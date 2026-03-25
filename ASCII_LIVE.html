@@ -1142,18 +1142,18 @@
 
             outputCtx.fillStyle = state.bg;
             outputCtx.fillRect(0, 0, outputCanvas.width, outputCanvas.height);
-            outputCtx.font = `bold ${scale}px 'Fira Code', monospace`;
+            outputCtx.font = `bold ${scale}px 'Fira Code', ui-monospace, monospace, 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji'`;
             outputCtx.textAlign = "left";
             outputCtx.textBaseline = "top";
 
-            const currentCharset = state.charset;
-            const charLen = currentCharset.length;
+            const glyphs = [...state.charset];
+            const charLen = Math.max(1, glyphs.length);
             for (let y = 0; y < h; y++) {
                 for (let x = 0; x < w; x++) {
                     const i = (y * w + x) * 4;
                     const brightness = pixels[i];
                     const charIdx = Math.floor((brightness / 256) * charLen);
-                    const char = currentCharset[charIdx] || currentCharset[charLen - 1];
+                    const char = glyphs[charIdx] || glyphs[glyphs.length - 1];
                     outputCtx.fillStyle = getASCIIColor(x, y, w, h, brightness, now);
                     outputCtx.fillText(char, x * scale, y * scale);
                 }
