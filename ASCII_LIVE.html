@@ -292,6 +292,35 @@
                         </div>
                     </div>
                 </div>
+                <div class="control-group">
+                    <div class="flex justify-between items-center gap-2">
+                        <label class="knob-label">Audio Reactive</label>
+                        <span id="audio-status" class="fira text-[8px] text-slate-500 tabular-nums">OFF</span>
+                    </div>
+                    <div class="flex flex-wrap gap-2 items-center mt-1">
+                        <button type="button" id="btn-audio-react" class="text-[8px] bg-slate-900 px-2 py-0.5 rounded border border-slate-700 hover:border-blue-500 transition-all font-bold">MIC</button>
+                        <div class="relative">
+                            <input type="color" id="audio-overlay-color" value="#ff00ff" class="w-8 h-8 rounded bg-transparent border-none cursor-pointer">
+                        </div>
+                        <select id="audio-blend-mode" class="text-[8px] bg-slate-900 border border-slate-700 rounded px-1 py-0.5 text-slate-300 outline-none focus:border-blue-500 max-w-[5.5rem]" title="Canvas blend mode">
+                            <option value="screen">Screen</option>
+                            <option value="multiply">Multiply</option>
+                            <option value="difference">Difference</option>
+                            <option value="overlay">Overlay</option>
+                            <option value="lighten">Lighten</option>
+                            <option value="darken">Darken</option>
+                            <option value="soft-light">Soft Light</option>
+                            <option value="hard-light">Hard Light</option>
+                            <option value="exclusion">Exclusion</option>
+                            <option value="source-over">Normal</option>
+                        </select>
+                    </div>
+                    <div class="flex flex-wrap items-center gap-2 mt-1">
+                        <span class="fira text-[7px] text-slate-600 w-16">Strength</span>
+                        <input type="range" id="audio-strength" min="0" max="2" step="0.01" value="1" class="w-24 h-1 bg-slate-800 rounded-lg appearance-none">
+                        <span id="val-audio-strength" class="fira text-[7px] text-slate-500 tabular-nums w-6">1.00</span>
+                    </div>
+                </div>
             </div>
         </div>
     </main>
@@ -351,6 +380,23 @@
             brightness: 1.0,
             tint: '#3b82f6',
             bg: '#000000',
+            audio: {
+                active: false,
+                level: 0,
+                smoothed: 0,
+                strength: 1,
+                overlayColor: '#ff00ff',
+                blendMode: 'screen',
+                audioCtx: null,
+                analyser: null,
+                srcNode: null,
+                stream: null,
+                data: null,
+                minDb: -60,
+                maxDb: -10,
+                rawLevel: 0,
+                beat: 0
+            },
             colorMode: 'solid',
             charset: charSets.standard,
             activePresetName: 'classic',
@@ -430,6 +476,17 @@
         function clampResInt(v) { return Math.min(250, Math.max(4, v)); }
         function staticDensityRes() { return Math.round((state.resMin + state.resMax) / 2); }
 
+        function clamp01(v) { return Math.min(1, Math.max(0, v)); }
+
+        function hexToRgb(hex) {
+            // Accepts "#rrggbb"
+            const h = hex.replace('#', '').trim();
+            const r = parseInt(h.slice(0, 2), 16);
+            const g = parseInt(h.slice(2, 4), 16);
+            const b = parseInt(h.slice(4, 6), 16);
+            return [r, g, b];
+        }
+
         /** 0..1 periodic LFO (not noise). `rate` scales angular speed like sine. */
         function lfoPeriodicT01(shape, time, rate) {
             switch (shape) {
@@ -496,6 +553,119 @@
             o.z += (target - o.z) * amt;
             o.z = Math.min(1, Math.max(0, o.z));
             return o.z;
+        }
+
+        async function startAudioReactive() {
+            if (state.audio.active) return;
+            const btn = document.getElementById('btn-audio-react');
+            const status = document.getElementById('audio-status');
+
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    audio: {
+                        echoCancellation: false,
+                        noiseSuppression: false,
+                        autoGainControl: false
+                    }
+                });
+
+                const audioCtx = state.audio.audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+                await audioCtx.resume();
+
+                const analyser = audioCtx.createAnalyser();
+                analyser.fftSize = 2048;
+                analyser.smoothingTimeConstant = 0.0; // we smooth ourselves
+
+                const src = audioCtx.createMediaStreamSource(stream);
+                src.connect(analyser);
+
+                state.audio.active = true;
+                state.audio.stream = stream;
+                state.audio.audioCtx = audioCtx;
+                state.audio.analyser = analyser;
+                state.audio.srcNode = src;
+                state.audio.data = new Uint8Array(analyser.fftSize);
+                state.audio.smoothed = 0;
+                state.audio.level = 0;
+                state.audio.beat = 0;
+                state.audio.rawLevel = 0;
+
+                status.textContent = 'ON';
+                status.className = 'fira text-[8px] text-green-400 tabular-nums';
+                btn.classList.add('border-blue-500', 'text-blue-300');
+                btn.classList.remove('text-slate-500');
+            } catch (err) {
+                console.warn('Mic denied/unavailable', err);
+                state.audio.active = false;
+                const statusEl = document.getElementById('audio-status');
+                statusEl.textContent = 'DENIED';
+                statusEl.className = 'fira text-[8px] text-red-400 tabular-nums';
+            }
+        }
+
+        function stopAudioReactive() {
+            if (!state.audio.active) return;
+            state.audio.active = false;
+
+            if (state.audio.stream) {
+                state.audio.stream.getTracks().forEach(t => t.stop());
+            }
+            if (state.audio.srcNode) {
+                try { state.audio.srcNode.disconnect(); } catch (e) { /* noop */ }
+            }
+            state.audio.stream = null;
+            state.audio.analyser = null;
+            state.audio.srcNode = null;
+            state.audio.data = null;
+            state.audio.smoothed = 0;
+            state.audio.level = 0;
+            state.audio.beat = 0;
+            state.audio.rawLevel = 0;
+
+            const btn = document.getElementById('btn-audio-react');
+            const status = document.getElementById('audio-status');
+            status.textContent = 'OFF';
+            status.className = 'fira text-[8px] text-slate-500 tabular-nums';
+            btn.classList.remove('border-blue-500', 'text-blue-300');
+        }
+
+        function updateAudioReactive(deltaSecs) {
+            if (!state.audio.active || !state.audio.analyser || !state.audio.data) return;
+            const analyser = state.audio.analyser;
+
+            analyser.getByteTimeDomainData(state.audio.data);
+            const arr = state.audio.data;
+
+            // RMS in range 0..~1
+            let sumSq = 0;
+            for (let i = 0; i < arr.length; i++) {
+                const x = (arr[i] - 128) / 128; // [-1, 1]
+                sumSq += x * x;
+            }
+            const rms = Math.sqrt(sumSq / arr.length);
+            const db = 20 * Math.log10(Math.max(1e-8, rms));
+
+            // Normalize dB range into 0..1
+            const norm = (db - state.audio.minDb) / (state.audio.maxDb - state.audio.minDb);
+            const lvl = clamp01(norm);
+            state.audio.rawLevel = lvl;
+
+            // Beat-ish detector:
+            // - treat loudness above a threshold as a "hit"
+            // - on hit, raise beat to 1 immediately (flash)
+            // - otherwise, decay quickly (so it looks like flashing drums)
+            const strength = state.audio.strength; // 0..2
+            const threshold = Math.min(0.85, Math.max(0.05, 0.38 - strength * 0.13));
+
+            if (lvl >= threshold) {
+                state.audio.beat = 1;
+            } else {
+                // Release rate: bigger strength => faster decay.
+                const releaseRate = 8 + strength * 22; // per second
+                state.audio.beat = state.audio.beat * Math.exp(-releaseRate * deltaSecs);
+            }
+
+            state.audio.level = state.audio.beat;
         }
 
         function randomDwellFromInput(rangeEl) {
@@ -740,6 +910,26 @@
             syncDensityLfoRateLabel();
             updateAutoWaveBtn(document.getElementById('btn-lfo-res-auto-wave'), state.lfo.res.autoWave);
             updateAutoWaveBtn(document.getElementById('btn-lfo-contrast-auto-wave'), state.lfo.contrast.autoWave);
+
+            // Audio reactive controls
+            document.getElementById('btn-audio-react').onclick = () => {
+                if (state.audio.active) stopAudioReactive();
+                else startAudioReactive();
+            };
+            document.getElementById('audio-overlay-color').oninput = e => {
+                state.audio.overlayColor = e.target.value;
+            };
+            document.getElementById('audio-strength').oninput = e => {
+                state.audio.strength = parseFloat(e.target.value);
+                document.getElementById('val-audio-strength').textContent = state.audio.strength.toFixed(2);
+            };
+            document.getElementById('audio-blend-mode').onchange = e => {
+                state.audio.blendMode = e.target.value;
+            };
+            document.getElementById('audio-strength').value = String(state.audio.strength);
+            document.getElementById('val-audio-strength').textContent = state.audio.strength.toFixed(2);
+            document.getElementById('audio-overlay-color').value = state.audio.overlayColor;
+            document.getElementById('audio-blend-mode').value = state.audio.blendMode;
         }
 
         async function startCamera(deviceId = null) {
@@ -1158,14 +1348,30 @@
                     outputCtx.fillText(char, x * scale, y * scale);
                 }
             }
+
+            // Audio-reactive overlay (draw after ASCII so it reads like a flash)
+            if (state.audio.active) {
+                // Convert "beat" envelope into flash alpha (fast hits, short decay).
+                const alpha = clamp01(Math.pow(state.audio.level, 0.25));
+                if (alpha > 0.001) {
+                    const [r, g, b] = hexToRgb(state.audio.overlayColor);
+                    outputCtx.save();
+                    outputCtx.globalCompositeOperation = state.audio.blendMode;
+                    outputCtx.fillStyle = `rgba(${r},${g},${b},${alpha})`;
+                    outputCtx.fillRect(0, 0, outputCanvas.width, outputCanvas.height);
+                    outputCtx.restore();
+                }
+            }
         }
 
         function renderLoop(now) {
             const rawDelta = now - state.lastFrameTime;
             const delta = state.lastFrameTime === 0 ? 16 : rawDelta;
+            const deltaSecs = delta / 1000;
             state.fps = rawDelta > 0 ? Math.round(1000 / rawDelta) : 0;
             state.lastFrameTime = now;
             if (now % 20 < 1) fpsEl.textContent = `${state.fps || 0} FPS`;
+            updateAudioReactive(deltaSecs);
             updateLFOs(now, delta);
             processFrame(now);
             requestAnimationFrame(renderLoop);
