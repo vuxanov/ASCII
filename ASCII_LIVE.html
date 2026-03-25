@@ -428,7 +428,9 @@
                 connected: false,
                 lastSentMs: 0,
                 targetFps: 10,
-                pingTimer: null
+                pingTimer: null,
+                channel: null,
+                lastBroadcastMs: 0
             },
             audio: {
                 active: false,
@@ -1175,11 +1177,10 @@
                 viewportContainer.style.padding = '0px';
             }
             const outputCanvas = document.getElementById('output-canvas');
-            if (outputCanvas) outputCanvas.style.display = 'none';
+            if (outputCanvas) outputCanvas.style.display = 'block';
             if (projectorCanvas) {
-                projectorCanvas.classList.remove('hidden');
-                projectorCanvas.style.display = 'block';
-                if (projectorCtx) projectorCtx.imageSmoothingEnabled = false;
+                projectorCanvas.classList.add('hidden');
+                projectorCanvas.style.display = 'none';
             }
 
             const fsBtn = document.getElementById('projector-fullscreen-btn');
@@ -1198,54 +1199,44 @@
                 onFsChange();
             }
 
-            // Tell the opener we are ready for the stream (best-effort).
-            try {
-                if (window.opener && !window.opener.closed) {
-                    window.opener.postMessage({ type: 'ascii-live-projector-ready', sessionId }, '*');
-                } else {
-                    // Fallback: use BroadcastChannel if available.
-                    if (sessionId) {
-                        const bc = new BroadcastChannel(`ascii-live-projector-${sessionId}`);
-                        bc.postMessage({ type: 'ascii-live-projector-ready' });
-                        bc.close();
-                    }
-                }
-            } catch (e) { /* ignore */ }
-
-            window.addEventListener('message', (e) => {
+            // Standalone projector: run renderer locally and sync settings via BroadcastChannel.
+            const ch = new BroadcastChannel(`ascii-live-sync-${sessionId || 'default'}`);
+            state.projector.channel = ch;
+            ch.onmessage = (e) => {
                 const msg = e.data;
-                if (msg && msg.type === 'ascii-live-projector-ping') {
-                    try {
-                        if (window.opener && !window.opener.closed) {
-                            window.opener.postMessage({ type: 'ascii-live-projector-ready', sessionId }, '*');
-                        }
-                    } catch (err) { /* noop */ }
-                    return;
+                if (!msg || msg.type !== 'ascii-live-sync') return;
+                const s = msg.state;
+                if (!s) return;
+
+                // Apply core visual settings (no UI sync needed since UI is hidden).
+                if (typeof s.activePresetName === 'string' && s.activePresetName !== state.activePresetName) {
+                    state.activePresetName = s.activePresetName;
                 }
-                if (!msg || msg.type !== 'ascii-live-projector-frame') return;
-                if (sessionId && msg.sessionId && msg.sessionId !== sessionId) return;
-                try {
-                    if (!projectorCanvas || !projectorCtx || !msg.blob) return;
-                    const seq = (state.projector.frameSeq = (state.projector.frameSeq || 0) + 1);
-                    createImageBitmap(msg.blob).then((bitmap) => {
-                        // Drop frames if a newer one arrived.
-                        if (!projectorCanvas || !projectorCtx || !state.projector || !bitmap) return;
-                        // Monotonic apply: never draw a frame older than what we've already shown.
-                        if (seq < (state.projector.lastAppliedSeq ?? 0)) {
-                            try { bitmap.close(); } catch (err) { /* noop */ }
-                            return;
-                        }
-                        projectorCanvas.width = bitmap.width;
-                        projectorCanvas.height = bitmap.height;
-                        projectorCtx.clearRect(0, 0, projectorCanvas.width, projectorCanvas.height);
-                        projectorCtx.drawImage(bitmap, 0, 0, projectorCanvas.width, projectorCanvas.height);
-                        state.projector.lastAppliedSeq = seq;
-                        try { bitmap.close(); } catch (err) { /* noop */ }
-                    }).catch(() => { /* noop */ });
-                } catch (err) {
-                    console.warn('Failed to apply projector frame', err);
+                if (typeof s.charset === 'string') state.charset = s.charset;
+                if (typeof s.tint === 'string') state.tint = s.tint;
+                if (typeof s.bg === 'string') state.bg = s.bg;
+                if (typeof s.colorMode === 'string') state.colorMode = s.colorMode;
+                if (typeof s.contrast === 'number') { state.contrast = s.contrast; state.lfo.contrast.base = s.contrast; }
+                if (typeof s.resMin === 'number') state.resMin = s.resMin;
+                if (typeof s.resMax === 'number') state.resMax = s.resMax;
+                if (!state.lfo.res.active) state.res = staticDensityRes();
+
+                // Active playlist item sync (by id)
+                if (s.activeSourceId) {
+                    const idx = state.playlist.findIndex(it => it.id === s.activeSourceId);
+                    if (idx >= 0 && idx !== state.activeIndex) selectSource(idx);
                 }
-            });
+            };
+
+            // Boot minimal projector playback state from persisted playlist.
+            (async () => {
+                await enumerateCameras();
+                await restorePersistedPlaylist();
+                renderPlaylist();
+                ensurePlaylistThumbs();
+                if (state.activeIndex >= 0) selectSource(state.activeIndex);
+                requestAnimationFrame(renderLoop);
+            })();
         }
 
         function setupProjectorSender() {
@@ -1267,75 +1258,46 @@
 
                 // Do not use 'noopener': we rely on window.opener messaging.
                 state.projector.win = window.open(url.toString(), 'ascii-live-projector');
-                // Start sending immediately; the receiver will ignore until it’s ready.
-                state.projector.connected = true;
-                state.projector.lastSentMs = 0;
-                // Ping the projector for a ready handshake (best-effort).
-                if (state.projector.pingTimer) {
-                    clearInterval(state.projector.pingTimer);
-                    state.projector.pingTimer = null;
+                // BroadcastChannel sync will take over; start channel now.
+                if (state.projector.channel) {
+                    try { state.projector.channel.close(); } catch (e) { /* noop */ }
+                    state.projector.channel = null;
                 }
-                state.projector.pingTimer = setInterval(() => {
-                    if (!state.projector.win || state.projector.win.closed) {
-                        clearInterval(state.projector.pingTimer);
-                        state.projector.pingTimer = null;
-                        return;
-                    }
-                    try {
-                        state.projector.win.postMessage({ type: 'ascii-live-projector-ping', sessionId: state.projector.sessionId }, '*');
-                    } catch (e) { /* noop */ }
-                }, 400);
+                state.projector.channel = new BroadcastChannel(`ascii-live-sync-${state.projector.sessionId}`);
+                state.projector.lastBroadcastMs = 0;
             };
 
-            window.addEventListener('message', (e) => {
-                const msg = e.data;
-                if (!msg || msg.type !== 'ascii-live-projector-ready') return;
-                if (!state.projector.win || state.projector.win.closed) return;
-                // Only respond if message came from the projector window.
-                if (e.source !== state.projector.win) return;
-                try {
-                    state.projector.connected = true;
-                    state.projector.lastSentMs = 0;
-                    if (state.projector.pingTimer) {
-                        clearInterval(state.projector.pingTimer);
-                        state.projector.pingTimer = null;
-                    }
-                    if (state.projector.frameTimer) {
-                        clearInterval(state.projector.frameTimer);
-                        state.projector.frameTimer = null;
-                    }
-                } catch (err) {
-                    console.warn('Failed to start projector frame sending', err);
-                }
-            });
+            // no-op: projector sync is via BroadcastChannel now.
         }
 
-        function maybeSendProjectorFrame(nowMs) {
-            if (!state.projector.connected) return;
-            if (!state.projector.win || state.projector.win.closed) {
-                state.projector.connected = false;
-                return;
-            }
-            const fps = state.projector.targetFps || 10;
-            const frameMs = 1000 / fps;
-            if (nowMs - (state.projector.lastSentMs || 0) < frameMs) return;
-            if (!outputCanvas) return;
-            if (state.projector.sendingFrame) return;
+        function maybeBroadcastProjectorState(nowMs) {
+            if (!state.projector.channel) return;
+            const intervalMs = 120; // ~8Hz baseline
+            if (nowMs - (state.projector.lastBroadcastMs || 0) < intervalMs) return;
+            state.projector.lastBroadcastMs = nowMs;
 
-            state.projector.lastSentMs = nowMs;
-            state.projector.sendingFrame = true;
-            outputCanvas.toBlob((blob) => {
-                state.projector.sendingFrame = false;
-                if (!blob) return;
-                try {
-                    state.projector.win.postMessage(
-                        { type: 'ascii-live-projector-frame', sessionId: state.projector.sessionId, blob },
-                        '*'
-                    );
-                } catch (err) {
-                    // ignore
-                }
-            }, 'image/jpeg', 0.45);
+            let activeSourceId = null;
+            if (state.activeIndex >= 0 && state.activeIndex < state.playlist.length) {
+                activeSourceId = state.playlist[state.activeIndex]?.id || null;
+            }
+            try {
+                state.projector.channel.postMessage({
+                    type: 'ascii-live-sync',
+                    state: {
+                        activePresetName: state.activePresetName,
+                        charset: state.charset,
+                        tint: state.tint,
+                        bg: state.bg,
+                        colorMode: state.colorMode,
+                        contrast: state.contrast,
+                        resMin: state.resMin,
+                        resMax: state.resMax,
+                        activeSourceId
+                    }
+                });
+            } catch (e) {
+                // noop
+            }
         }
 
         async function init() {
@@ -2084,7 +2046,7 @@
             updateAudioReactive(deltaSecs);
             updateLFOs(now, delta);
             processFrame(now);
-            maybeSendProjectorFrame(now);
+            maybeBroadcastProjectorState(now);
             requestAnimationFrame(renderLoop);
         }
 
