@@ -1235,7 +1235,8 @@
             }
 
             // Standalone projector: run renderer locally and sync settings via BroadcastChannel.
-            const ch = new BroadcastChannel(`ascii-live-sync-${sessionId || 'default'}`);
+            // Use a global channel name so projector keeps syncing across reloads/session changes.
+            const ch = new BroadcastChannel('ascii-live-sync');
             state.projector.channel = ch;
             ch.onmessage = (e) => {
                 const msg = e.data;
@@ -1325,7 +1326,7 @@
                     try { state.projector.channel.close(); } catch (e) { /* noop */ }
                     state.projector.channel = null;
                 }
-                state.projector.channel = new BroadcastChannel(`ascii-live-sync-${state.projector.sessionId}`);
+                state.projector.channel = new BroadcastChannel('ascii-live-sync');
                 state.projector.lastBroadcastMs = 0;
             };
 
