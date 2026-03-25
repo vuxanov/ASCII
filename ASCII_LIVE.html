@@ -1234,14 +1234,7 @@
                 onFsChange();
             }
 
-            // Standalone projector: run renderer locally and sync settings via BroadcastChannel.
-            // Use a global channel name so projector keeps syncing across reloads/session changes.
-            const ch = new BroadcastChannel('ascii-live-sync');
-            state.projector.channel = ch;
-            ch.onmessage = (e) => {
-                const msg = e.data;
-                if (!msg || msg.type !== 'ascii-live-sync') return;
-                const s = msg.state;
+            function applyIncomingSyncState(s) {
                 if (!s) return;
 
                 // Apply core visual settings (no UI sync needed since UI is hidden).
@@ -1257,13 +1250,12 @@
                 if (typeof s.resMax === 'number') state.resMax = s.resMax;
                 if (!state.lfo.res.active) state.res = staticDensityRes();
 
-                // Playlist sync (IDs + order) — blobs are retrieved from shared IndexedDB.
+                // Playlist sync (IDs + order) — blobs are retrieved from shared IndexedDB (same origin).
                 if (Array.isArray(s.playlist) && !state.projector.applyingRemotePlaylist) {
                     state.projector.applyingRemotePlaylist = true;
                     (async () => {
                         try {
                             const camItems = state.playlist.filter(it => it.type === 'cam');
-                            // Rebuild playlist order from remote meta.
                             revokeNonCamObjectUrls();
                             const rebuilt = [];
                             for (const meta of s.playlist) {
@@ -1278,18 +1270,40 @@
                             state.projector.applyingRemotePlaylist = false;
                         }
 
-                        // Active playlist item sync (by id)
                         if (s.activeSourceId) {
                             const idx = state.playlist.findIndex(it => it.id === s.activeSourceId);
                             if (idx >= 0 && idx !== state.activeIndex) selectSource(idx);
                         }
                     })();
-                } else if (s.activeSourceId) {
-                    // Active playlist item sync (by id)
+                    return;
+                }
+
+                // Active playlist item sync (by id)
+                if (s.activeSourceId) {
                     const idx = state.playlist.findIndex(it => it.id === s.activeSourceId);
                     if (idx >= 0 && idx !== state.activeIndex) selectSource(idx);
                 }
-            };
+            }
+
+            // Preferred sync path: postMessage from opener (works even when BroadcastChannel is flaky).
+            window.addEventListener('message', (e) => {
+                const msg = e.data;
+                if (!msg || msg.type !== 'ascii-live-sync') return;
+                applyIncomingSyncState(msg.state);
+            });
+
+            // Secondary sync path: BroadcastChannel (same-origin only).
+            try {
+                const ch = new BroadcastChannel('ascii-live-sync');
+                state.projector.channel = ch;
+                ch.onmessage = (e) => {
+                    const msg = e.data;
+                    if (!msg || msg.type !== 'ascii-live-sync') return;
+                    applyIncomingSyncState(msg.state);
+                };
+            } catch (e) {
+                state.projector.channel = null;
+            }
 
             // Boot minimal projector playback state from persisted playlist.
             (async () => {
@@ -1334,7 +1348,6 @@
         }
 
         function maybeBroadcastProjectorState(nowMs) {
-            if (!state.projector.channel) return;
             const intervalMs = 120; // ~8Hz baseline
             if (nowMs - (state.projector.lastBroadcastMs || 0) < intervalMs) return;
             state.projector.lastBroadcastMs = nowMs;
@@ -1349,24 +1362,29 @@
             const sig = playlistMeta.map(x => x.id).join('|');
             const sendPlaylist = sig !== (state.projector.lastPlaylistSig || '');
             if (sendPlaylist) state.projector.lastPlaylistSig = sig;
-            try {
-                state.projector.channel.postMessage({
-                    type: 'ascii-live-sync',
-                    state: {
-                        activePresetName: state.activePresetName,
-                        charset: state.charset,
-                        tint: state.tint,
-                        bg: state.bg,
-                        colorMode: state.colorMode,
-                        contrast: state.contrast,
-                        resMin: state.resMin,
-                        resMax: state.resMax,
-                        activeSourceId,
-                        playlist: sendPlaylist ? playlistMeta : undefined
-                    }
-                });
-            } catch (e) {
-                // noop
+            const payload = {
+                type: 'ascii-live-sync',
+                state: {
+                    activePresetName: state.activePresetName,
+                    charset: state.charset,
+                    tint: state.tint,
+                    bg: state.bg,
+                    colorMode: state.colorMode,
+                    contrast: state.contrast,
+                    resMin: state.resMin,
+                    resMax: state.resMax,
+                    activeSourceId,
+                    playlist: sendPlaylist ? playlistMeta : undefined
+                }
+            };
+
+            // 1) BroadcastChannel (if available)
+            if (state.projector.channel) {
+                try { state.projector.channel.postMessage(payload); } catch (e) { /* noop */ }
+            }
+            // 2) Direct postMessage to the projector window (most reliable)
+            if (state.projector.win && !state.projector.win.closed) {
+                try { state.projector.win.postMessage(payload, '*'); } catch (e) { /* noop */ }
             }
         }
 
