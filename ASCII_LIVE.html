@@ -427,7 +427,8 @@
                 lastAppliedSeq: 0,
                 connected: false,
                 lastSentMs: 0,
-                targetFps: 10
+                targetFps: 10,
+                pingTimer: null
             },
             audio: {
                 active: false,
@@ -1213,6 +1214,14 @@
 
             window.addEventListener('message', (e) => {
                 const msg = e.data;
+                if (msg && msg.type === 'ascii-live-projector-ping') {
+                    try {
+                        if (window.opener && !window.opener.closed) {
+                            window.opener.postMessage({ type: 'ascii-live-projector-ready', sessionId }, '*');
+                        }
+                    } catch (err) { /* noop */ }
+                    return;
+                }
                 if (!msg || msg.type !== 'ascii-live-projector-frame') return;
                 if (sessionId && msg.sessionId && msg.sessionId !== sessionId) return;
                 try {
@@ -1258,6 +1267,24 @@
 
                 // Do not use 'noopener': we rely on window.opener messaging.
                 state.projector.win = window.open(url.toString(), 'ascii-live-projector');
+                // Start sending immediately; the receiver will ignore until it’s ready.
+                state.projector.connected = true;
+                state.projector.lastSentMs = 0;
+                // Ping the projector for a ready handshake (best-effort).
+                if (state.projector.pingTimer) {
+                    clearInterval(state.projector.pingTimer);
+                    state.projector.pingTimer = null;
+                }
+                state.projector.pingTimer = setInterval(() => {
+                    if (!state.projector.win || state.projector.win.closed) {
+                        clearInterval(state.projector.pingTimer);
+                        state.projector.pingTimer = null;
+                        return;
+                    }
+                    try {
+                        state.projector.win.postMessage({ type: 'ascii-live-projector-ping', sessionId: state.projector.sessionId }, '*');
+                    } catch (e) { /* noop */ }
+                }, 400);
             };
 
             window.addEventListener('message', (e) => {
@@ -1269,6 +1296,10 @@
                 try {
                     state.projector.connected = true;
                     state.projector.lastSentMs = 0;
+                    if (state.projector.pingTimer) {
+                        clearInterval(state.projector.pingTimer);
+                        state.projector.pingTimer = null;
+                    }
                     if (state.projector.frameTimer) {
                         clearInterval(state.projector.frameTimer);
                         state.projector.frameTimer = null;
