@@ -70,6 +70,25 @@
         .thumbnail-box {
             @apply w-10 h-7 rounded bg-black flex-shrink-0 border border-white/5 overflow-hidden flex items-center justify-center;
         }
+        .item-delete-btn {
+            position: absolute;
+            top: 3px;
+            right: 3px;
+            width: 18px;
+            height: 18px;
+            border-radius: 5px;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            line-height: 1;
+            background: rgba(2, 6, 23, 0.65);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            color: #fb7185;
+            z-index: 30;
+            pointer-events: auto;
+        }
+        .playlist-item:hover .item-delete-btn { display: flex; }
         .preset-grid { @apply grid grid-cols-2 gap-1.5; }
         .preset-grid-wide { @apply grid grid-cols-3 gap-1.5 max-h-36 overflow-y-auto pr-0.5; }
         .preset-btn {
@@ -175,7 +194,10 @@
             </section>
 
             <section class="flex-1 flex flex-col overflow-hidden border-t border-slate-800 pt-3">
-                <h2 class="knob-label mb-2">Source Queue</h2>
+                <div class="flex justify-between items-center mb-2">
+                    <h2 class="knob-label">Source Queue</h2>
+                    <button id="btn-delete-all" type="button" class="text-[8px] font-black px-1.5 py-0.5 rounded border border-slate-700 bg-slate-900 text-slate-500 hover:border-red-500 hover:text-red-300 transition-colors" title="Delete all uploaded items">DELETE ALL</button>
+                </div>
                 <div id="playlist-container" class="flex-1 overflow-y-auto space-y-2 pr-1"></div>
             </section>
 
@@ -211,6 +233,7 @@
 
         <div class="flex-1 flex flex-col relative bg-black items-center justify-center overflow-hidden">
             <div id="viewport-container" class="relative w-full h-full flex items-center justify-center p-4">
+                <button id="projector-fullscreen-btn" type="button" class="hidden absolute top-3 right-3 z-50 text-[10px] font-black px-2 py-1 rounded border border-white/10 bg-black/50 hover:bg-black/70 text-white/80 hover:text-white transition-colors" title="Projector fullscreen">FULL</button>
                 <canvas id="output-canvas" class="shadow-2xl"></canvas>
                 <canvas id="projector-canvas" class="hidden absolute inset-0 w-full h-full" aria-label="Projector output"></canvas>
             </div>
@@ -865,6 +888,27 @@
             });
         }
 
+        async function idbDeleteBlob(id) {
+            if (!id) return;
+            const db = await openPersistDb();
+            await new Promise((resolve, reject) => {
+                const tx = db.transaction(PERSIST_STORE, 'readwrite');
+                tx.objectStore(PERSIST_STORE).delete(id);
+                tx.oncomplete = () => resolve();
+                tx.onerror = () => reject(tx.error);
+            });
+        }
+
+        async function idbClearBlobs() {
+            const db = await openPersistDb();
+            await new Promise((resolve, reject) => {
+                const tx = db.transaction(PERSIST_STORE, 'readwrite');
+                tx.objectStore(PERSIST_STORE).clear();
+                tx.oncomplete = () => resolve();
+                tx.onerror = () => reject(tx.error);
+            });
+        }
+
         function persistPlaylistMeta() {
             try {
                 const persistItems = state.playlist
@@ -934,6 +978,140 @@
             }
         }
 
+        async function generateGifThumb(item) {
+            if (!item || !item.gifData || !item.gifData.width || !item.gifData.height) return null;
+            const gif = item.gifData;
+            const thumbWidth = 64;
+            const thumbHeight = Math.floor((thumbWidth / gif.width) * gif.height);
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = gif.width; tempCanvas.height = gif.height;
+            const tempCtx = tempCanvas.getContext('2d');
+            const imageData = tempCtx.createImageData(gif.width, gif.height);
+            gif.decodeAndBlitFrameRGBA(0, imageData.data);
+            tempCtx.putImageData(imageData, 0, 0);
+
+            const thumbCanvas = document.createElement('canvas');
+            thumbCanvas.width = thumbWidth; thumbCanvas.height = Math.max(1, thumbHeight);
+            thumbCanvas.getContext('2d').drawImage(tempCanvas, 0, 0, thumbWidth, thumbCanvas.height);
+            return thumbCanvas.toDataURL('image/jpeg', 0.6);
+        }
+
+        async function generateVideoThumb(item) {
+            if (!item || !item.url) return null;
+            const tempVid = document.createElement('video');
+            tempVid.src = item.url;
+            tempVid.muted = true;
+            tempVid.playsInline = true;
+            tempVid.preload = 'auto';
+
+            const thumbWidth = 64;
+            const thumbHeightFromMeta = () => {
+                if (!tempVid.videoWidth || !tempVid.videoHeight) return 36;
+                return Math.floor((thumbWidth / tempVid.videoWidth) * tempVid.videoHeight);
+            };
+
+            return await new Promise((resolve) => {
+                const cleanup = () => { try { tempVid.remove(); } catch (e) { /* noop */ } };
+                tempVid.onloadeddata = () => {
+                    const t = 0.5;
+                    const thumbHeight = Math.max(1, thumbHeightFromMeta());
+                    const doDraw = () => {
+                        try {
+                            const thumbCanvas = document.createElement('canvas');
+                            thumbCanvas.width = thumbWidth;
+                            thumbCanvas.height = thumbHeight;
+                            thumbCanvas.getContext('2d').drawImage(tempVid, 0, 0, thumbWidth, thumbHeight);
+                            const dataUrl = thumbCanvas.toDataURL('image/jpeg', 0.6);
+                            resolve(dataUrl);
+                        } catch (err) {
+                            resolve(null);
+                        } finally {
+                            cleanup();
+                        }
+                    };
+                    tempVid.onseeked = () => doDraw();
+                    try { tempVid.currentTime = t; } catch (err) { doDraw(); }
+                };
+                tempVid.onerror = () => { cleanup(); resolve(null); };
+            });
+        }
+
+        function ensurePlaylistThumbs() {
+            const rerender = (() => {
+                let scheduled = false;
+                return () => {
+                    if (scheduled) return;
+                    scheduled = true;
+                    setTimeout(() => {
+                        scheduled = false;
+                        renderPlaylist();
+                    }, 50);
+                };
+            })();
+
+            state.playlist.forEach(item => {
+                if (!item || item.type === 'cam') return;
+                if (item.thumb) return;
+                if (item.type === 'gif' && item.gifData) {
+                    generateGifThumb(item).then(t => {
+                        if (t) item.thumb = t;
+                        rerender();
+                    });
+                } else if (item.type === 'video' && item.url) {
+                    generateVideoThumb(item).then(t => {
+                        if (t) item.thumb = t;
+                        rerender();
+                    });
+                }
+            });
+        }
+
+        async function deletePersistedItem(item) {
+            if (!item || !item.id || item.type === 'cam') return;
+            try { await idbDeleteBlob(item.id); } catch (e) { /* noop */ }
+        }
+
+        function deletePlaylistItem(idx) {
+            if (idx < 0 || idx >= state.playlist.length) return;
+            const item = state.playlist[idx];
+            if (!item || item.type === 'cam') return;
+
+            const wasActive = state.activeIndex === idx;
+            if (idx < state.activeIndex) state.activeIndex -= 1;
+            state.playlist.splice(idx, 1);
+
+            if (item.url) { try { URL.revokeObjectURL(item.url); } catch (e) { /* noop */ } }
+
+            persistPlaylistMeta();
+            renderPlaylist();
+
+            deletePersistedItem(item); // async fire-and-forget
+
+            if (wasActive) {
+                const next = state.playlist.findIndex(it => it.type !== 'cam');
+                if (next >= 0) selectSource(next);
+            }
+        }
+
+        function deleteAllPlaylistItems() {
+            const nonCam = state.playlist.filter(it => it.type !== 'cam');
+            nonCam.forEach(it => {
+                if (it.url) { try { URL.revokeObjectURL(it.url); } catch (e) { /* noop */ } }
+                deletePersistedItem(it);
+            });
+
+            state.playlist = state.playlist.filter(it => it.type === 'cam');
+            state.activeIndex = -1;
+            state.sourceType = 'none';
+            try { video.pause(); } catch (e) { /* noop */ }
+
+            localStorage.removeItem(PERSIST_KEY);
+            idbClearBlobs(); // async
+
+            persistPlaylistMeta();
+            renderPlaylist();
+        }
+
         function syncSourceIntervalSliderUI() {
             const el = document.getElementById('param-interval');
             const on = state.playlistSettings.jitter;
@@ -998,6 +1176,13 @@
                 projectorCanvas.classList.remove('hidden');
                 projectorCanvas.style.display = 'block';
                 if (projectorCtx) projectorCtx.imageSmoothingEnabled = false;
+            }
+
+            const fsBtn = document.getElementById('projector-fullscreen-btn');
+            if (fsBtn) {
+                fsBtn.classList.remove('hidden');
+                fsBtn.style.display = 'block';
+                fsBtn.onclick = () => { toggleFullscreen(); };
             }
 
             // Tell the opener we are ready for the stream (best-effort).
@@ -1111,6 +1296,7 @@
             await enumerateCameras();
             await restorePersistedPlaylist();
             renderPlaylist();
+            ensurePlaylistThumbs();
             applyPreset('classic');
             if (state.activeIndex >= 0) {
                 selectSource(state.activeIndex);
@@ -1365,6 +1551,10 @@
             };
             document.getElementById('val-audio-kick-low').textContent = String(state.audio.kickLowHz);
             document.getElementById('val-audio-kick-high').textContent = String(state.audio.kickHighHz);
+
+            // Playlist management
+            const delAllBtn = document.getElementById('btn-delete-all');
+            if (delAllBtn) delAllBtn.onclick = () => deleteAllPlaylistItems();
         }
 
         async function startCamera(deviceId = null) {
@@ -1502,6 +1692,9 @@
                         </div>
                     ` : (item.thumb ? `<div class="thumbnail-box"><img src="${item.thumb}" class="w-full h-full object-cover"></div>` : `<div class="thumbnail-box bg-slate-800 animate-pulse"></div>`);
                 let extraControls = '';
+                const deleteBtnHtml = item.type !== 'cam'
+                    ? `<button class="item-delete-btn" title="Delete" onclick="event.stopPropagation(); deletePlaylistItem(${idx})">×</button>`
+                    : '';
                 if (item.type === 'cam') {
                     const camOptions = state.cameras.map(c => `<option value="${c.deviceId}" ${item.deviceId === c.deviceId ? 'selected' : ''}>${c.label || 'CAM ' + (state.cameras.indexOf(c)+1)}</option>`).join('');
                     extraControls = `
@@ -1517,6 +1710,7 @@
                     `;
                 }
                 div.innerHTML = `
+                    ${deleteBtnHtml}
                     <div class="flex items-center gap-2 w-full overflow-hidden">
                         <div class="text-slate-800 cursor-grab active:cursor-grabbing hover:text-slate-500 flex-shrink-0">
                              <svg xmlns="http://www.w3.org/2000/svg" width="10" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="5" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="9" cy="19" r="1"/><circle cx="15" cy="5" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="19" r="1"/></svg>
