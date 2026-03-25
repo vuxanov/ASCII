@@ -904,7 +904,19 @@
                 if (!msg || msg.type !== 'ascii-live-canvas-stream') return;
                 if (sessionId && msg.sessionId && msg.sessionId !== sessionId) return;
                 try {
-                    if (projectorVideo && msg.stream) {
+                    if (projectorVideo && msg.track) {
+                        // Re-wrap transferable track into a MediaStream.
+                        try {
+                            if (projectorVideo.srcObject) {
+                                const oldTracks = projectorVideo.srcObject.getTracks();
+                                oldTracks.forEach(t => { try { t.stop(); } catch (e) { /* ignore */ } });
+                            }
+                        } catch (e) { /* ignore */ }
+                        const ms = new MediaStream([msg.track]);
+                        projectorVideo.srcObject = ms;
+                        projectorVideo.play().catch(() => { /* ignore autoplay */ });
+                    } else if (projectorVideo && msg.stream) {
+                        // Fallback: some browsers may clone MediaStream via postMessage.
                         projectorVideo.srcObject = msg.stream;
                         projectorVideo.play().catch(() => { /* ignore autoplay */ });
                     }
@@ -944,9 +956,17 @@
                 try {
                     // Capture the current output canvas stream at a reasonable FPS.
                     const stream = outputCanvas.captureStream(30);
+                    const tracks = stream.getVideoTracks();
+                    const track = tracks && tracks.length ? tracks[0] : null;
+                    if (!track) {
+                        console.warn('No video track from canvas captureStream');
+                        return;
+                    }
+                    // Transfer the track (MediaStream itself may not clone reliably).
                     state.projector.win.postMessage(
-                        { type: 'ascii-live-canvas-stream', sessionId: state.projector.sessionId, stream },
-                        '*'
+                        { type: 'ascii-live-canvas-stream', sessionId: state.projector.sessionId, track },
+                        '*',
+                        [track]
                     );
                 } catch (err) {
                     console.warn('Failed to capture canvas stream', err);
