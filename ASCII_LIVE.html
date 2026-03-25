@@ -212,7 +212,7 @@
         <div class="flex-1 flex flex-col relative bg-black items-center justify-center overflow-hidden">
             <div id="viewport-container" class="relative w-full h-full flex items-center justify-center p-4">
                 <canvas id="output-canvas" class="shadow-2xl"></canvas>
-                <video id="projector-video" class="hidden absolute inset-0 w-full h-full" autoplay muted playsinline></video>
+                <img id="projector-img" class="hidden absolute inset-0 w-full h-full object-contain" alt="Projector output">
             </div>
             <div id="controls-panel" class="absolute bottom-6 glass rounded-3xl p-5 flex gap-8 items-end border border-white/10 shadow-2xl max-w-[95vw] overflow-x-auto">
                 <div class="control-group min-w-[200px]">
@@ -399,7 +399,9 @@
             bg: '#000000',
             projector: {
                 sessionId: null,
-                win: null
+                win: null,
+                frameTimer: null,
+                sendingFrame: false
             },
             audio: {
                 active: false,
@@ -464,7 +466,7 @@
         const video = document.getElementById('hidden-video');
         const bufferCanvas = document.getElementById('buffer-canvas');
         const outputCanvas = document.getElementById('output-canvas');
-        const projectorVideo = document.getElementById('projector-video');
+        const projectorImg = document.getElementById('projector-img');
         const gifBufferCanvas = document.getElementById('gif-buffer');
         const viewportContainer = document.getElementById('viewport-container');
         const bufferCtx = bufferCanvas.getContext('2d', { alpha: false });
@@ -820,6 +822,117 @@
             return lo + Math.random() * (hi - lo);
         }
 
+        // ===== Persist playlist across reloads (images/gifs/videos) =====
+        const PERSIST_KEY = 'ascii-live-playlist-v1';
+        const PERSIST_DB_NAME = 'ascii-live-persist-db-v1';
+        const PERSIST_STORE = 'blobs';
+        let persistDbPromise = null;
+
+        function openPersistDb() {
+            if (persistDbPromise) return persistDbPromise;
+            persistDbPromise = new Promise((resolve, reject) => {
+                const req = indexedDB.open(PERSIST_DB_NAME, 1);
+                req.onupgradeneeded = () => {
+                    const db = req.result;
+                    if (!db.objectStoreNames.contains(PERSIST_STORE)) {
+                        db.createObjectStore(PERSIST_STORE);
+                    }
+                };
+                req.onsuccess = () => resolve(req.result);
+                req.onerror = () => reject(req.error);
+            });
+            return persistDbPromise;
+        }
+
+        async function idbPutBlob(id, blob) {
+            const db = await openPersistDb();
+            await new Promise((resolve, reject) => {
+                const tx = db.transaction(PERSIST_STORE, 'readwrite');
+                tx.objectStore(PERSIST_STORE).put(blob, id);
+                tx.oncomplete = () => resolve();
+                tx.onerror = () => reject(tx.error);
+            });
+        }
+
+        async function idbGetBlob(id) {
+            const db = await openPersistDb();
+            return await new Promise((resolve) => {
+                const tx = db.transaction(PERSIST_STORE, 'readonly');
+                const req = tx.objectStore(PERSIST_STORE).get(id);
+                req.onsuccess = () => resolve(req.result || null);
+                req.onerror = () => resolve(null);
+            });
+        }
+
+        function persistPlaylistMeta() {
+            try {
+                const persistItems = state.playlist
+                    .filter(it => it.type !== 'cam')
+                    .map(it => ({ id: it.id, name: it.name, type: it.type, mime: it.mime || '' }));
+                let activeId = null;
+                if (state.activeIndex >= 0 && state.activeIndex < state.playlist.length) {
+                    const active = state.playlist[state.activeIndex];
+                    activeId = active && active.type !== 'cam' ? active.id : null;
+                }
+                localStorage.setItem(PERSIST_KEY, JSON.stringify({ v: 1, items: persistItems, activeId }));
+            } catch (e) {
+                // noop
+            }
+        }
+
+        async function restorePersistedPlaylist() {
+            try {
+                const raw = localStorage.getItem(PERSIST_KEY);
+                if (!raw) return;
+                const meta = JSON.parse(raw);
+                if (!meta || meta.v !== 1) return;
+                const items = Array.isArray(meta.items) ? meta.items : [];
+                if (!items.length) return;
+
+                // Keep existing camera stub.
+                const camItems = state.playlist.filter(it => it.type === 'cam');
+                state.playlist = camItems;
+                state.activeIndex = -1;
+
+                const loadedItems = [];
+                for (const it of items) {
+                    const blob = await idbGetBlob(it.id);
+                    if (!blob) continue;
+                    const url = URL.createObjectURL(blob);
+                    const item = {
+                        id: it.id,
+                        name: it.name,
+                        url,
+                        type: it.type,
+                        mime: it.mime || (blob.type || '')
+                    };
+                    if (it.type === 'gif') {
+                        try {
+                            const buffer = await blob.arrayBuffer();
+                            const gif = new window.GifReader(new Uint8Array(buffer));
+                            item.gifData = gif;
+                        } catch (err) {
+                            // If gif decode fails, skip this item.
+                            continue;
+                        }
+                    }
+                    loadedItems.push(item);
+                }
+
+                if (!loadedItems.length) return;
+                state.playlist = camItems.concat(loadedItems);
+
+                if (meta.activeId) {
+                    const idx = state.playlist.findIndex(x => x.id === meta.activeId);
+                    state.activeIndex = idx >= 0 ? idx : 1;
+                } else {
+                    state.activeIndex = 1; // autoplay first restored item
+                }
+            } catch (e) {
+                // noop
+            }
+        }
+
         function syncSourceIntervalSliderUI() {
             const el = document.getElementById('param-interval');
             const on = state.playlistSettings.jitter;
@@ -880,9 +993,9 @@
             }
             const outputCanvas = document.getElementById('output-canvas');
             if (outputCanvas) outputCanvas.style.display = 'none';
-            if (projectorVideo) {
-                projectorVideo.classList.remove('hidden');
-                projectorVideo.style.display = 'block';
+            if (projectorImg) {
+                projectorImg.classList.remove('hidden');
+                projectorImg.style.display = 'block';
             }
 
             // Tell the opener we are ready for the stream (best-effort).
@@ -901,27 +1014,17 @@
 
             window.addEventListener('message', (e) => {
                 const msg = e.data;
-                if (!msg || msg.type !== 'ascii-live-canvas-stream') return;
+                if (!msg || msg.type !== 'ascii-live-projector-frame') return;
                 if (sessionId && msg.sessionId && msg.sessionId !== sessionId) return;
                 try {
-                    if (projectorVideo && msg.track) {
-                        // Re-wrap transferable track into a MediaStream.
-                        try {
-                            if (projectorVideo.srcObject) {
-                                const oldTracks = projectorVideo.srcObject.getTracks();
-                                oldTracks.forEach(t => { try { t.stop(); } catch (e) { /* ignore */ } });
-                            }
-                        } catch (e) { /* ignore */ }
-                        const ms = new MediaStream([msg.track]);
-                        projectorVideo.srcObject = ms;
-                        projectorVideo.play().catch(() => { /* ignore autoplay */ });
-                    } else if (projectorVideo && msg.stream) {
-                        // Fallback: some browsers may clone MediaStream via postMessage.
-                        projectorVideo.srcObject = msg.stream;
-                        projectorVideo.play().catch(() => { /* ignore autoplay */ });
+                    if (!projectorImg || !msg.blob) return;
+                    if (projectorImg._lastObjectUrl) {
+                        try { URL.revokeObjectURL(projectorImg._lastObjectUrl); } catch (e) { /* noop */ }
                     }
+                    projectorImg._lastObjectUrl = URL.createObjectURL(msg.blob);
+                    projectorImg.src = projectorImg._lastObjectUrl;
                 } catch (err) {
-                    console.warn('Failed to apply stream', err);
+                    console.warn('Failed to apply projector frame', err);
                 }
             });
         }
@@ -954,22 +1057,33 @@
                 // Only respond if message came from the projector window.
                 if (e.source !== state.projector.win) return;
                 try {
-                    // Capture the current output canvas stream at a reasonable FPS.
-                    const stream = outputCanvas.captureStream(30);
-                    const tracks = stream.getVideoTracks();
-                    const track = tracks && tracks.length ? tracks[0] : null;
-                    if (!track) {
-                        console.warn('No video track from canvas captureStream');
-                        return;
+                    const fps = 10;
+                    const frameMs = 1000 / fps;
+                    if (state.projector.frameTimer) {
+                        clearInterval(state.projector.frameTimer);
+                        state.projector.frameTimer = null;
                     }
-                    // Transfer the track (MediaStream itself may not clone reliably).
-                    state.projector.win.postMessage(
-                        { type: 'ascii-live-canvas-stream', sessionId: state.projector.sessionId, track },
-                        '*',
-                        [track]
-                    );
+                    state.projector.frameTimer = setInterval(() => {
+                        if (!state.projector.win || state.projector.win.closed) return;
+                        if (!outputCanvas) return;
+                        // Avoid piling up async blobs.
+                        if (state.projector.sendingFrame) return;
+                        state.projector.sendingFrame = true;
+                        outputCanvas.toBlob((blob) => {
+                            state.projector.sendingFrame = false;
+                            if (!blob) return;
+                            try {
+                                state.projector.win.postMessage(
+                                    { type: 'ascii-live-projector-frame', sessionId: state.projector.sessionId, blob },
+                                    '*'
+                                );
+                            } catch (err) {
+                                // ignore
+                            }
+                        }, 'image/jpeg', 0.65);
+                    }, frameMs);
                 } catch (err) {
-                    console.warn('Failed to capture canvas stream', err);
+                    console.warn('Failed to start projector frame sending', err);
                 }
             });
         }
@@ -988,8 +1102,12 @@
             setupListeners();
             setupProjectorSender();
             await enumerateCameras();
+            await restorePersistedPlaylist();
             renderPlaylist();
             applyPreset('classic');
+            if (state.activeIndex >= 0) {
+                selectSource(state.activeIndex);
+            }
             requestAnimationFrame(renderLoop);
         }
 
@@ -1283,10 +1401,11 @@
 
         function handlePlaylistUpload(e) {
             const files = Array.from(e.target.files);
+            let didAutoPlay = false;
             files.forEach(async file => {
                 const url = URL.createObjectURL(file);
                 const type = file.type === 'image/gif' ? 'gif' : 'video';
-                const item = { id: crypto.randomUUID(), name: file.name.toUpperCase(), url: url, type: type, thumb: null };
+                const item = { id: crypto.randomUUID(), name: file.name.toUpperCase(), url: url, type: type, mime: file.type, thumb: null };
                 if (type === 'gif') {
                     try {
                         const buffer = await file.arrayBuffer();
@@ -1322,8 +1441,16 @@
                         };
                     };
                 }
+                // Persist uploaded content so playlist survives reload.
+                try { await idbPutBlob(item.id, file); } catch (err) { /* noop */ }
                 state.playlist.push(item);
                 renderPlaylist();
+                if (!didAutoPlay && state.activeIndex === -1 && state.playlist.length > 1) {
+                    didAutoPlay = true;
+                    const idx = state.playlist.findIndex(x => x.id === item.id);
+                    if (idx >= 0) selectSource(idx);
+                }
+                persistPlaylistMeta();
             });
         }
 
@@ -1346,6 +1473,7 @@
                 state.playlist.splice(index, 0, movedItem);
                 if (activeItem) state.activeIndex = state.playlist.indexOf(activeItem);
                 renderPlaylist();
+                persistPlaylistMeta();
             }
             state.draggedItemIndex = null;
         }
@@ -1424,6 +1552,7 @@
                 statusEl.className = "px-2 py-0.5 rounded bg-purple-900/40 text-[10px] font-bold uppercase tracking-widest text-purple-400 border border-purple-500/50";
             }
             renderPlaylist();
+            persistPlaylistMeta();
         }
 
         function advancePlaylist() {
