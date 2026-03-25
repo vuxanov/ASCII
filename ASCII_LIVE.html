@@ -320,6 +320,13 @@
                         <input type="range" id="audio-strength" min="0" max="2" step="0.01" value="1" class="w-24 h-1 bg-slate-800 rounded-lg appearance-none">
                         <span id="val-audio-strength" class="fira text-[7px] text-slate-500 tabular-nums w-6">1.00</span>
                     </div>
+                    <div class="flex flex-wrap items-center gap-2 mt-1">
+                        <span class="fira text-[7px] text-slate-600 w-16">Kick Hz</span>
+                        <input type="range" id="audio-kick-low" min="20" max="250" step="1" value="60" class="w-24 h-1 bg-slate-800 rounded-lg appearance-none" title="Kick band low cutoff (Hz)">
+                        <span id="val-audio-kick-low" class="fira text-[7px] text-slate-500 tabular-nums w-8">60</span>
+                        <input type="range" id="audio-kick-high" min="80" max="400" step="1" value="200" class="w-24 h-1 bg-slate-800 rounded-lg appearance-none" title="Kick band high cutoff (Hz)">
+                        <span id="val-audio-kick-high" class="fira text-[7px] text-slate-500 tabular-nums w-8">200</span>
+                    </div>
                 </div>
             </div>
         </div>
@@ -392,10 +399,17 @@
                 srcNode: null,
                 stream: null,
                 data: null,
+                freqData: null,
                 minDb: -60,
                 maxDb: -10,
                 rawLevel: 0,
-                beat: 0
+                beat: 0,
+                // Kick band settings (Hz)
+                kickLowHz: 60,
+                kickHighHz: 200,
+                // Adaptive baseline + smoothing for more stable triggers
+                kickSmoothed: 0,
+                kickFloor: 0
             },
             colorMode: 'solid',
             charset: charSets.standard,
@@ -561,6 +575,17 @@
             const status = document.getElementById('audio-status');
 
             try {
+                // If we already have an allowed microphone stream, just resume.
+                if (state.audio.stream && state.audio.analyser && state.audio.audioCtx) {
+                    state.audio.active = true;
+                    await state.audio.audioCtx.resume();
+                    status.textContent = 'ON';
+                    status.className = 'fira text-[8px] text-green-400 tabular-nums';
+                    btn.classList.add('border-blue-500', 'text-blue-300');
+                    btn.classList.remove('text-slate-500');
+                    return;
+                }
+
                 const stream = await navigator.mediaDevices.getUserMedia({
                     audio: {
                         echoCancellation: false,
@@ -585,10 +610,13 @@
                 state.audio.analyser = analyser;
                 state.audio.srcNode = src;
                 state.audio.data = new Uint8Array(analyser.fftSize);
+                state.audio.freqData = new Uint8Array(analyser.frequencyBinCount);
                 state.audio.smoothed = 0;
                 state.audio.level = 0;
                 state.audio.beat = 0;
                 state.audio.rawLevel = 0;
+                state.audio.kickSmoothed = 0;
+                state.audio.kickFloor = 0;
 
                 status.textContent = 'ON';
                 status.className = 'fira text-[8px] text-green-400 tabular-nums';
@@ -606,21 +634,15 @@
         function stopAudioReactive() {
             if (!state.audio.active) return;
             state.audio.active = false;
-
-            if (state.audio.stream) {
-                state.audio.stream.getTracks().forEach(t => t.stop());
+            if (state.audio.audioCtx) {
+                try { state.audio.audioCtx.suspend(); } catch (e) { /* noop */ }
             }
-            if (state.audio.srcNode) {
-                try { state.audio.srcNode.disconnect(); } catch (e) { /* noop */ }
-            }
-            state.audio.stream = null;
-            state.audio.analyser = null;
-            state.audio.srcNode = null;
-            state.audio.data = null;
-            state.audio.smoothed = 0;
+            // Keep the stream + nodes so the browser doesn't ask permission again.
             state.audio.level = 0;
             state.audio.beat = 0;
             state.audio.rawLevel = 0;
+            state.audio.kickSmoothed = 0;
+            state.audio.kickFloor = state.audio.kickFloor || 0;
 
             const btn = document.getElementById('btn-audio-react');
             const status = document.getElementById('audio-status');
@@ -630,40 +652,68 @@
         }
 
         function updateAudioReactive(deltaSecs) {
-            if (!state.audio.active || !state.audio.analyser || !state.audio.data) return;
+            if (!state.audio.active || !state.audio.analyser || !state.audio.freqData) return;
             const analyser = state.audio.analyser;
 
-            analyser.getByteTimeDomainData(state.audio.data);
-            const arr = state.audio.data;
+            // Low-frequency energy (kick-ish band)
+            analyser.getByteFrequencyData(state.audio.freqData);
+            const freq = state.audio.freqData;
+            const binCount = freq.length;
+            const sampleRate = state.audio.audioCtx ? state.audio.audioCtx.sampleRate : 48000;
+            const binHz = sampleRate / (analyser.fftSize || 1);
 
-            // RMS in range 0..~1
-            let sumSq = 0;
-            for (let i = 0; i < arr.length; i++) {
-                const x = (arr[i] - 128) / 128; // [-1, 1]
-                sumSq += x * x;
+            const lowHz = Math.min(state.audio.kickLowHz, state.audio.kickHighHz - 1);
+            const highHz = Math.max(state.audio.kickHighHz, state.audio.kickLowHz + 1);
+
+            let lowBin = Math.floor(lowHz / binHz);
+            let highBin = Math.ceil(highHz / binHz);
+            lowBin = Math.max(0, Math.min(binCount - 1, lowBin));
+            highBin = Math.max(0, Math.min(binCount - 1, highBin));
+            if (highBin < lowBin) { const t = lowBin; lowBin = highBin; highBin = t; }
+
+            let sum = 0;
+            let count = 0;
+            for (let i = lowBin; i <= highBin; i++) {
+                sum += freq[i];
+                count++;
             }
-            const rms = Math.sqrt(sumSq / arr.length);
-            const db = 20 * Math.log10(Math.max(1e-8, rms));
 
-            // Normalize dB range into 0..1
-            const norm = (db - state.audio.minDb) / (state.audio.maxDb - state.audio.minDb);
-            const lvl = clamp01(norm);
-            state.audio.rawLevel = lvl;
+            const kickNorm = count > 0 ? (sum / count) / 255 : 0; // 0..1
+            state.audio.rawLevel = kickNorm;
 
-            // Beat-ish detector:
-            // - treat loudness above a threshold as a "hit"
-            // - on hit, raise beat to 1 immediately (flash)
-            // - otherwise, decay quickly (so it looks like flashing drums)
-            const strength = state.audio.strength; // 0..2
-            const threshold = Math.min(0.85, Math.max(0.05, 0.38 - strength * 0.13));
+            // Smooth kick energy
+            const kSmooth = Math.min(1, deltaSecs * 18);
+            state.audio.kickSmoothed = state.audio.kickSmoothed + (kickNorm - state.audio.kickSmoothed) * kSmooth;
 
-            if (lvl >= threshold) {
-                state.audio.beat = 1;
+            // Adaptive baseline (noise floor / room tone)
+            if (!state.audio.kickFloor || state.audio.kickFloor <= 0) state.audio.kickFloor = state.audio.kickSmoothed;
+            const kDown = Math.min(1, deltaSecs * 6);   // track down quickly
+            const kUp = Math.min(1, deltaSecs * 0.9);    // track up slowly
+            if (state.audio.kickSmoothed < state.audio.kickFloor) {
+                state.audio.kickFloor = state.audio.kickFloor + (state.audio.kickSmoothed - state.audio.kickFloor) * kDown;
             } else {
-                // Release rate: bigger strength => faster decay.
-                const releaseRate = 8 + strength * 22; // per second
-                state.audio.beat = state.audio.beat * Math.exp(-releaseRate * deltaSecs);
+                state.audio.kickFloor = state.audio.kickFloor + (state.audio.kickSmoothed - state.audio.kickFloor) * kUp;
             }
+
+            // Convert "above floor" into a 0..1 hit gate
+            const over = state.audio.kickSmoothed - state.audio.kickFloor;
+            const denom = Math.max(1e-6, 1 - state.audio.kickFloor);
+            const gate = clamp01(over / denom);
+            const strength = state.audio.strength; // 0..2 (higher = more sensitive)
+
+            // Sensitivity threshold: higher strength => lower threshold
+            const threshold = Math.max(0.03, 0.16 - strength * 0.055);
+
+            const beatRaw = clamp01((gate - threshold) / (1 - threshold));
+            // Exponent < 1 makes it "hit harder" so it looks more like flashing drums.
+            const beatTarget = gate <= threshold ? 0 : Math.pow(beatRaw, 0.35);
+
+            // Fast decay so it looks like flashing instead of fades
+            const decayRate = 14 + strength * 36; // per second
+            state.audio.beat = Math.max(
+                state.audio.beat * Math.exp(-decayRate * deltaSecs),
+                beatTarget
+            );
 
             state.audio.level = state.audio.beat;
         }
@@ -930,6 +980,31 @@
             document.getElementById('val-audio-strength').textContent = state.audio.strength.toFixed(2);
             document.getElementById('audio-overlay-color').value = state.audio.overlayColor;
             document.getElementById('audio-blend-mode').value = state.audio.blendMode;
+
+            document.getElementById('audio-kick-low').oninput = (e) => {
+                const v = parseInt(e.target.value, 10);
+                state.audio.kickLowHz = v;
+                document.getElementById('val-audio-kick-low').textContent = String(v);
+                if (state.audio.kickLowHz >= state.audio.kickHighHz) {
+                    state.audio.kickHighHz = state.audio.kickLowHz + 1;
+                    const highEl = document.getElementById('audio-kick-high');
+                    highEl.value = String(state.audio.kickHighHz);
+                    document.getElementById('val-audio-kick-high').textContent = String(state.audio.kickHighHz);
+                }
+            };
+            document.getElementById('audio-kick-high').oninput = (e) => {
+                const v = parseInt(e.target.value, 10);
+                state.audio.kickHighHz = v;
+                document.getElementById('val-audio-kick-high').textContent = String(v);
+                if (state.audio.kickHighHz <= state.audio.kickLowHz) {
+                    state.audio.kickLowHz = state.audio.kickHighHz - 1;
+                    const lowEl = document.getElementById('audio-kick-low');
+                    lowEl.value = String(state.audio.kickLowHz);
+                    document.getElementById('val-audio-kick-low').textContent = String(state.audio.kickLowHz);
+                }
+            };
+            document.getElementById('val-audio-kick-low').textContent = String(state.audio.kickLowHz);
+            document.getElementById('val-audio-kick-high').textContent = String(state.audio.kickHighHz);
         }
 
         async function startCamera(deviceId = null) {
@@ -1351,8 +1426,9 @@
 
             // Audio-reactive overlay (draw after ASCII so it reads like a flash)
             if (state.audio.active) {
-                // Convert "beat" envelope into flash alpha (fast hits, short decay).
-                const alpha = clamp01(Math.pow(state.audio.level, 0.25));
+                // Kick gate -> flash alpha (fast hits, short decay).
+                const strength = state.audio.strength; // 0..2
+                const alpha = clamp01((0.12 + strength * 0.38) * Math.pow(state.audio.beat, 0.25));
                 if (alpha > 0.001) {
                     const [r, g, b] = hexToRgb(state.audio.overlayColor);
                     outputCtx.save();
