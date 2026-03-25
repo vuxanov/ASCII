@@ -212,7 +212,7 @@
         <div class="flex-1 flex flex-col relative bg-black items-center justify-center overflow-hidden">
             <div id="viewport-container" class="relative w-full h-full flex items-center justify-center p-4">
                 <canvas id="output-canvas" class="shadow-2xl"></canvas>
-                <img id="projector-img" class="hidden absolute inset-0 w-full h-full object-contain" alt="Projector output">
+                <canvas id="projector-canvas" class="hidden absolute inset-0 w-full h-full" aria-label="Projector output"></canvas>
             </div>
             <div id="controls-panel" class="absolute bottom-6 glass rounded-3xl p-5 flex gap-8 items-end border border-white/10 shadow-2xl max-w-[95vw] overflow-x-auto">
                 <div class="control-group min-w-[200px]">
@@ -466,7 +466,8 @@
         const video = document.getElementById('hidden-video');
         const bufferCanvas = document.getElementById('buffer-canvas');
         const outputCanvas = document.getElementById('output-canvas');
-        const projectorImg = document.getElementById('projector-img');
+        const projectorCanvas = document.getElementById('projector-canvas');
+        const projectorCtx = projectorCanvas ? projectorCanvas.getContext('2d') : null;
         const gifBufferCanvas = document.getElementById('gif-buffer');
         const viewportContainer = document.getElementById('viewport-container');
         const bufferCtx = bufferCanvas.getContext('2d', { alpha: false });
@@ -993,9 +994,10 @@
             }
             const outputCanvas = document.getElementById('output-canvas');
             if (outputCanvas) outputCanvas.style.display = 'none';
-            if (projectorImg) {
-                projectorImg.classList.remove('hidden');
-                projectorImg.style.display = 'block';
+            if (projectorCanvas) {
+                projectorCanvas.classList.remove('hidden');
+                projectorCanvas.style.display = 'block';
+                if (projectorCtx) projectorCtx.imageSmoothingEnabled = false;
             }
 
             // Tell the opener we are ready for the stream (best-effort).
@@ -1017,12 +1019,17 @@
                 if (!msg || msg.type !== 'ascii-live-projector-frame') return;
                 if (sessionId && msg.sessionId && msg.sessionId !== sessionId) return;
                 try {
-                    if (!projectorImg || !msg.blob) return;
-                    if (projectorImg._lastObjectUrl) {
-                        try { URL.revokeObjectURL(projectorImg._lastObjectUrl); } catch (e) { /* noop */ }
-                    }
-                    projectorImg._lastObjectUrl = URL.createObjectURL(msg.blob);
-                    projectorImg.src = projectorImg._lastObjectUrl;
+                    if (!projectorCanvas || !projectorCtx || !msg.blob) return;
+                    const seq = (state.projector.frameSeq = (state.projector.frameSeq || 0) + 1);
+                    createImageBitmap(msg.blob).then((bitmap) => {
+                        // Drop frames if a newer one arrived.
+                        if (!projectorCanvas || !state.projector || seq !== state.projector.frameSeq) return;
+                        projectorCanvas.width = bitmap.width;
+                        projectorCanvas.height = bitmap.height;
+                        projectorCtx.clearRect(0, 0, projectorCanvas.width, projectorCanvas.height);
+                        projectorCtx.drawImage(bitmap, 0, 0, projectorCanvas.width, projectorCanvas.height);
+                        try { bitmap.close(); } catch (err) { /* noop */ }
+                    }).catch(() => { /* noop */ });
                 } catch (err) {
                     console.warn('Failed to apply projector frame', err);
                 }
@@ -1069,7 +1076,7 @@
                         // Avoid piling up async blobs.
                         if (state.projector.sendingFrame) return;
                         state.projector.sendingFrame = true;
-                        outputCanvas.toBlob((blob) => {
+                            outputCanvas.toBlob((blob) => {
                             state.projector.sendingFrame = false;
                             if (!blob) return;
                             try {
@@ -1080,7 +1087,7 @@
                             } catch (err) {
                                 // ignore
                             }
-                        }, 'image/jpeg', 0.65);
+                            }, 'image/jpeg', 0.45);
                     }, frameMs);
                 } catch (err) {
                     console.warn('Failed to start projector frame sending', err);
