@@ -322,9 +322,9 @@
                         <span id="val-audio-strength" class="fira text-[7px] text-slate-500 tabular-nums w-6">1.00</span>
                     </div>
                     <div class="flex flex-wrap items-center gap-2 mt-1">
-                        <span class="fira text-[7px] text-slate-600 w-16">Color Hz</span>
-                        <input type="range" id="audio-color-speed" min="0" max="2" step="0.01" value="0.5" class="w-24 h-1 bg-slate-800 rounded-lg appearance-none" title="Auto color speed">
-                        <span id="val-audio-color-speed" class="fira text-[7px] text-slate-500 tabular-nums w-6">0.50</span>
+                        <span class="fira text-[7px] text-slate-600 w-16">Color Cycle</span>
+                        <input type="range" id="audio-color-cycle" min="1" max="20" step="0.1" value="5" class="w-24 h-1 bg-slate-800 rounded-lg appearance-none" title="Seconds per full color cycle">
+                        <span id="val-audio-color-cycle" class="fira text-[7px] text-slate-500 tabular-nums w-6">5s</span>
                     </div>
                     <div class="flex flex-wrap items-center gap-2 mt-1">
                         <span class="fira text-[7px] text-slate-600 w-16">Kick Hz</span>
@@ -400,7 +400,7 @@
                 strength: 1,
                 overlayColor: '#ff00ff',
                 colorAuto: false,
-                colorSpeed: 0.5,
+                colorCycleSec: 5,
                 blendMode: 'screen',
                 audioCtx: null,
                 analyser: null,
@@ -421,7 +421,8 @@
                 // Base overlay color in HSL (used for animated hue rotation).
                 colorHueBase: 300,
                 colorSatBase: 1,
-                colorLitBase: 0.5
+                colorLitBase: 0.5,
+                swatchLastSyncMs: 0
             },
             colorMode: 'solid',
             charset: charSets.standard,
@@ -511,6 +512,24 @@
             const g = parseInt(h.slice(2, 4), 16);
             const b = parseInt(h.slice(4, 6), 16);
             return [r, g, b];
+        }
+
+        function rgbToHex(r, g, b) {
+            const toHex = (v) => {
+                const n = Math.max(0, Math.min(255, Math.round(v)));
+                return n.toString(16).padStart(2, '0');
+            };
+            return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+        }
+
+        function syncAudioOverlaySwatchFromRgb(r, g, b, nowMs) {
+            if (!state.audio.colorAuto || !state.audio.active) return;
+            // Avoid updating the input value every frame.
+            if (nowMs - state.audio.swatchLastSyncMs < 80) return;
+            state.audio.swatchLastSyncMs = nowMs;
+            const picker = document.getElementById('audio-overlay-color');
+            if (!picker) return;
+            picker.value = rgbToHex(r, g, b);
         }
 
         function rgbToHsl(r, g, b) {
@@ -1052,13 +1071,19 @@
             document.getElementById('btn-audio-color-auto').onclick = (e) => {
                 state.audio.colorAuto = !state.audio.colorAuto;
                 updateAudioColorAutoBtn(e.currentTarget, state.audio.colorAuto);
+                if (!state.audio.colorAuto) {
+                    // Restore manual picker color when auto mode is off.
+                    const picker = document.getElementById('audio-overlay-color');
+                    if (picker) picker.value = state.audio.overlayColor;
+                }
             };
-            document.getElementById('audio-color-speed').oninput = (e) => {
-                state.audio.colorSpeed = parseFloat(e.target.value);
-                document.getElementById('val-audio-color-speed').textContent = state.audio.colorSpeed.toFixed(2);
+            document.getElementById('audio-color-cycle').oninput = (e) => {
+                const v = parseFloat(e.target.value);
+                state.audio.colorCycleSec = Math.max(0.1, v);
+                document.getElementById('val-audio-color-cycle').textContent = state.audio.colorCycleSec.toFixed(1) + 's';
             };
-            document.getElementById('audio-color-speed').value = String(state.audio.colorSpeed);
-            document.getElementById('val-audio-color-speed').textContent = state.audio.colorSpeed.toFixed(2);
+            document.getElementById('audio-color-cycle').value = String(state.audio.colorCycleSec);
+            document.getElementById('val-audio-color-cycle').textContent = state.audio.colorCycleSec.toFixed(1) + 's';
             syncAudioBaseColorFromPicker();
             updateAudioColorAutoBtn(document.getElementById('btn-audio-color-auto'), state.audio.colorAuto);
 
@@ -1514,10 +1539,12 @@
                     const time = now / 1000;
                     let r, g, b;
                     if (state.audio.colorAuto) {
-                        const hue = state.audio.colorHueBase + time * 60 * state.audio.colorSpeed + state.audio.beat * 45;
+                        const cycleSec = Math.max(0.1, state.audio.colorCycleSec);
+                        const hue = state.audio.colorHueBase + 360 * (time / cycleSec) + state.audio.beat * 45;
                         const sat = clamp01(state.audio.colorSatBase + state.audio.beat * 0.15);
                         const lit = clamp01(state.audio.colorLitBase + state.audio.beat * 0.18);
                         [r, g, b] = hslToRgb(hue, sat, lit);
+                        syncAudioOverlaySwatchFromRgb(r, g, b, now);
                     } else {
                         [r, g, b] = hexToRgb(state.audio.overlayColor);
                     }
