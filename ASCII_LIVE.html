@@ -72,8 +72,9 @@
         }
         .item-delete-btn {
             position: absolute;
-            top: 3px;
-            right: 3px;
+            top: 50%;
+            right: 6px;
+            transform: translateY(-50%);
             width: 18px;
             height: 18px;
             border-radius: 5px;
@@ -424,7 +425,9 @@
                 sessionId: null,
                 win: null,
                 frameTimer: null,
-                sendingFrame: false
+                sendingFrame: false,
+                frameSeq: 0,
+                lastAppliedSeq: 0
             },
             audio: {
                 active: false,
@@ -1183,6 +1186,15 @@
                 fsBtn.classList.remove('hidden');
                 fsBtn.style.display = 'block';
                 fsBtn.onclick = () => { toggleFullscreen(); };
+
+                const onFsChange = () => {
+                    const fsEl = document.fullscreenElement || document.webkitFullscreenElement || document.msFullscreenElement;
+                    fsBtn.style.display = fsEl ? 'none' : 'block';
+                };
+                document.addEventListener('fullscreenchange', onFsChange);
+                document.addEventListener('webkitfullscreenchange', onFsChange);
+                document.addEventListener('MSFullscreenChange', onFsChange);
+                onFsChange();
             }
 
             // Tell the opener we are ready for the stream (best-effort).
@@ -1208,11 +1220,17 @@
                     const seq = (state.projector.frameSeq = (state.projector.frameSeq || 0) + 1);
                     createImageBitmap(msg.blob).then((bitmap) => {
                         // Drop frames if a newer one arrived.
-                        if (!projectorCanvas || !state.projector || seq !== state.projector.frameSeq) return;
+                        if (!projectorCanvas || !projectorCtx || !state.projector || !bitmap) return;
+                        // Monotonic apply: never draw a frame older than what we've already shown.
+                        if (seq < (state.projector.lastAppliedSeq ?? 0)) {
+                            try { bitmap.close(); } catch (err) { /* noop */ }
+                            return;
+                        }
                         projectorCanvas.width = bitmap.width;
                         projectorCanvas.height = bitmap.height;
                         projectorCtx.clearRect(0, 0, projectorCanvas.width, projectorCanvas.height);
                         projectorCtx.drawImage(bitmap, 0, 0, projectorCanvas.width, projectorCanvas.height);
+                        state.projector.lastAppliedSeq = seq;
                         try { bitmap.close(); } catch (err) { /* noop */ }
                     }).catch(() => { /* noop */ });
                 } catch (err) {
