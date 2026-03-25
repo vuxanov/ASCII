@@ -1,0 +1,1215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ASCII Live Visuals Engine v9.5</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/omggif@1.0.10/omggif.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;700&family=Inter:wght@400;600;800&display=swap');
+        :root {
+            --accent: #3b82f6;
+            --accent-glow: rgba(59, 130, 246, 0.5);
+            --bg-dark: #020617;
+            --panel-bg: rgba(15, 23, 42, 0.95);
+        }
+        body {
+            background-color: var(--bg-dark);
+            color: #f8fafc;
+            font-family: 'Inter', sans-serif;
+            overflow: hidden;
+            height: 100vh;
+        }
+        .fira { font-family: 'Fira Code', monospace; }
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: #0f172a; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 2px; }
+        .glass {
+            background: var(--panel-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255,255,255,0.08);
+        }
+        .knob-label { font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.1em; color: #64748b; font-weight: 800; }
+        input[type=range] { accent-color: var(--accent); }
+        .lfo-indicator {
+            width: 6px; height: 6px; border-radius: 50%;
+            display: inline-block; margin-left: 4px;
+            transition: background-color 0.1s ease;
+        }
+        .lfo-active { box-shadow: 0 0 8px var(--accent-glow); }
+        #output-canvas {
+            image-rendering: pixelated;
+            max-width: 100%; max-height: 100%;
+            object-fit: contain;
+        }
+        .playlist-item {
+            @apply p-1.5 rounded-lg text-[10px] cursor-pointer border flex items-center gap-2.5 group transition-all relative overflow-hidden border-l-4;
+            user-select: none;
+        }
+        .active-item {
+            @apply border-blue-500 bg-blue-500/30 text-blue-100 ring-2 ring-blue-500/20 border-l-blue-400 shadow-[0_0_20px_rgba(59,130,246,0.3)];
+            animation: pulse-active 2s infinite ease-in-out;
+        }
+        @keyframes pulse-active {
+            0%, 100% { border-left-color: #3b82f6; box-shadow: 0 0 15px rgba(59,130,246,0.1); }
+            50% { border-left-color: #60a5fa; box-shadow: 0 0 25px rgba(59,130,246,0.3); }
+        }
+        .inactive-item {
+            @apply border-slate-800 bg-slate-900/40 hover:bg-slate-800 text-slate-500 border-l-transparent;
+        }
+        .dragging { opacity: 0.5; transform: scale(0.98); border: 1px dashed #3b82f6 !important; }
+        .drag-over { border-top: 2px solid #3b82f6 !important; }
+        .progress-bar {
+            position: absolute; bottom: 0; left: 0; height: 2px;
+            background: #60a5fa; transition: width 0.1s linear; z-index: 10;
+        }
+        .icon-btn { @apply p-2 rounded-lg border transition-all flex items-center justify-center; }
+        .icon-btn-active { @apply bg-blue-600 border-blue-400 text-white shadow-[0_0_10px_rgba(59,130,246,0.5)]; }
+        .icon-btn-inactive { @apply bg-slate-800 border-slate-700 text-slate-400 hover:border-slate-500; }
+        .thumbnail-box {
+            @apply w-10 h-7 rounded bg-black flex-shrink-0 border border-white/5 overflow-hidden flex items-center justify-center;
+        }
+        .preset-grid { @apply grid grid-cols-2 gap-1.5; }
+        .preset-grid-wide { @apply grid grid-cols-3 gap-1.5 max-h-36 overflow-y-auto pr-0.5; }
+        .preset-btn {
+            @apply text-[9px] font-black bg-slate-900 p-2 rounded border border-slate-800 hover:border-blue-500 transition-all uppercase tracking-tighter;
+        }
+        .preset-active {
+            @apply border-blue-500 bg-blue-900/30 text-blue-100 shadow-[0_0_10px_rgba(59,130,246,0.2)];
+        }
+        .density-dual-range { position: relative; height: 28px; width: 100%; min-width: 128px; }
+        .density-dual-range .density-range-track-bg {
+            position: absolute; left: 0; right: 0; top: 50%; transform: translateY(-50%);
+            height: 6px; border-radius: 9999px; background: #1e293b; pointer-events: none;
+        }
+        .density-dual-range .density-range-fill {
+            position: absolute; top: 50%; transform: translateY(-50%);
+            height: 6px; border-radius: 9999px; background: rgba(59, 130, 246, 0.45); pointer-events: none;
+        }
+        .density-dual-range input[type=range] {
+            position: absolute; left: 0; width: 100%; min-width: 128px; margin: 0; height: 28px;
+            background: none; -webkit-appearance: none; appearance: none; pointer-events: none;
+        }
+        .density-dual-range #param-res-min { z-index: 1; }
+        .density-dual-range #param-res-max { z-index: 2; }
+        .density-dual-range input[type=range]::-webkit-slider-runnable-track { height: 6px; background: transparent; }
+        .density-dual-range input[type=range]::-moz-range-track { height: 6px; background: transparent; }
+        .density-dual-range input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none; appearance: none;
+            width: 14px; height: 14px; border-radius: 50%; background: #3b82f6;
+            border: 2px solid #1e3a8a; cursor: grab; pointer-events: auto; margin-top: -4px;
+        }
+        .density-dual-range input[type=range]::-moz-range-thumb {
+            width: 14px; height: 14px; border-radius: 50%; background: #3b82f6;
+            border: 2px solid #1e3a8a; cursor: grab; pointer-events: auto;
+        }
+        .density-dual-range input[type=range]:focus { outline: none; }
+    </style>
+</head>
+<body class="flex flex-col">
+    <header class="h-12 glass border-b border-slate-800 flex items-center justify-between px-6 shrink-0 z-50">
+        <div class="flex items-center gap-4">
+            <h1 class="font-black text-blue-500 tracking-tighter text-xl italic text-shadow-glow">ASCII_LIVE.v9.5</h1>
+            <div id="fps-counter" class="fira text-[10px] text-slate-500 bg-slate-900 px-2 py-0.5 rounded border border-slate-800">60 FPS</div>
+        </div>
+        <div class="flex items-center gap-3">
+            <div id="dim-info" class="text-[10px] fira text-slate-400 mr-4">0 x 0</div>
+            <span id="source-status" class="px-2 py-0.5 rounded bg-slate-800 text-[10px] font-bold uppercase tracking-widest text-slate-400">Standby</span>
+            <button id="fullscreen-btn" type="button" class="hover:text-blue-400 transition-colors p-1" title="Fullscreen canvas area">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M21 8V5a2 2 0 0 0-2-2h-3"/><path d="M3 16v3a2 2 0 0 0 2 2h3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/></svg>
+            </button>
+        </div>
+    </header>
+
+    <main class="flex flex-1 overflow-hidden">
+        <aside class="w-72 glass border-r border-slate-800 flex flex-col p-4 gap-4 shrink-0 overflow-y-auto">
+            <section>
+                <h2 class="knob-label mb-2">Import Content</h2>
+                <label class="w-full py-2 bg-slate-800 hover:bg-blue-600/20 border border-slate-700 rounded text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer shadow-inner">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                    ADD MP4/GIF
+                    <input type="file" id="playlist-upload" multiple accept="video/*,image/gif" class="hidden">
+                </label>
+            </section>
+
+            <section class="flex flex-col gap-2 border-t border-slate-800 pt-3">
+                <h2 class="knob-label mb-1 text-slate-400">Performance Automation</h2>
+                <div class="flex gap-2">
+                    <button id="btn-shuffle" type="button" class="icon-btn icon-btn-inactive flex-1" title="Shuffle Playlist">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/><line x1="4" y1="4" x2="9" y2="9"/></svg>
+                    </button>
+                    <button id="btn-repeat" type="button" class="icon-btn icon-btn-inactive flex-1" title="Repeat Current">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
+                    </button>
+                </div>
+                <div class="flex flex-col gap-1.5 mt-2">
+                    <div class="flex justify-between items-center">
+                        <label class="text-[9px] font-extrabold text-slate-500 uppercase tracking-tighter">Source Switch</label>
+                        <div class="flex items-center gap-1.5">
+                            <button id="btn-switch-jitter" type="button" class="text-[8px] font-black px-1.5 py-0.5 rounded border border-slate-700 bg-slate-900 text-slate-500 hover:border-amber-500/60 hover:text-amber-400 transition-colors" title="Random dwell each cycle (2–60s); disables interval slider">RND</button>
+                            <button id="btn-auto-switch" type="button" class="text-[9px] font-bold text-blue-400 hover:text-white transition-colors">ENABLE</button>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <input type="range" id="param-interval" min="2" max="60" value="10" class="flex-1 h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer">
+                        <span id="val-interval" class="fira text-[9px] min-w-[2rem] text-right text-slate-400">10s</span>
+                    </div>
+                </div>
+                <div class="flex flex-col gap-1.5 mt-2 border-t border-slate-800/50 pt-2">
+                    <div class="flex justify-between items-center">
+                        <label class="text-[9px] font-extrabold text-slate-500 uppercase tracking-tighter">Preset Cycle <span id="lfo-preset-led" class="lfo-indicator bg-slate-700"></span></label>
+                        <div class="flex items-center gap-1.5">
+                            <button id="btn-preset-jitter" type="button" class="text-[8px] font-black px-1.5 py-0.5 rounded border border-slate-700 bg-slate-900 text-slate-500 hover:border-amber-500/60 hover:text-amber-400 transition-colors" title="Random dwell each cycle (1–30s); disables interval slider">RND</button>
+                            <button id="btn-auto-preset" type="button" class="text-[9px] font-bold text-blue-400 hover:text-white transition-colors">ENABLE</button>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <input type="range" id="param-preset-interval" min="1" max="30" value="5" class="flex-1 h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer">
+                        <span id="val-preset-interval" class="fira text-[9px] min-w-[2rem] text-right text-slate-400">5s</span>
+                    </div>
+                </div>
+            </section>
+
+            <section class="flex-1 flex flex-col overflow-hidden border-t border-slate-800 pt-3">
+                <h2 class="knob-label mb-2">Source Queue</h2>
+                <div id="playlist-container" class="flex-1 overflow-y-auto space-y-2 pr-1"></div>
+            </section>
+
+            <section class="border-t border-slate-800 pt-3">
+                <div class="flex justify-between items-center mb-2">
+                    <h2 class="knob-label text-blue-400">Style Presets</h2>
+                    <button type="button" onclick="resetPresets()" class="text-[8px] px-1.5 py-0.5 rounded border border-slate-700 bg-slate-800 hover:bg-red-900/40 hover:text-red-400 hover:border-red-500 transition-all font-bold">RESET ALL</button>
+                </div>
+                <div class="preset-grid">
+                    <button type="button" onclick="applyPreset('matrix')" class="preset-btn" id="btn-pre-matrix">MATRIX</button>
+                    <button type="button" onclick="applyPreset('cyber')" class="preset-btn text-cyan-400" id="btn-pre-cyber">CYBER</button>
+                    <button type="button" onclick="applyPreset('vaporwave')" class="preset-btn text-pink-400" id="btn-pre-vaporwave">VAPOR</button>
+                    <button type="button" onclick="applyPreset('inferno')" class="preset-btn text-orange-500" id="btn-pre-inferno">INFERNO</button>
+                    <button type="button" onclick="applyPreset('rgb')" class="preset-btn text-white bg-gradient-to-r from-red-500 via-green-500 to-blue-500" id="btn-pre-rgb">RGB</button>
+                    <button type="button" onclick="applyPreset('toxic')" class="preset-btn text-lime-400" id="btn-pre-toxic">TOXIC</button>
+                    <button type="button" onclick="applyPreset('classic')" class="preset-btn" id="btn-pre-classic">B&W</button>
+                    <button type="button" onclick="applyPreset('dots')" class="preset-btn text-purple-400" id="btn-pre-dots">GLOW</button>
+                </div>
+                <p class="text-[8px] text-slate-600 font-bold uppercase tracking-wider mt-2 mb-1">More</p>
+                <div class="preset-grid-wide">
+                    <button type="button" onclick="applyPreset('emoji')" class="preset-btn" id="btn-pre-emoji">😀 MOOD</button>
+                    <button type="button" onclick="applyPreset('pixel')" class="preset-btn" id="btn-pre-pixel">▂ PIXEL</button>
+                    <button type="button" onclick="applyPreset('braille')" class="preset-btn" id="btn-pre-braille">⠿ BRAILLE</button>
+                    <button type="button" onclick="applyPreset('hearts')" class="preset-btn text-rose-400" id="btn-pre-hearts">♥ LOVE</button>
+                    <button type="button" onclick="applyPreset('arrows')" class="preset-btn text-amber-400" id="btn-pre-arrows">➤ ARROWS</button>
+                    <button type="button" onclick="applyPreset('ocean')" class="preset-btn text-sky-400" id="btn-pre-ocean">🌊 OCEAN</button>
+                    <button type="button" onclick="applyPreset('circuit')" class="preset-btn text-emerald-400" id="btn-pre-circuit">⌘ WIRE</button>
+                    <button type="button" onclick="applyPreset('runes')" class="preset-btn text-stone-400" id="btn-pre-runes">ᚱ RUNES</button>
+                    <button type="button" onclick="applyPreset('math')" class="preset-btn text-indigo-400" id="btn-pre-math">∑ MATH</button>
+                </div>
+            </section>
+        </aside>
+
+        <div class="flex-1 flex flex-col relative bg-black items-center justify-center overflow-hidden">
+            <div id="viewport-container" class="relative w-full h-full flex items-center justify-center p-4">
+                <canvas id="output-canvas" class="shadow-2xl"></canvas>
+            </div>
+            <div class="absolute bottom-6 glass rounded-3xl p-5 flex gap-8 items-end border border-white/10 shadow-2xl max-w-[95vw] overflow-x-auto">
+                <div class="control-group min-w-[200px]">
+                    <div class="flex justify-between items-center gap-2">
+                        <label class="knob-label">Density <span id="lfo-res-led" class="lfo-indicator bg-slate-700"></span></label>
+                        <span class="fira text-[9px] text-slate-400 tabular-nums"><span id="val-res-min">80</span>–<span id="val-res-max">80</span> <span class="text-slate-600">|</span> <span id="val-res" class="text-slate-300">80</span></span>
+                    </div>
+                    <div class="density-dual-range mt-1">
+                        <div class="density-range-track-bg" aria-hidden="true"></div>
+                        <div id="density-range-fill" class="density-range-fill" style="left:0%;width:0%"></div>
+                        <input type="range" id="param-res-min" min="4" max="250" value="80">
+                        <input type="range" id="param-res-max" min="4" max="250" value="80">
+                    </div>
+                    <div class="flex flex-wrap gap-1.5 items-center mt-1">
+                        <button type="button" id="lfo-res-btn" class="text-[8px] bg-slate-900 px-2 py-0.5 rounded border border-slate-700 hover:border-blue-500 transition-all">LFO</button>
+                        <select id="lfo-res-shape" class="text-[8px] bg-slate-900 border border-slate-700 rounded px-1 py-0.5 text-slate-300 outline-none focus:border-blue-500 max-w-[4.75rem]" title="Wave shape (use WAVE AUTO to cycle)">
+                            <option value="sine">Sine</option>
+                            <option value="triangle">Tri</option>
+                            <option value="saw">Saw</option>
+                            <option value="square">Sqr</option>
+                            <option value="pulse">Pulse</option>
+                            <option value="noise">Noise</option>
+                        </select>
+                        <span class="fira text-[7px] text-slate-600 w-4 shrink-0" id="lfo-res-rate-label" title="Periodic: speed · Noise: amplitude">∿</span>
+                        <input type="range" id="lfo-res-rate" min="0.1" max="5" step="0.1" value="1" class="w-14 h-1 bg-slate-800 rounded-lg appearance-none" title="Periodic waves: frequency · Noise: jump spread">
+                    </div>
+                    <div class="flex flex-wrap items-center gap-1.5 mt-1">
+                        <button type="button" id="btn-lfo-res-auto-wave" class="text-[7px] font-black px-1.5 py-0.5 rounded border border-slate-700 bg-slate-900 text-slate-500 hover:border-violet-500/60 hover:text-violet-300 transition-colors" title="Cycle wave shape automatically">WAVE AUTO</button>
+                        <input type="range" id="lfo-res-wave-cycle" min="1" max="12" value="3" class="w-12 h-1 bg-slate-800 rounded-lg appearance-none" title="Seconds per wave shape">
+                        <span id="val-lfo-res-wave-cycle" class="fira text-[7px] text-slate-500 w-6">3s</span>
+                    </div>
+                </div>
+                <div class="control-group">
+                    <div class="flex justify-between items-center">
+                        <label class="knob-label">Contrast <span id="lfo-contrast-led" class="lfo-indicator bg-slate-700"></span></label>
+                        <span id="val-contrast" class="fira text-[10px]">1.2</span>
+                    </div>
+                    <input type="range" id="param-contrast" min="0" max="4" step="0.1" value="1.2" class="w-32 h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer">
+                    <div class="flex flex-wrap gap-1.5 items-center">
+                        <button type="button" id="lfo-contrast-btn" class="text-[8px] bg-slate-900 px-2 py-0.5 rounded border border-slate-700 hover:border-blue-500 transition-all">LFO</button>
+                        <select id="lfo-contrast-shape" class="text-[8px] bg-slate-900 border border-slate-700 rounded px-1 py-0.5 text-slate-300 outline-none focus:border-blue-500 max-w-[4.75rem]">
+                            <option value="sine">Sine</option>
+                            <option value="triangle">Tri</option>
+                            <option value="saw">Saw</option>
+                            <option value="square">Sqr</option>
+                            <option value="pulse">Pulse</option>
+                            <option value="noise">Noise</option>
+                        </select>
+                        <input type="range" id="lfo-contrast-rate" min="0.1" max="5" step="0.1" value="1" class="w-14 h-1 bg-slate-800 rounded-lg appearance-none">
+                    </div>
+                    <div class="flex flex-wrap items-center gap-1.5 mt-1">
+                        <button type="button" id="btn-lfo-contrast-auto-wave" class="text-[7px] font-black px-1.5 py-0.5 rounded border border-slate-700 bg-slate-900 text-slate-500 hover:border-violet-500/60 hover:text-violet-300 transition-colors" title="Cycle contrast wave automatically">WAVE AUTO</button>
+                        <input type="range" id="lfo-contrast-wave-cycle" min="1" max="12" value="3" class="w-12 h-1 bg-slate-800 rounded-lg appearance-none">
+                        <span id="val-lfo-contrast-wave-cycle" class="fira text-[7px] text-slate-500 w-6">3s</span>
+                    </div>
+                </div>
+                <div class="control-group min-w-[200px]">
+                    <div class="flex justify-between items-center">
+                        <label class="knob-label">Characters <span id="lfo-charset-led" class="lfo-indicator bg-slate-700"></span></label>
+                    </div>
+                    <input type="text" id="param-charset" value="@%#*+=-:. " class="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-[10px] fira focus:border-blue-500 outline-none text-blue-400">
+                    <div class="flex flex-wrap gap-1.5 items-center">
+                        <button type="button" id="lfo-charset-btn" class="text-[8px] bg-slate-900 px-2 py-0.5 rounded border border-slate-700 hover:border-blue-500 transition-all uppercase font-bold">Cycle</button>
+                        <select id="lfo-charset-shape" class="text-[8px] bg-slate-900 border border-slate-700 rounded px-1 py-0.5 text-slate-300 outline-none focus:border-blue-500 max-w-[4.5rem]">
+                            <option value="sine">Order</option>
+                            <option value="noise">Random</option>
+                        </select>
+                        <input type="range" id="lfo-charset-rate" min="0.1" max="10" step="0.1" value="2" class="w-14 h-1 bg-slate-800 rounded-lg appearance-none">
+                    </div>
+                </div>
+                <div class="control-group">
+                    <label class="knob-label">Palette</label>
+                    <div class="flex gap-2">
+                        <div class="relative">
+                            <input type="color" id="param-color" value="#3b82f6" class="w-8 h-8 rounded bg-transparent border-none cursor-pointer">
+                            <div class="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-blue-500 border border-black pointer-events-none"></div>
+                        </div>
+                        <div class="relative">
+                            <input type="color" id="param-bg" value="#000000" class="w-8 h-8 rounded bg-transparent border-none cursor-pointer">
+                            <div class="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-slate-500 border border-black pointer-events-none"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <video id="hidden-video" class="hidden" crossorigin="anonymous" playsinline loop muted></video>
+    <canvas id="buffer-canvas" class="hidden"></canvas>
+    <canvas id="gif-buffer" class="hidden"></canvas>
+
+    <script>
+        const charSets = {
+            standard: "@%#*+=-:. ",
+            blocks: "█▓▒░ ",
+            dots: "●○•· ",
+            matrix: "ｦｱｳｴｵｶｷｸｹｺｻｼｽｾｿﾀﾁﾂﾃﾄ",
+            glitch: "▚▞▙▛▜▟ ",
+            emoji: "😀😎🔥💎⭐🌙☄️🎵👁✨⚡🖤💀🌊🔮🌀💫🎯🧿",
+            pixelBars: "▁▂▃▄▅▆▇█",
+            braille: "⠀⠁⠂⠃⠄⠅⠆⠇⠈⠉⠊⠋⠌⠍⠎⠏⠐⠑⠒⠓⠔⠕⠖⠗",
+            hearts: "♥♡❤💗💕💖💘❣♥︎💔💞💓",
+            arrows: "←↑→↓↖↗↘↙⇐⇑⇒⇓⬆⬇⬅➡▲▼◀▶⏎",
+            ocean: "🌊〜～⌇≈≋∿〰～～",
+            circuit: "╱╲│─┼┌┐└┘╔╗╚╝║═⊙◎⌁╳╋",
+            runes: "ᚠᚢᚦᚨᚱᚲᚷᚹᚺᚾᛁᛃᛇᛈᛉᛊᛏᛒᛖᛗᛚᛜᛝᛟ",
+            math: "∫∂∇∑∏√∞≈≠±×÷∮∯∀∃∈∉⊂⊃∧∨¬αβγδεθλμπωΩ"
+        };
+        const LFO_WAVE_SHAPES = ['sine', 'triangle', 'saw', 'square', 'pulse', 'noise'];
+        const presetKeys = [
+            'matrix', 'cyber', 'vaporwave', 'inferno', 'toxic', 'rgb', 'classic', 'dots',
+            'emoji', 'pixel', 'braille', 'hearts', 'arrows', 'ocean', 'circuit', 'runes', 'math'
+        ];
+        const defaultConfigs = {
+            matrix: { charset: charSets.matrix, tint: "#00ff41", bg: "#000800", contrast: 2.2, resMin: 140, resMax: 140, mode: 'solid' },
+            cyber: { charset: charSets.glitch, tint: "#00fff9", bg: "#050010", contrast: 1.8, resMin: 160, resMax: 160, mode: 'cyber' },
+            vaporwave: { charset: charSets.glitch, tint: "#ff71ce", bg: "#1a0033", contrast: 1.2, resMin: 120, resMax: 120, mode: 'vapor' },
+            inferno: { charset: charSets.standard, tint: "#ff4500", bg: "#000000", contrast: 1.5, resMin: 100, resMax: 100, mode: 'heatmap' },
+            toxic: { charset: charSets.standard, tint: "#a3ff00", bg: "#000a00", contrast: 2.0, resMin: 80, resMax: 80, mode: 'toxic' },
+            rgb: { charset: charSets.blocks, tint: "#00eaff", bg: "#000000", contrast: 1.5, resMin: 90, resMax: 90, mode: 'rgb-tiered' },
+            classic: { charset: charSets.standard, tint: "#ffffff", bg: "#000000", contrast: 1.6, resMin: 80, resMax: 80, mode: 'solid' },
+            dots: { charset: charSets.dots, tint: "#e9d5ff", bg: "#2e1065", contrast: 1.1, resMin: 160, resMax: 160, mode: 'solid' },
+            emoji: { charset: charSets.emoji, tint: "#fbbf24", bg: "#1c1917", contrast: 1.5, resMin: 96, resMax: 96, mode: 'solid' },
+            pixel: { charset: charSets.pixelBars, tint: "#38bdf8", bg: "#0c1222", contrast: 1.9, resMin: 120, resMax: 120, mode: 'cyber' },
+            braille: { charset: charSets.braille, tint: "#a78bfa", bg: "#0f172a", contrast: 1.7, resMin: 110, resMax: 110, mode: 'solid' },
+            hearts: { charset: charSets.hearts, tint: "#fb7185", bg: "#1f0a12", contrast: 1.4, resMin: 100, resMax: 100, mode: 'vapor' },
+            arrows: { charset: charSets.arrows, tint: "#f59e0b", bg: "#111827", contrast: 1.8, resMin: 130, resMax: 130, mode: 'solid' },
+            ocean: { charset: charSets.ocean, tint: "#22d3ee", bg: "#042f2e", contrast: 1.3, resMin: 90, resMax: 90, mode: 'vapor' },
+            circuit: { charset: charSets.circuit, tint: "#34d399", bg: "#022c22", contrast: 2.0, resMin: 140, resMax: 140, mode: 'cyber' },
+            runes: { charset: charSets.runes, tint: "#d6d3d1", bg: "#1c1917", contrast: 1.6, resMin: 88, resMax: 88, mode: 'solid' },
+            math: { charset: charSets.math, tint: "#818cf8", bg: "#0b0f1a", contrast: 1.7, resMin: 100, resMax: 100, mode: 'rgb-tiered' }
+        };
+        let userConfigs = JSON.parse(JSON.stringify(defaultConfigs));
+
+        const state = {
+            res: 80,
+            resMin: 80,
+            resMax: 80,
+            contrast: 1.2,
+            brightness: 1.0,
+            tint: '#3b82f6',
+            bg: '#000000',
+            colorMode: 'solid',
+            charset: charSets.standard,
+            activePresetName: 'classic',
+            _lfoNoise: {},
+            lfo: {
+                res: { active: false, rate: 1.0, shape: 'sine', noiseAcc: 0, autoWave: false, waveTimer: 0, waveCycleSec: 3 },
+                contrast: { active: false, rate: 1.0, base: 1.2, shape: 'sine', autoWave: false, waveTimer: 0, waveCycleSec: 3 },
+                charset: { active: false, rate: 2.0, shape: 'sine', noiseAcc: 0 },
+                presets: { active: false, interval: 5, timer: 0, index: 0, jitter: false, effectiveInterval: 5 }
+            },
+            playlistSettings: {
+                shuffle: false,
+                repeat: false,
+                autoSwitch: false,
+                interval: 10,
+                timer: 0,
+                jitter: false,
+                effectiveInterval: 10
+            },
+            sourceType: 'none',
+            playlist: [{ id: 'cam', name: 'LIVE CAMERA FEED', type: 'cam', isStreaming: false, deviceId: null, thumb: null }],
+            activeIndex: -1,
+            lastFrameTime: 0,
+            camStream: null,
+            cameras: [],
+            currentGif: { frames: [], frameIndex: 0, nextFrameTime: 0, gif: null },
+            draggedItemIndex: null
+        };
+
+        const video = document.getElementById('hidden-video');
+        const bufferCanvas = document.getElementById('buffer-canvas');
+        const outputCanvas = document.getElementById('output-canvas');
+        const gifBufferCanvas = document.getElementById('gif-buffer');
+        const viewportContainer = document.getElementById('viewport-container');
+        const bufferCtx = bufferCanvas.getContext('2d', { alpha: false });
+        const outputCtx = outputCanvas.getContext('2d');
+        const gifBufferCtx = gifBufferCanvas.getContext('2d');
+        const fpsEl = document.getElementById('fps-counter');
+        const dimInfo = document.getElementById('dim-info');
+        const statusEl = document.getElementById('source-status');
+
+        function adjustHue(hex, degrees) {
+            let r = parseInt(hex.slice(1, 3), 16) / 255;
+            let g = parseInt(hex.slice(3, 5), 16) / 255;
+            let b = parseInt(hex.slice(5, 7), 16) / 255;
+            let max = Math.max(r, g, b), min = Math.min(r, g, b);
+            let h, s, l = (max + min) / 2;
+            if (max === min) { h = s = 0; } else {
+                let d = max - min;
+                s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+                switch (max) {
+                    case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+                    case g: h = (b - r) / d + 2; break;
+                    case b: h = (r - g) / d + 4; break;
+                }
+                h /= 6;
+            }
+            h = (h * 360 + degrees) % 360;
+            if (h < 0) h += 360;
+            h /= 360;
+            let q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+            let p = 2 * l - q;
+            function hue2rgb(p, q, t) {
+                if (t < 0) t += 1;
+                if (t > 1) t -= 1;
+                if (t < 1/6) return p + (q - p) * 6 * t;
+                if (t < 1/2) return q;
+                if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
+                return p;
+            }
+            r = Math.round(hue2rgb(p, q, h + 1/3) * 255);
+            g = Math.round(hue2rgb(p, q, h) * 255);
+            b = Math.round(hue2rgb(p, q, h - 1/3) * 255);
+            return `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)}`;
+        }
+
+        function clampResInt(v) { return Math.min(250, Math.max(4, v)); }
+        function staticDensityRes() { return Math.round((state.resMin + state.resMax) / 2); }
+
+        /** 0..1 periodic LFO (not noise). `rate` scales angular speed like sine. */
+        function lfoPeriodicT01(shape, time, rate) {
+            switch (shape) {
+                case 'sine':
+                    return (Math.sin(time * rate) + 1) / 2;
+                case 'triangle': {
+                    let u = (time * rate) / (Math.PI * 2);
+                    u = u - Math.floor(u);
+                    return u < 0.5 ? 2 * u : 2 - 2 * u;
+                }
+                case 'saw': {
+                    let u = (time * rate) / (Math.PI * 2);
+                    return u - Math.floor(u);
+                }
+                case 'square': {
+                    let u = (time * rate) / (Math.PI * 2);
+                    u = u - Math.floor(u);
+                    return u < 0.5 ? 0 : 1;
+                }
+                case 'pulse': {
+                    let u = (time * rate) / (Math.PI * 2);
+                    u = u - Math.floor(u);
+                    return u < 0.1 ? 1 : 0;
+                }
+                default:
+                    return (Math.sin(time * rate) + 1) / 2;
+            }
+        }
+
+        function syncDensityLfoRateLabel() {
+            document.getElementById('lfo-res-rate-label').textContent = state.lfo.res.shape === 'noise' ? 'A' : '∿';
+        }
+
+        function updateAutoWaveBtn(el, on) {
+            el.classList.toggle('border-violet-500', on);
+            el.classList.toggle('text-violet-300', on);
+            el.classList.toggle('bg-violet-950/40', on);
+            el.classList.toggle('text-slate-500', !on);
+        }
+
+        function updateDensityRangeFill() {
+            const minV = 4, maxV = 250, span = maxV - minV;
+            const lo = state.resMin, hi = state.resMax;
+            const fill = document.getElementById('density-range-fill');
+            if (fill) {
+                fill.style.left = ((lo - minV) / span) * 100 + '%';
+                fill.style.width = Math.max(0, ((hi - lo) / span) * 100) + '%';
+            }
+        }
+
+        function syncDensitySlidersFromState() {
+            document.getElementById('param-res-min').value = String(state.resMin);
+            document.getElementById('param-res-max').value = String(state.resMax);
+            document.getElementById('val-res-min').textContent = state.resMin;
+            document.getElementById('val-res-max').textContent = state.resMax;
+            updateDensityRangeFill();
+        }
+
+        function stepSmoothedNoise(key, deltaSecs, responsiveness) {
+            if (!state._lfoNoise[key]) state._lfoNoise[key] = { z: Math.random() };
+            const o = state._lfoNoise[key];
+            const target = Math.random();
+            const amt = Math.min(1, deltaSecs * responsiveness);
+            o.z += (target - o.z) * amt;
+            o.z = Math.min(1, Math.max(0, o.z));
+            return o.z;
+        }
+
+        function randomDwellFromInput(rangeEl) {
+            const lo = parseFloat(rangeEl.min);
+            const hi = parseFloat(rangeEl.max);
+            return lo + Math.random() * (hi - lo);
+        }
+
+        function syncSourceIntervalSliderUI() {
+            const el = document.getElementById('param-interval');
+            const on = state.playlistSettings.jitter;
+            el.disabled = on;
+            el.classList.toggle('opacity-40', on);
+            el.classList.toggle('cursor-not-allowed', on);
+            document.getElementById('val-interval').textContent = on ? 'RND' : (state.playlistSettings.interval + 's');
+        }
+
+        function syncPresetIntervalSliderUI() {
+            const el = document.getElementById('param-preset-interval');
+            const on = state.lfo.presets.jitter;
+            el.disabled = on;
+            el.classList.toggle('opacity-40', on);
+            el.classList.toggle('cursor-not-allowed', on);
+            document.getElementById('val-preset-interval').textContent = on ? 'RND' : (state.lfo.presets.interval + 's');
+        }
+
+        function updateJitterButton(el, on) {
+            el.classList.toggle('border-amber-500', on);
+            el.classList.toggle('text-amber-400', on);
+            el.classList.toggle('bg-amber-950/40', on);
+            el.classList.toggle('text-slate-500', !on);
+        }
+
+        async function toggleFullscreen() {
+            const target = document.getElementById('viewport-container');
+            const doc = document;
+            try {
+                const fsEl = doc.fullscreenElement || doc.webkitFullscreenElement || doc.msFullscreenElement;
+                if (!fsEl) {
+                    if (target.requestFullscreen) await target.requestFullscreen();
+                    else if (target.webkitRequestFullscreen) target.webkitRequestFullscreen();
+                    else if (target.msRequestFullscreen) target.msRequestFullscreen();
+                    else if (doc.documentElement.requestFullscreen) await doc.documentElement.requestFullscreen();
+                    else if (doc.documentElement.webkitRequestFullscreen) doc.documentElement.webkitRequestFullscreen();
+                } else {
+                    if (doc.exitFullscreen) await doc.exitFullscreen();
+                    else if (doc.webkitExitFullscreen) doc.webkitExitFullscreen();
+                    else if (doc.webkitCancelFullScreen) doc.webkitCancelFullScreen();
+                    else if (doc.msExitFullscreen) doc.msExitFullscreen();
+                }
+            } catch (err) { console.warn('Fullscreen failed', err); }
+        }
+
+        async function init() {
+            setupListeners();
+            await enumerateCameras();
+            renderPlaylist();
+            applyPreset('classic');
+            requestAnimationFrame(renderLoop);
+        }
+
+        async function enumerateCameras() {
+            try {
+                const devices = await navigator.mediaDevices.enumerateDevices();
+                state.cameras = devices.filter(d => d.kind === 'videoinput');
+            } catch (err) { console.error("Could not find cameras", err); }
+        }
+
+        function saveToCurrentPreset() {
+            if (!state.activePresetName) return;
+            const c = userConfigs[state.activePresetName];
+            c.resMin = state.resMin;
+            c.resMax = state.resMax;
+            c.contrast = state.contrast;
+            c.tint = state.tint;
+            c.bg = state.bg;
+            c.charset = state.charset;
+            c.mode = state.colorMode;
+        }
+
+        function setupListeners() {
+            const inputs = {
+                contrast: document.getElementById('param-contrast'),
+                color: document.getElementById('param-color'),
+                bg: document.getElementById('param-bg'),
+                charset: document.getElementById('param-charset')
+            };
+
+            document.getElementById('param-res-min').oninput = () => {
+                state.resMin = clampResInt(parseInt(document.getElementById('param-res-min').value, 10));
+                if (state.resMin > state.resMax) {
+                    state.resMax = state.resMin;
+                    document.getElementById('param-res-max').value = String(state.resMax);
+                }
+                document.getElementById('val-res-min').textContent = state.resMin;
+                document.getElementById('val-res-max').textContent = state.resMax;
+                updateDensityRangeFill();
+                if (!state.lfo.res.active) state.res = staticDensityRes();
+                document.getElementById('val-res').textContent = state.res;
+                saveToCurrentPreset();
+            };
+            document.getElementById('param-res-max').oninput = () => {
+                state.resMax = clampResInt(parseInt(document.getElementById('param-res-max').value, 10));
+                if (state.resMax < state.resMin) {
+                    state.resMin = state.resMax;
+                    document.getElementById('param-res-min').value = String(state.resMin);
+                }
+                document.getElementById('val-res-min').textContent = state.resMin;
+                document.getElementById('val-res-max').textContent = state.resMax;
+                updateDensityRangeFill();
+                if (!state.lfo.res.active) state.res = staticDensityRes();
+                document.getElementById('val-res').textContent = state.res;
+                saveToCurrentPreset();
+            };
+
+            inputs.contrast.oninput = e => {
+                state.contrast = parseFloat(e.target.value);
+                state.lfo.contrast.base = state.contrast;
+                document.getElementById('val-contrast').textContent = state.contrast.toFixed(1);
+                saveToCurrentPreset();
+            };
+            inputs.color.oninput = e => { state.tint = e.target.value; saveToCurrentPreset(); };
+            inputs.bg.oninput = e => { state.bg = e.target.value; saveToCurrentPreset(); };
+            inputs.charset.oninput = e => { state.charset = e.target.value; saveToCurrentPreset(); };
+
+            ['res', 'contrast', 'charset'].forEach(key => {
+                document.getElementById(`lfo-${key}-btn`).onclick = (e) => {
+                    state.lfo[key].active = !state.lfo[key].active;
+                    if (key === 'charset' && state.lfo.charset.active) state.lfo.charset.noiseAcc = 0;
+                    e.currentTarget.classList.toggle('bg-blue-600', state.lfo[key].active);
+                    e.currentTarget.classList.toggle('text-white', state.lfo[key].active);
+                    document.getElementById(`lfo-${key}-led`).classList.toggle('lfo-active', state.lfo[key].active);
+                    if (key === 'res') {
+                        if (!state.lfo.res.active) state.res = staticDensityRes();
+                        else state.lfo.res.noiseAcc = 0;
+                    }
+                };
+                document.getElementById(`lfo-${key}-rate`).oninput = e => state.lfo[key].rate = parseFloat(e.target.value);
+            });
+            document.getElementById('lfo-res-shape').onchange = e => {
+                state.lfo.res.shape = e.target.value;
+                state.lfo.res.noiseAcc = 0;
+                syncDensityLfoRateLabel();
+            };
+            document.getElementById('lfo-contrast-shape').onchange = e => {
+                state.lfo.contrast.shape = e.target.value;
+            };
+            document.getElementById('btn-lfo-res-auto-wave').onclick = (e) => {
+                state.lfo.res.autoWave = !state.lfo.res.autoWave;
+                state.lfo.res.waveTimer = 0;
+                updateAutoWaveBtn(e.currentTarget, state.lfo.res.autoWave);
+            };
+            document.getElementById('lfo-res-wave-cycle').oninput = (e) => {
+                const v = parseInt(e.target.value, 10);
+                state.lfo.res.waveCycleSec = v;
+                document.getElementById('val-lfo-res-wave-cycle').textContent = v + 's';
+            };
+            document.getElementById('btn-lfo-contrast-auto-wave').onclick = (e) => {
+                state.lfo.contrast.autoWave = !state.lfo.contrast.autoWave;
+                state.lfo.contrast.waveTimer = 0;
+                updateAutoWaveBtn(e.currentTarget, state.lfo.contrast.autoWave);
+            };
+            document.getElementById('lfo-contrast-wave-cycle').oninput = (e) => {
+                const v = parseInt(e.target.value, 10);
+                state.lfo.contrast.waveCycleSec = v;
+                document.getElementById('val-lfo-contrast-wave-cycle').textContent = v + 's';
+            };
+            document.getElementById('lfo-charset-shape').onchange = e => {
+                state.lfo.charset.shape = e.target.value;
+                state.lfo.charset.noiseAcc = 0;
+            };
+
+            document.getElementById('btn-shuffle').onclick = (e) => {
+                state.playlistSettings.shuffle = !state.playlistSettings.shuffle;
+                e.currentTarget.className = `icon-btn ${state.playlistSettings.shuffle ? 'icon-btn-active' : 'icon-btn-inactive'} flex-1`;
+            };
+            document.getElementById('btn-repeat').onclick = (e) => {
+                state.playlistSettings.repeat = !state.playlistSettings.repeat;
+                e.currentTarget.className = `icon-btn ${state.playlistSettings.repeat ? 'icon-btn-active' : 'icon-btn-inactive'} flex-1`;
+            };
+
+            document.getElementById('btn-switch-jitter').onclick = (e) => {
+                state.playlistSettings.jitter = !state.playlistSettings.jitter;
+                const rangeEl = document.getElementById('param-interval');
+                state.playlistSettings.effectiveInterval = state.playlistSettings.jitter
+                    ? randomDwellFromInput(rangeEl)
+                    : state.playlistSettings.interval;
+                updateJitterButton(e.currentTarget, state.playlistSettings.jitter);
+                syncSourceIntervalSliderUI();
+            };
+            document.getElementById('btn-auto-switch').onclick = (e) => {
+                state.playlistSettings.autoSwitch = !state.playlistSettings.autoSwitch;
+                state.playlistSettings.timer = 0;
+                const rangeEl = document.getElementById('param-interval');
+                state.playlistSettings.effectiveInterval = state.playlistSettings.jitter
+                    ? randomDwellFromInput(rangeEl)
+                    : state.playlistSettings.interval;
+                e.target.textContent = state.playlistSettings.autoSwitch ? 'DISABLE' : 'ENABLE';
+                e.target.classList.toggle('text-blue-400', !state.playlistSettings.autoSwitch);
+                e.target.classList.toggle('text-red-400', state.playlistSettings.autoSwitch);
+            };
+            document.getElementById('param-interval').oninput = (e) => {
+                if (state.playlistSettings.jitter) return;
+                state.playlistSettings.interval = parseInt(e.target.value, 10);
+                document.getElementById('val-interval').textContent = state.playlistSettings.interval + 's';
+                state.playlistSettings.effectiveInterval = state.playlistSettings.interval;
+            };
+
+            document.getElementById('btn-preset-jitter').onclick = (e) => {
+                state.lfo.presets.jitter = !state.lfo.presets.jitter;
+                const rangeEl = document.getElementById('param-preset-interval');
+                state.lfo.presets.effectiveInterval = state.lfo.presets.jitter
+                    ? randomDwellFromInput(rangeEl)
+                    : state.lfo.presets.interval;
+                updateJitterButton(e.currentTarget, state.lfo.presets.jitter);
+                syncPresetIntervalSliderUI();
+            };
+            document.getElementById('btn-auto-preset').onclick = (e) => {
+                state.lfo.presets.active = !state.lfo.presets.active;
+                state.lfo.presets.timer = 0;
+                const rangeEl = document.getElementById('param-preset-interval');
+                state.lfo.presets.effectiveInterval = state.lfo.presets.jitter
+                    ? randomDwellFromInput(rangeEl)
+                    : state.lfo.presets.interval;
+                e.target.textContent = state.lfo.presets.active ? 'DISABLE' : 'ENABLE';
+                e.target.classList.toggle('text-blue-400', !state.lfo.presets.active);
+                e.target.classList.toggle('text-red-400', state.lfo.presets.active);
+                document.getElementById('lfo-preset-led').classList.toggle('lfo-active', state.lfo.presets.active);
+            };
+            document.getElementById('param-preset-interval').oninput = (e) => {
+                if (state.lfo.presets.jitter) return;
+                state.lfo.presets.interval = parseInt(e.target.value, 10);
+                document.getElementById('val-preset-interval').textContent = state.lfo.presets.interval + 's';
+                state.lfo.presets.effectiveInterval = state.lfo.presets.interval;
+            };
+
+            document.getElementById('playlist-upload').onchange = handlePlaylistUpload;
+            document.getElementById('fullscreen-btn').onclick = () => { toggleFullscreen(); };
+
+            syncSourceIntervalSliderUI();
+            syncPresetIntervalSliderUI();
+            syncDensityLfoRateLabel();
+            updateAutoWaveBtn(document.getElementById('btn-lfo-res-auto-wave'), state.lfo.res.autoWave);
+            updateAutoWaveBtn(document.getElementById('btn-lfo-contrast-auto-wave'), state.lfo.contrast.autoWave);
+        }
+
+        async function startCamera(deviceId = null) {
+            try {
+                if (state.camStream) state.camStream.getTracks().forEach(t => t.stop());
+                const constraints = {
+                    video: {
+                        deviceId: deviceId ? { exact: deviceId } : undefined,
+                        width: { ideal: 1920 },
+                        height: { ideal: 1080 },
+                        aspectRatio: { ideal: 1.7777777778 }
+                    },
+                    audio: false
+                };
+                state.camStream = await navigator.mediaDevices.getUserMedia(constraints);
+                video.srcObject = state.camStream;
+                video.play();
+                state.sourceType = 'cam';
+                state.playlist.find(p => p.id === 'cam').isStreaming = true;
+                state.playlist.find(p => p.id === 'cam').deviceId = deviceId;
+                statusEl.textContent = "LIVE CAM";
+                statusEl.className = "px-2 py-0.5 rounded bg-green-900/40 text-[10px] font-bold uppercase tracking-widest text-green-400 border border-green-500/50";
+                renderPlaylist();
+            } catch (err) { console.error("Camera denied", err); }
+        }
+
+        function stopCamera() {
+            if (state.camStream) {
+                state.camStream.getTracks().forEach(track => track.stop());
+                state.camStream = null;
+            }
+            video.srcObject = null;
+            state.playlist.find(p => p.id === 'cam').isStreaming = false;
+            if (state.activeIndex === state.playlist.findIndex(p => p.id === 'cam')) {
+                state.sourceType = 'none';
+                statusEl.textContent = "IDLE";
+                statusEl.className = "px-2 py-0.5 rounded bg-slate-800 text-[10px] font-bold uppercase tracking-widest text-slate-400";
+            }
+            renderPlaylist();
+        }
+
+        function handlePlaylistUpload(e) {
+            const files = Array.from(e.target.files);
+            files.forEach(async file => {
+                const url = URL.createObjectURL(file);
+                const type = file.type === 'image/gif' ? 'gif' : 'video';
+                const item = { id: crypto.randomUUID(), name: file.name.toUpperCase(), url: url, type: type, thumb: null };
+                if (type === 'gif') {
+                    try {
+                        const buffer = await file.arrayBuffer();
+                        const gif = new window.GifReader(new Uint8Array(buffer));
+                        item.gifData = gif;
+                        const thumbWidth = 64;
+                        const thumbHeight = Math.floor((thumbWidth / gif.width) * gif.height);
+                        const tempCanvas = document.createElement('canvas');
+                        tempCanvas.width = gif.width; tempCanvas.height = gif.height;
+                        const tempCtx = tempCanvas.getContext('2d');
+                        const imageData = tempCtx.createImageData(gif.width, gif.height);
+                        gif.decodeAndBlitFrameRGBA(0, imageData.data);
+                        tempCtx.putImageData(imageData, 0, 0);
+                        const thumbCanvas = document.createElement('canvas');
+                        thumbCanvas.width = thumbWidth; thumbCanvas.height = thumbHeight;
+                        thumbCanvas.getContext('2d').drawImage(tempCanvas, 0, 0, thumbWidth, thumbHeight);
+                        item.thumb = thumbCanvas.toDataURL('image/jpeg', 0.6);
+                    } catch (err) { console.error("GIF fail", err); item.type = 'none'; }
+                } else {
+                    const tempVid = document.createElement('video');
+                    tempVid.src = url;
+                    tempVid.onloadeddata = () => {
+                        tempVid.currentTime = 0.5;
+                        tempVid.onseeked = () => {
+                            const thumbWidth = 64;
+                            const thumbHeight = Math.floor((thumbWidth / (tempVid.videoWidth / tempVid.videoHeight)));
+                            const thumbCanvas = document.createElement('canvas');
+                            thumbCanvas.width = thumbWidth; thumbCanvas.height = thumbHeight;
+                            thumbCanvas.getContext('2d').drawImage(tempVid, 0, 0, thumbWidth, thumbHeight);
+                            item.thumb = thumbCanvas.toDataURL('image/jpeg', 0.6);
+                            renderPlaylist();
+                            tempVid.remove();
+                        };
+                    };
+                }
+                state.playlist.push(item);
+                renderPlaylist();
+            });
+        }
+
+        function handleDragStart(e, index) {
+            state.draggedItemIndex = index;
+            e.currentTarget.classList.add('dragging');
+            e.dataTransfer.effectAllowed = 'move';
+        }
+        function handleDragOver(e, index) {
+            e.preventDefault();
+            document.querySelectorAll('.playlist-item').forEach(item => item.classList.remove('drag-over'));
+            if (index !== state.draggedItemIndex) e.currentTarget.classList.add('drag-over');
+        }
+        function handleDrop(e, index) {
+            e.preventDefault();
+            document.querySelectorAll('.playlist-item').forEach(item => item.classList.remove('drag-over', 'dragging'));
+            if (state.draggedItemIndex !== null && state.draggedItemIndex !== index) {
+                const activeItem = state.playlist[state.activeIndex];
+                const movedItem = state.playlist.splice(state.draggedItemIndex, 1)[0];
+                state.playlist.splice(index, 0, movedItem);
+                if (activeItem) state.activeIndex = state.playlist.indexOf(activeItem);
+                renderPlaylist();
+            }
+            state.draggedItemIndex = null;
+        }
+
+        function renderPlaylist() {
+            const container = document.getElementById('playlist-container');
+            container.innerHTML = '';
+            state.playlist.forEach((item, idx) => {
+                const div = document.createElement('div');
+                div.draggable = true;
+                div.className = `playlist-item ${state.activeIndex === idx ? 'active-item' : 'inactive-item'}`;
+                div.ondragstart = (e) => handleDragStart(e, idx);
+                div.ondragover = (e) => handleDragOver(e, idx);
+                div.ondrop = (e) => handleDrop(e, idx);
+                div.ondragend = () => document.querySelectorAll('.playlist-item').forEach(i => i.classList.remove('dragging', 'drag-over'));
+                let thumbHtml = item.type === 'cam' ? `
+                        <div class="thumbnail-box text-blue-500 bg-blue-500/10 border-blue-500/30">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                        </div>
+                    ` : (item.thumb ? `<div class="thumbnail-box"><img src="${item.thumb}" class="w-full h-full object-cover"></div>` : `<div class="thumbnail-box bg-slate-800 animate-pulse"></div>`);
+                let extraControls = '';
+                if (item.type === 'cam') {
+                    const camOptions = state.cameras.map(c => `<option value="${c.deviceId}" ${item.deviceId === c.deviceId ? 'selected' : ''}>${c.label || 'CAM ' + (state.cameras.indexOf(c)+1)}</option>`).join('');
+                    extraControls = `
+                        <div class="flex gap-1 w-full mt-0.5">
+                            <select class="text-[7px] bg-black/60 border border-white/5 rounded px-1 outline-none text-slate-300 flex-1 h-3.5" onchange="startCamera(this.value)">
+                                <option value="">Auto Select</option>
+                                ${camOptions}
+                            </select>
+                            <button class="text-[7px] bg-black/60 px-1.5 rounded border border-white/5 hover:border-blue-500 h-3.5 font-bold uppercase" onclick="event.stopPropagation(); ${item.isStreaming ? 'stopCamera()' : 'startCamera()'}">
+                                ${item.isStreaming ? 'STOP' : 'START'}
+                            </button>
+                        </div>
+                    `;
+                }
+                div.innerHTML = `
+                    <div class="flex items-center gap-2 w-full overflow-hidden">
+                        <div class="text-slate-800 cursor-grab active:cursor-grabbing hover:text-slate-500 flex-shrink-0">
+                             <svg xmlns="http://www.w3.org/2000/svg" width="10" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="5" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="9" cy="19" r="1"/><circle cx="15" cy="5" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="19" r="1"/></svg>
+                        </div>
+                        ${thumbHtml}
+                        <div class="flex flex-col flex-1 min-w-0">
+                            <span class="truncate font-black tracking-tight leading-none text-xs uppercase">${item.name}</span>
+                            <span class="text-[7px] uppercase font-bold opacity-40 mb-0.5 tracking-widest">${item.type}</span>
+                            ${extraControls}
+                        </div>
+                    </div>
+                    ${state.activeIndex === idx && state.playlistSettings.autoSwitch ? '<div class="progress-bar" id="timer-progress"></div>' : ''}
+                `;
+                div.onclick = (e) => {
+                    if (['SELECT', 'OPTION', 'BUTTON', 'svg', 'path'].includes(e.target.tagName)) return;
+                    selectSource(idx);
+                };
+                container.appendChild(div);
+            });
+        }
+
+        function selectSource(idx) {
+            if (idx < 0 || idx >= state.playlist.length) return;
+            state.activeIndex = idx;
+            const item = state.playlist[idx];
+            state.playlistSettings.timer = 0;
+            video.pause();
+            if (state.sourceType !== 'cam' && state.sourceType !== 'video') video.src = "";
+            if (item.type === 'cam') {
+                if (!item.isStreaming) startCamera();
+                else { video.srcObject = state.camStream; video.play(); state.sourceType = 'cam'; }
+            } else if (item.type === 'video') {
+                state.sourceType = 'video'; video.src = item.url; video.play();
+                statusEl.textContent = "MP4 FEED";
+                statusEl.className = "px-2 py-0.5 rounded bg-blue-900/40 text-[10px] font-bold uppercase tracking-widest text-blue-400 border border-blue-500/50";
+            } else if (item.type === 'gif') {
+                state.sourceType = 'gif';
+                state.currentGif = { frames: [], frameIndex: 0, nextFrameTime: 0, gif: item.gifData };
+                statusEl.textContent = "GIF FEED";
+                statusEl.className = "px-2 py-0.5 rounded bg-purple-900/40 text-[10px] font-bold uppercase tracking-widest text-purple-400 border border-purple-500/50";
+            }
+            renderPlaylist();
+        }
+
+        function advancePlaylist() {
+            if (state.playlist.length <= 1) return;
+            if (state.playlistSettings.repeat && state.activeIndex !== -1) return;
+            let nextIdx;
+            if (state.playlistSettings.shuffle) {
+                do { nextIdx = Math.floor(Math.random() * state.playlist.length); } while (nextIdx === state.activeIndex);
+            } else { nextIdx = (state.activeIndex + 1) % state.playlist.length; }
+            selectSource(nextIdx);
+        }
+
+        function advancePreset() {
+            state.lfo.presets.index = (state.lfo.presets.index + 1) % presetKeys.length;
+            applyPreset(presetKeys[state.lfo.presets.index], { preserveDensity: true });
+        }
+
+        function updateLFOs(now, delta) {
+            const time = now / 1000;
+            const deltaSecs = delta / 1000;
+
+            if (state.playlistSettings.autoSwitch && state.activeIndex !== -1) {
+                state.playlistSettings.timer += deltaSecs;
+                const eff = state.playlistSettings.effectiveInterval;
+                const prog = eff > 0 ? (state.playlistSettings.timer / eff) * 100 : 0;
+                const progBar = document.getElementById('timer-progress');
+                if (progBar) progBar.style.width = Math.min(prog, 100) + '%';
+                if (state.playlistSettings.timer >= eff) {
+                    state.playlistSettings.timer = 0;
+                    state.playlistSettings.effectiveInterval = state.playlistSettings.jitter
+                        ? randomDwellFromInput(document.getElementById('param-interval'))
+                        : state.playlistSettings.interval;
+                    advancePlaylist();
+                }
+            }
+            if (state.lfo.presets.active) {
+                state.lfo.presets.timer += deltaSecs;
+                const wave = (Math.sin(time * 2 * Math.PI) + 1) / 2;
+                document.getElementById('lfo-preset-led').style.backgroundColor = `rgba(59, 130, 246, ${0.2 + wave * 0.8})`;
+                const eff = state.lfo.presets.effectiveInterval;
+                if (state.lfo.presets.timer >= eff) {
+                    state.lfo.presets.timer = 0;
+                    state.lfo.presets.effectiveInterval = state.lfo.presets.jitter
+                        ? randomDwellFromInput(document.getElementById('param-preset-interval'))
+                        : state.lfo.presets.interval;
+                    advancePreset();
+                }
+            }
+
+            const resSpan = state.resMax - state.resMin;
+            if (state.lfo.res.active) {
+                if (state.lfo.res.autoWave) {
+                    state.lfo.res.waveTimer += deltaSecs;
+                    if (state.lfo.res.waveTimer >= state.lfo.res.waveCycleSec) {
+                        state.lfo.res.waveTimer = 0;
+                        const i = Math.max(0, LFO_WAVE_SHAPES.indexOf(state.lfo.res.shape));
+                        const ni = (i + 1) % LFO_WAVE_SHAPES.length;
+                        state.lfo.res.shape = LFO_WAVE_SHAPES[ni];
+                        document.getElementById('lfo-res-shape').value = state.lfo.res.shape;
+                        state.lfo.res.noiseAcc = 0;
+                        syncDensityLfoRateLabel();
+                    }
+                }
+                let t01;
+                if (state.lfo.res.shape === 'noise') {
+                    const rate = state.lfo.res.rate;
+                    const stepDt = Math.max(0.04, 0.12 / (0.35 + rate));
+                    const a = 0.05 + ((rate - 0.1) / 4.9) * 0.95;
+                    const mid = (state.resMin + state.resMax) / 2;
+                    const half = (state.resMax - state.resMin) / 2;
+                    if (half <= 0) {
+                        state.lfo.res.noiseAcc = 0;
+                        state.res = clampResInt(Math.round(mid));
+                        t01 = 0.5;
+                    } else {
+                        state.lfo.res.noiseAcc += deltaSecs;
+                        while (state.lfo.res.noiseAcc >= stepDt) {
+                            state.lfo.res.noiseAcc -= stepDt;
+                            const offset = (Math.random() * 2 - 1) * half * a;
+                            let raw = mid + offset;
+                            raw = Math.min(state.resMax, Math.max(state.resMin, raw));
+                            state.res = clampResInt(Math.round(raw));
+                        }
+                        t01 = (state.res - state.resMin) / resSpan;
+                    }
+                } else {
+                    state.lfo.res.noiseAcc = 0;
+                    t01 = lfoPeriodicT01(state.lfo.res.shape, time, state.lfo.res.rate);
+                    t01 = Math.min(1, Math.max(0, t01));
+                    let raw = resSpan <= 0 ? state.resMin : state.resMin + t01 * resSpan;
+                    raw = Math.min(state.resMax, Math.max(state.resMin, raw));
+                    state.res = clampResInt(Math.round(raw));
+                }
+                document.getElementById('val-res').textContent = state.res;
+                document.getElementById('lfo-res-led').style.backgroundColor = `rgba(59, 130, 246, ${0.2 + t01 * 0.8})`;
+            } else {
+                state.res = staticDensityRes();
+                document.getElementById('val-res').textContent = state.res;
+            }
+
+            if (state.lfo.contrast.active) {
+                if (state.lfo.contrast.autoWave) {
+                    state.lfo.contrast.waveTimer += deltaSecs;
+                    if (state.lfo.contrast.waveTimer >= state.lfo.contrast.waveCycleSec) {
+                        state.lfo.contrast.waveTimer = 0;
+                        const i = Math.max(0, LFO_WAVE_SHAPES.indexOf(state.lfo.contrast.shape));
+                        const ni = (i + 1) % LFO_WAVE_SHAPES.length;
+                        state.lfo.contrast.shape = LFO_WAVE_SHAPES[ni];
+                        document.getElementById('lfo-contrast-shape').value = state.lfo.contrast.shape;
+                    }
+                }
+                let wave;
+                if (state.lfo.contrast.shape === 'noise') {
+                    wave = stepSmoothedNoise('contrast', deltaSecs, 0.25 + state.lfo.contrast.rate * 0.35);
+                } else {
+                    wave = lfoPeriodicT01(state.lfo.contrast.shape, time, state.lfo.contrast.rate);
+                }
+                state.contrast = state.lfo.contrast.base * (0.5 + wave);
+                document.getElementById('val-contrast').textContent = state.contrast.toFixed(1);
+                document.getElementById('lfo-contrast-led').style.backgroundColor = `rgba(59, 130, 246, ${0.2 + wave * 0.8})`;
+            }
+
+            if (state.lfo.charset.active) {
+                const keys = Object.keys(charSets);
+                if (state.lfo.charset.shape === 'noise') {
+                    state.lfo.charset.noiseAcc += deltaSecs;
+                    const step = Math.max(0.06, 1 / (state.lfo.charset.rate * 1.25));
+                    if (state.lfo.charset.noiseAcc >= step) {
+                        state.lfo.charset.noiseAcc = 0;
+                        const idx = Math.floor(Math.random() * keys.length);
+                        const nextSet = charSets[keys[idx]];
+                        if (state.charset !== nextSet) {
+                            state.charset = nextSet;
+                            document.getElementById('param-charset').value = nextSet;
+                        }
+                    }
+                } else {
+                    const idx = Math.floor((time * state.lfo.charset.rate) % keys.length);
+                    const nextSet = charSets[keys[idx]];
+                    if (state.charset !== nextSet) {
+                        state.charset = nextSet;
+                        document.getElementById('param-charset').value = nextSet;
+                    }
+                }
+            }
+        }
+
+        function getASCIIColor(x, y, w, h, brightness, now) {
+            const time = now / 1000;
+            switch (state.colorMode) {
+                case 'rainbow':
+                    return `hsl(${(x / w) * 360 + (time * 50)}, 70%, 60%)`;
+                case 'heatmap': {
+                    const hue = 240 - (brightness / 255) * 240;
+                    return `hsl(${hue}, 100%, 50%)`;
+                }
+                case 'vapor': {
+                    const vaporLeft = state.tint;
+                    const vaporRight = adjustHue(state.tint, 180);
+                    return (x / w) < 0.5 ? vaporLeft : vaporRight;
+                }
+                case 'cyber':
+                    if (brightness > 180) return state.tint;
+                    if (brightness > 90) return adjustHue(state.tint, -40);
+                    return adjustHue(state.tint, -80);
+                case 'rgb-tiered':
+                    if (brightness > 180) return state.tint;
+                    if (brightness > 80) return adjustHue(state.tint, 120);
+                    return adjustHue(state.tint, 240);
+                case 'toxic':
+                    return brightness > 120 ? state.tint : adjustHue(state.tint, 20);
+                default:
+                    return state.tint;
+            }
+        }
+
+        function processFrame(now) {
+            let sw, sh, activeSourceElement = null;
+            if (state.sourceType === 'cam' || state.sourceType === 'video') {
+                if (video.paused || !video.videoWidth) return;
+                activeSourceElement = video; sw = video.videoWidth; sh = video.videoHeight;
+            } else if (state.sourceType === 'gif') {
+                const g = state.currentGif;
+                if (!g.gif) return;
+                if (now >= g.nextFrameTime) {
+                    const frameInfo = g.gif.frameInfo(g.frameIndex);
+                    gifBufferCanvas.width = g.gif.width; gifBufferCanvas.height = g.gif.height;
+                    const imageData = gifBufferCtx.createImageData(g.gif.width, g.gif.height);
+                    g.gif.decodeAndBlitFrameRGBA(g.frameIndex, imageData.data);
+                    gifBufferCtx.putImageData(imageData, 0, 0);
+                    g.frameIndex = (g.frameIndex + 1) % g.gif.numFrames();
+                    g.nextFrameTime = now + (frameInfo.delay * 10);
+                }
+                activeSourceElement = gifBufferCanvas; sw = g.gif.width; sh = g.gif.height;
+            }
+            if (!activeSourceElement) return;
+
+            const aspect = sw / sh;
+            dimInfo.textContent = `${sw} x ${sh}`;
+            const w = Math.floor(state.res);
+            const h = Math.max(1, Math.floor(w / aspect));
+
+            bufferCanvas.width = w;
+            bufferCanvas.height = h;
+            bufferCtx.filter = `contrast(${state.contrast * 100}%) brightness(${state.brightness * 100}%) grayscale(100%)`;
+            bufferCtx.drawImage(activeSourceElement, 0, 0, w, h);
+
+            const frameData = bufferCtx.getImageData(0, 0, w, h);
+            const pixels = frameData.data;
+
+            const targetW = viewportContainer.clientWidth;
+            const targetH = viewportContainer.clientHeight;
+            const scale = Math.min(targetW / w, targetH / h);
+            outputCanvas.width = w * scale;
+            outputCanvas.height = h * scale;
+
+            outputCtx.fillStyle = state.bg;
+            outputCtx.fillRect(0, 0, outputCanvas.width, outputCanvas.height);
+            outputCtx.font = `bold ${scale}px 'Fira Code', monospace`;
+            outputCtx.textAlign = "left";
+            outputCtx.textBaseline = "top";
+
+            const currentCharset = state.charset;
+            const charLen = currentCharset.length;
+            for (let y = 0; y < h; y++) {
+                for (let x = 0; x < w; x++) {
+                    const i = (y * w + x) * 4;
+                    const brightness = pixels[i];
+                    const charIdx = Math.floor((brightness / 256) * charLen);
+                    const char = currentCharset[charIdx] || currentCharset[charLen - 1];
+                    outputCtx.fillStyle = getASCIIColor(x, y, w, h, brightness, now);
+                    outputCtx.fillText(char, x * scale, y * scale);
+                }
+            }
+        }
+
+        function renderLoop(now) {
+            const rawDelta = now - state.lastFrameTime;
+            const delta = state.lastFrameTime === 0 ? 16 : rawDelta;
+            state.fps = rawDelta > 0 ? Math.round(1000 / rawDelta) : 0;
+            state.lastFrameTime = now;
+            if (now % 20 < 1) fpsEl.textContent = `${state.fps || 0} FPS`;
+            updateLFOs(now, delta);
+            processFrame(now);
+            requestAnimationFrame(renderLoop);
+        }
+
+        function applyPreset(type, opts = {}) {
+            const config = userConfigs[type];
+            if (!config) return;
+
+            const rMin = config.resMin ?? config.res ?? 80;
+            const rMax = config.resMax ?? config.res ?? rMin;
+
+            state.activePresetName = type;
+            state.charset = config.charset;
+            state.tint = config.tint;
+            state.bg = config.bg;
+            state.contrast = config.contrast;
+            state.colorMode = config.mode;
+            if (!opts.preserveDensity) {
+                state.resMin = clampResInt(Math.min(rMin, rMax));
+                state.resMax = clampResInt(Math.max(rMin, rMax));
+            }
+            state.lfo.contrast.base = config.contrast;
+            if (!state.lfo.res.active) state.res = staticDensityRes();
+
+            if (!opts.preserveDensity) syncDensitySlidersFromState();
+            document.getElementById('param-contrast').value = config.contrast;
+            document.getElementById('param-color').value = config.tint;
+            document.getElementById('param-bg').value = config.bg;
+            document.getElementById('param-charset').value = config.charset;
+            document.getElementById('val-res').textContent = state.res;
+            document.getElementById('val-contrast').textContent = state.contrast.toFixed(1);
+
+            document.querySelectorAll('.preset-btn').forEach(btn => {
+                btn.classList.toggle('preset-active', btn.id === `btn-pre-${type}`);
+            });
+        }
+
+        function resetPresets() {
+            userConfigs = JSON.parse(JSON.stringify(defaultConfigs));
+            applyPreset(state.activePresetName);
+        }
+
+        window.onload = init;
+    </script>
+</body>
+</html>
