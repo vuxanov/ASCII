@@ -71,10 +71,7 @@
             @apply w-10 h-7 rounded bg-black flex-shrink-0 border border-white/5 overflow-hidden flex items-center justify-center;
         }
         .item-delete-btn {
-            position: absolute;
-            top: 50%;
-            right: 6px;
-            transform: translateY(-50%);
+            position: static;
             width: 18px;
             height: 18px;
             border-radius: 5px;
@@ -427,7 +424,10 @@
                 frameTimer: null,
                 sendingFrame: false,
                 frameSeq: 0,
-                lastAppliedSeq: 0
+                lastAppliedSeq: 0,
+                connected: false,
+                lastSentMs: 0,
+                targetFps: 10
             },
             audio: {
                 active: false,
@@ -1267,35 +1267,44 @@
                 // Only respond if message came from the projector window.
                 if (e.source !== state.projector.win) return;
                 try {
-                    const fps = 10;
-                    const frameMs = 1000 / fps;
+                    state.projector.connected = true;
+                    state.projector.lastSentMs = 0;
                     if (state.projector.frameTimer) {
                         clearInterval(state.projector.frameTimer);
                         state.projector.frameTimer = null;
                     }
-                    state.projector.frameTimer = setInterval(() => {
-                        if (!state.projector.win || state.projector.win.closed) return;
-                        if (!outputCanvas) return;
-                        // Avoid piling up async blobs.
-                        if (state.projector.sendingFrame) return;
-                        state.projector.sendingFrame = true;
-                            outputCanvas.toBlob((blob) => {
-                            state.projector.sendingFrame = false;
-                            if (!blob) return;
-                            try {
-                                state.projector.win.postMessage(
-                                    { type: 'ascii-live-projector-frame', sessionId: state.projector.sessionId, blob },
-                                    '*'
-                                );
-                            } catch (err) {
-                                // ignore
-                            }
-                            }, 'image/jpeg', 0.45);
-                    }, frameMs);
                 } catch (err) {
                     console.warn('Failed to start projector frame sending', err);
                 }
             });
+        }
+
+        function maybeSendProjectorFrame(nowMs) {
+            if (!state.projector.connected) return;
+            if (!state.projector.win || state.projector.win.closed) {
+                state.projector.connected = false;
+                return;
+            }
+            const fps = state.projector.targetFps || 10;
+            const frameMs = 1000 / fps;
+            if (nowMs - (state.projector.lastSentMs || 0) < frameMs) return;
+            if (!outputCanvas) return;
+            if (state.projector.sendingFrame) return;
+
+            state.projector.lastSentMs = nowMs;
+            state.projector.sendingFrame = true;
+            outputCanvas.toBlob((blob) => {
+                state.projector.sendingFrame = false;
+                if (!blob) return;
+                try {
+                    state.projector.win.postMessage(
+                        { type: 'ascii-live-projector-frame', sessionId: state.projector.sessionId, blob },
+                        '*'
+                    );
+                } catch (err) {
+                    // ignore
+                }
+            }, 'image/jpeg', 0.45);
         }
 
         async function init() {
@@ -1711,7 +1720,7 @@
                     ` : (item.thumb ? `<div class="thumbnail-box"><img src="${item.thumb}" class="w-full h-full object-cover"></div>` : `<div class="thumbnail-box bg-slate-800 animate-pulse"></div>`);
                 let extraControls = '';
                 const deleteBtnHtml = item.type !== 'cam'
-                    ? `<button class="item-delete-btn" title="Delete" onclick="event.stopPropagation(); deletePlaylistItem(${idx})">×</button>`
+                    ? `<button class="item-delete-btn ml-2" title="Delete" onclick="event.stopPropagation(); deletePlaylistItem(${idx})">×</button>`
                     : '';
                 if (item.type === 'cam') {
                     const camOptions = state.cameras.map(c => `<option value="${c.deviceId}" ${item.deviceId === c.deviceId ? 'selected' : ''}>${c.label || 'CAM ' + (state.cameras.indexOf(c)+1)}</option>`).join('');
@@ -1728,7 +1737,6 @@
                     `;
                 }
                 div.innerHTML = `
-                    ${deleteBtnHtml}
                     <div class="flex items-center gap-2 w-full overflow-hidden">
                         <div class="text-slate-800 cursor-grab active:cursor-grabbing hover:text-slate-500 flex-shrink-0">
                              <svg xmlns="http://www.w3.org/2000/svg" width="10" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="5" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="9" cy="19" r="1"/><circle cx="15" cy="5" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="19" r="1"/></svg>
@@ -1739,6 +1747,7 @@
                             <span class="text-[7px] uppercase font-bold opacity-40 mb-0.5 tracking-widest">${item.type}</span>
                             ${extraControls}
                         </div>
+                        ${deleteBtnHtml}
                     </div>
                     ${state.activeIndex === idx && state.playlistSettings.autoSwitch ? '<div class="progress-bar" id="timer-progress"></div>' : ''}
                 `;
@@ -2044,6 +2053,7 @@
             updateAudioReactive(deltaSecs);
             updateLFOs(now, delta);
             processFrame(now);
+            maybeSendProjectorFrame(now);
             requestAnimationFrame(renderLoop);
         }
 
