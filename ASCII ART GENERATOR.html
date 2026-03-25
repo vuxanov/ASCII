@@ -1,0 +1,790 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ASCII Video Lab</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- gif.js for encoding -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gif.js/0.2.0/gif.js"></script>
+    <!-- gifuct-js: npm package has no dist/ UMD; loaded dynamically in script (see GIFUCT_ESM_URL) -->
+    <!-- JSZip for PNG sequence export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;700&display=swap');
+        
+        body {
+            background-color: #0f172a;
+            color: #e2e8f0;
+            font-family: 'Inter', sans-serif;
+        }
+
+        #output-canvas {
+            image-rendering: pixelated;
+            background-image: linear-gradient(45deg, #1e293b 25%, transparent 25%), 
+                              linear-gradient(-45deg, #1e293b 25%, transparent 25%), 
+                              linear-gradient(45deg, transparent 75%, #1e293b 75%), 
+                              linear-gradient(-45deg, transparent 75%, #1e293b 75%);
+            background-size: 20px 20px;
+            background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #1e293b;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #475569;
+            border-radius: 10px;
+        }
+
+        .loader {
+            border-top-color: #3b82f6;
+            animation: spinner 0.6s linear infinite;
+        }
+
+        @keyframes spinner {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        input[type="range"] {
+            height: 4px;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+    <header class="border-b border-slate-800 p-4 bg-slate-900/50 backdrop-blur-md sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto flex justify-between items-center">
+            <div class="flex items-center gap-3">
+                <div class="bg-blue-600 p-2 rounded-lg">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-white"><path d="M4 7V4h16v3"/><path d="M9 20h6"/><path d="M12 4v16"/><path d="M11 13h2"/></svg>
+                </div>
+                <h1 class="text-xl font-bold tracking-tight">ASCII <span class="text-blue-500">Video Lab</span></h1>
+            </div>
+            <div id="status-badge" class="hidden px-3 py-1 bg-blue-500/20 text-blue-400 rounded-full text-xs font-medium border border-blue-500/30 animate-pulse">
+                IDLE
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-1 max-w-7xl mx-auto w-full p-4 lg:p-8 grid grid-cols-1 lg:grid-cols-12 gap-8">
+        
+        <aside class="lg:col-span-4 space-y-6 custom-scrollbar lg:max-h-[calc(100vh-120px)] lg:overflow-y-auto pr-2 pb-10">
+            
+            <!-- Source -->
+            <div class="bg-slate-800/50 p-6 rounded-2xl border border-slate-700">
+                <label class="block mb-4 text-sm font-semibold text-slate-400 uppercase tracking-wider">Source Material</label>
+                <div class="relative group">
+                    <input type="file" id="video-input" accept="video/*,image/*" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10">
+                    <div class="border-2 border-dashed border-slate-600 group-hover:border-blue-500 transition-colors rounded-xl p-8 text-center bg-slate-900/50">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="mx-auto h-10 w-10 text-slate-500 mb-2 group-hover:text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                        </svg>
+                        <p class="text-sm font-medium">Click or drag Video, GIF, or Image</p>
+                        <p id="file-name" class="text-xs text-slate-500 mt-2 truncate">No file selected</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Cropping Controls -->
+            <div class="bg-slate-800/50 p-6 rounded-2xl border border-slate-700 space-y-4">
+                <label class="block text-sm font-semibold text-slate-400 uppercase tracking-wider">Cropping & Composition</label>
+                
+                <div class="space-y-4">
+                    <div>
+                        <div class="flex justify-between text-[10px] text-slate-400 uppercase mb-1">
+                            <span>Crop X Offset</span>
+                            <span id="crop-x-val">0%</span>
+                        </div>
+                        <input type="range" id="crop-x" min="0" max="100" value="0" class="w-full bg-slate-900 rounded-lg appearance-none cursor-pointer accent-blue-500">
+                    </div>
+                    <div>
+                        <div class="flex justify-between text-[10px] text-slate-400 uppercase mb-1">
+                            <span>Crop Y Offset</span>
+                            <span id="crop-y-val">0%</span>
+                        </div>
+                        <input type="range" id="crop-y" min="0" max="100" value="0" class="w-full bg-slate-900 rounded-lg appearance-none cursor-pointer accent-blue-500">
+                    </div>
+                    <div>
+                        <div class="flex justify-between text-[10px] text-slate-400 uppercase mb-1">
+                            <span>Crop Width</span>
+                            <span id="crop-w-val">100%</span>
+                        </div>
+                        <input type="range" id="crop-w" min="1" max="100" value="100" class="w-full bg-slate-900 rounded-lg appearance-none cursor-pointer accent-blue-500">
+                    </div>
+                    <div>
+                        <div class="flex justify-between text-[10px] text-slate-400 uppercase mb-1">
+                            <span>Crop Height</span>
+                            <span id="crop-h-val">100%</span>
+                        </div>
+                        <input type="range" id="crop-h" min="1" max="100" value="100" class="w-full bg-slate-900 rounded-lg appearance-none cursor-pointer accent-blue-500">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Parameters -->
+            <div class="bg-slate-800/50 p-6 rounded-2xl border border-slate-700 space-y-6">
+                <label class="block text-sm font-semibold text-slate-400 uppercase tracking-wider">Styling</label>
+                
+                <div>
+                    <label class="block text-xs text-slate-400 mb-2">Character Preset</label>
+                    <select id="char-preset" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+                        <option value="standard">Standard (@%#*+=-:. )</option>
+                        <option value="blocks">Blocks (█▓▒░ )</option>
+                        <option value="minimal">Minimal (●○•· )</option>
+                        <option value="binary">Binary (01)</option>
+                        <option value="matrix">Matrix (ｦｱｳｴｵｶｷｸｹｺ)</option>
+                    </select>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs text-slate-400 mb-2">Width (Chars)</label>
+                        <input type="number" id="resolution-width" value="80" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs text-slate-400 mb-2">Font Size (px)</label>
+                        <input type="number" id="font-size" value="10" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-sm">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs text-slate-400 mb-2">Character Set (Custom)</label>
+                    <input type="text" id="custom-chars" value="@%#*+=-:. " class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-sm font-mono">
+                </div>
+
+                <div class="space-y-4">
+                    <label class="block text-xs text-slate-400">Color Palette</label>
+                    <div class="flex flex-col gap-3">
+                        <div class="flex items-center gap-2">
+                            <input type="color" id="fg-color" value="#ffffff" class="w-10 h-10 rounded-lg border-0 bg-transparent cursor-pointer">
+                            <input type="text" id="fg-hex" value="#ffffff" class="flex-1 bg-slate-900 border border-slate-700 rounded-lg p-2 text-xs font-mono uppercase focus:ring-1 focus:ring-blue-500 outline-none">
+                            <span class="text-[10px] text-slate-500 uppercase">Text</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <input type="color" id="bg-color" value="#000000" class="w-10 h-10 rounded-lg border-0 bg-transparent cursor-pointer">
+                            <input type="text" id="bg-hex" value="#000000" class="flex-1 bg-slate-900 border border-slate-700 rounded-lg p-2 text-xs font-mono uppercase focus:ring-1 focus:ring-blue-500 outline-none">
+                            <span class="text-[10px] text-slate-500 uppercase">Back</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="space-y-2">
+                    <div class="flex items-center gap-3">
+                        <input type="checkbox" id="transparent-bg" class="w-4 h-4 rounded border-slate-700 bg-slate-900 text-blue-600 focus:ring-blue-500">
+                        <label for="transparent-bg" class="text-xs text-slate-400">Transparent Background (Matte for GIF)</label>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <input type="checkbox" id="invert-chars" class="w-4 h-4 rounded border-slate-700 bg-slate-900 text-blue-600 focus:ring-blue-500">
+                        <label for="invert-chars" class="text-xs text-slate-400">Invert Density</label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Export Section -->
+            <div class="bg-slate-800/50 p-6 rounded-2xl border border-slate-700 space-y-4" id="export-section">
+                <label class="block text-sm font-semibold text-slate-400 uppercase tracking-wider">Batch Export Range</label>
+                
+                <div id="range-controls" class="space-y-4">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs text-slate-400 mb-1">Start (sec)</label>
+                            <input type="number" id="export-start" value="0" step="0.1" min="0" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-xs text-slate-400 mb-1">End (sec)</label>
+                            <input type="number" id="export-end" value="5" step="0.1" min="0.1" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-sm">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs text-slate-400 mb-1">Target FPS (Export)</label>
+                        <input type="number" id="export-fps" value="12" min="1" max="60" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-sm">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-2 pt-2">
+                    <button id="batch-gif-btn" class="bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 px-2 rounded-xl text-xs transition-all flex flex-col items-center gap-1">
+                        <span class="uppercase tracking-tighter">Export Sequence</span>
+                        <span class="text-[10px] opacity-80">as GIF</span>
+                    </button>
+                    <button id="batch-png-btn" class="bg-slate-700 hover:bg-slate-600 text-white font-bold py-3 px-2 rounded-xl text-xs transition-all flex flex-col items-center gap-1">
+                        <span class="uppercase tracking-tighter">Export Sequence</span>
+                        <span class="text-[10px] opacity-80">as PNG Zip</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="space-y-3">
+                <button id="save-frame-btn" class="w-full bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 font-semibold py-3 px-4 rounded-xl transition-all text-sm flex items-center justify-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                    Save Single Frame (PNG)
+                </button>
+            </div>
+        </aside>
+
+        <!-- Preview Area -->
+        <div class="lg:col-span-8 flex flex-col gap-4">
+            <div class="relative flex-1 bg-slate-950 rounded-3xl border border-slate-800 overflow-hidden flex items-center justify-center min-h-[450px]">
+                <div id="loading-overlay" class="hidden absolute inset-0 z-40 bg-slate-900/90 backdrop-blur-md flex-col items-center justify-center text-center p-10">
+                    <div class="loader ease-linear rounded-full border-4 border-t-4 border-slate-700 h-16 w-16 mb-6"></div>
+                    <h3 id="loading-title" class="text-xl font-bold mb-2">Processing...</h3>
+                    <p id="encoding-progress" class="text-4xl font-mono text-blue-400 font-bold">0%</p>
+                    <p id="loading-sub" class="text-sm text-slate-500 mt-4 max-w-xs">Please keep this tab open.</p>
+                </div>
+
+                <canvas id="output-canvas" class="max-w-full max-h-full shadow-2xl"></canvas>
+                
+                <div id="empty-state" class="text-center p-8">
+                    <div class="bg-slate-800/50 w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-6 border border-slate-700 shadow-inner">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 4v16l13-8z" />
+                        </svg>
+                    </div>
+                    <h2 class="text-2xl font-bold mb-2">ASCII Lab Ready</h2>
+                    <p class="text-slate-500">Upload Video, Animated GIF, or Static Image</p>
+                </div>
+            </div>
+
+            <!-- Playback Controls (Visible for Video/GIF, Hidden for Images) -->
+            <div id="playback-bar" class="hidden bg-slate-900 border border-slate-800 p-4 rounded-2xl flex items-center gap-4">
+                <button id="play-pause" class="p-3 bg-slate-800 hover:bg-slate-700 rounded-full transition-colors">
+                    <svg id="play-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+                </button>
+                <div class="flex-1">
+                    <input type="range" id="seek-bar" value="0" step="0.01" class="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-blue-500">
+                </div>
+                <div id="time-display" class="text-sm font-mono text-slate-400 min-w-[120px] text-right">00:00 / 00:00</div>
+            </div>
+        </div>
+    </main>
+
+    <footer class="p-6 text-center text-xs text-slate-600 border-t border-slate-800/50">
+        ASCII Video Lab • Video, Animated GIF & Static Image Support
+    </footer>
+
+    <!-- Hidden source elements -->
+    <video id="source-video" class="hidden" loop crossorigin="anonymous" muted></video>
+    <img id="source-img" class="hidden" crossorigin="anonymous">
+    <canvas id="buffer-canvas" class="hidden"></canvas>
+
+    <script>
+        const PRESETS = {
+            standard: "@%#*+=-:. ",
+            blocks: "█▓▒░ ",
+            minimal: "●○•· ",
+            binary: "01",
+            matrix: "ｦｱｳｴｵｶｷｸｹｺｻｼｽｾｿﾀﾁﾂﾃﾄ"
+        };
+
+        const videoInput = document.getElementById('video-input');
+        const fileName = document.getElementById('file-name');
+        const sourceVideo = document.getElementById('source-video');
+        const sourceImg = document.getElementById('source-img');
+        const outputCanvas = document.getElementById('output-canvas');
+        const bufferCanvas = document.getElementById('buffer-canvas');
+        const emptyState = document.getElementById('empty-state');
+        const playbackBar = document.getElementById('playback-bar');
+        const rangeControls = document.getElementById('range-controls');
+        const playPauseBtn = document.getElementById('play-pause');
+        const playIcon = document.getElementById('play-icon');
+        const seekBar = document.getElementById('seek-bar');
+        const timeDisplay = document.getElementById('time-display');
+        const statusBadge = document.getElementById('status-badge');
+        const loadingOverlay = document.getElementById('loading-overlay');
+        const progressText = document.getElementById('encoding-progress');
+        const loadingTitle = document.getElementById('loading-title');
+
+        const charPreset = document.getElementById('char-preset');
+        const customCharsInput = document.getElementById('custom-chars');
+        const resWidthInput = document.getElementById('resolution-width');
+        const fontSizeInput = document.getElementById('font-size');
+        const fgColorPicker = document.getElementById('fg-color');
+        const fgHexInput = document.getElementById('fg-hex');
+        const bgColorPicker = document.getElementById('bg-color');
+        const bgHexInput = document.getElementById('bg-hex');
+        const transparentBgInput = document.getElementById('transparent-bg');
+        const invertCharsInput = document.getElementById('invert-chars');
+
+        const cropX = document.getElementById('crop-x');
+        const cropY = document.getElementById('crop-y');
+        const cropW = document.getElementById('crop-w');
+        const cropH = document.getElementById('crop-h');
+        const cropXVal = document.getElementById('crop-x-val');
+        const cropYVal = document.getElementById('crop-y-val');
+        const cropWVal = document.getElementById('crop-w-val');
+        const cropHVal = document.getElementById('crop-h-val');
+        
+        const batchGifBtn = document.getElementById('batch-gif-btn');
+        const batchPngBtn = document.getElementById('batch-png-btn');
+        const exportStartInput = document.getElementById('export-start');
+        const exportEndInput = document.getElementById('export-end');
+        const exportFpsInput = document.getElementById('export-fps');
+        const saveFrameBtn = document.getElementById('save-frame-btn');
+
+        let characterSet = PRESETS.standard;
+        let workerBlobUrl = null;
+        let isBatching = false;
+
+        /** gifuct-js@2.x ships only CommonJS in npm; esm.sh bundles it for browser import(). */
+        const GIFUCT_ESM_URL = 'https://esm.sh/gifuct-js@2.1.2';
+        let gifuctLoadPromise = null;
+        function loadGifuct() {
+            if (!gifuctLoadPromise) {
+                gifuctLoadPromise = import(GIFUCT_ESM_URL);
+            }
+            return gifuctLoadPromise;
+        }
+        
+        // Source States
+        let isGifSource = false;
+        let isStaticImageSource = false;
+        let gifFrames = [];
+        let currentGifFrameIndex = 0;
+        let gifPlayTimeout = null;
+        let gifTotalDuration = 0;
+
+        async function init() {
+            charPreset.addEventListener('change', () => {
+                characterSet = PRESETS[charPreset.value];
+                customCharsInput.value = characterSet;
+            });
+
+            fgColorPicker.addEventListener('input', () => fgHexInput.value = fgColorPicker.value.toUpperCase());
+            fgHexInput.addEventListener('input', () => {
+                if (/^#[0-9A-F]{6}$/i.test(fgHexInput.value)) fgColorPicker.value = fgHexInput.value;
+            });
+            bgColorPicker.addEventListener('input', () => bgHexInput.value = bgColorPicker.value.toUpperCase());
+            bgHexInput.addEventListener('input', () => {
+                if (/^#[0-9A-F]{6}$/i.test(bgHexInput.value)) bgColorPicker.value = bgHexInput.value;
+            });
+
+            [cropX, cropY, cropW, cropH].forEach(input => {
+                input.addEventListener('input', () => {
+                    cropXVal.textContent = cropX.value + '%';
+                    cropYVal.textContent = cropY.value + '%';
+                    cropWVal.textContent = cropW.value + '%';
+                    cropHVal.textContent = cropH.value + '%';
+                    if (parseInt(cropX.value) + parseInt(cropW.value) > 100) cropX.value = 100 - parseInt(cropW.value);
+                    if (parseInt(cropY.value) + parseInt(cropH.value) > 100) cropY.value = 100 - parseInt(cropH.value);
+                });
+            });
+
+            customCharsInput.addEventListener('input', () => characterSet = customCharsInput.value);
+            videoInput.addEventListener('change', handleFile);
+            playPauseBtn.addEventListener('click', togglePlay);
+            sourceVideo.addEventListener('timeupdate', updateSeek);
+            seekBar.addEventListener('input', handleSeekBarInput);
+
+            saveFrameBtn.addEventListener('click', saveCurrentFrame);
+            batchGifBtn.addEventListener('click', () => startBatch('gif'));
+            batchPngBtn.addEventListener('click', () => startBatch('png'));
+
+            await prepareWorker();
+            requestAnimationFrame(livePreviewLoop);
+        }
+
+        async function prepareWorker() {
+            try {
+                const response = await fetch('https://cdnjs.cloudflare.com/ajax/libs/gif.js/0.2.0/gif.worker.js');
+                const blob = await response.blob();
+                workerBlobUrl = URL.createObjectURL(blob);
+            } catch (e) {
+                console.warn("Worker pre-fetch failed.", e);
+            }
+        }
+
+        async function handleFile(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            fileName.textContent = file.name;
+            const url = URL.createObjectURL(file);
+            
+            if (gifPlayTimeout) clearTimeout(gifPlayTimeout);
+            gifFrames = [];
+            currentGifFrameIndex = 0;
+            isGifSource = false;
+            isStaticImageSource = false;
+            
+            if (file.type === 'image/gif') {
+                isGifSource = true;
+                loadingOverlay.classList.remove('hidden');
+                loadingTitle.textContent = "Decoding GIF...";
+                progressText.textContent = "Please wait";
+                
+                try {
+                    const response = await fetch(url);
+                    const buffer = await response.arrayBuffer();
+                    const { parseGIF, decompressFrames } = await loadGifuct();
+
+                    if (typeof parseGIF !== 'function' || typeof decompressFrames !== 'function') {
+                        throw new Error("GIF library failed to load.");
+                    }
+
+                    const gifParsed = parseGIF(buffer);
+                    gifFrames = decompressFrames(gifParsed, true);
+                    
+                    gifTotalDuration = 0;
+                    gifFrames.forEach(frame => {
+                        const canvas = document.createElement('canvas');
+                        canvas.width = frame.dims.width;
+                        canvas.height = frame.dims.height;
+                        const ctx = canvas.getContext('2d');
+                        const imageData = new ImageData(frame.patch, frame.dims.width, frame.dims.height);
+                        ctx.putImageData(imageData, 0, 0);
+                        frame.preRendered = canvas;
+                        gifTotalDuration += frame.delay;
+                    });
+
+                    loadingOverlay.classList.add('hidden');
+                    emptyState.classList.add('hidden');
+                    playbackBar.classList.remove('hidden');
+                    rangeControls.classList.remove('hidden');
+                    seekBar.max = gifTotalDuration;
+                    exportEndInput.value = (gifTotalDuration / 1000).toFixed(1);
+                    statusBadge.classList.remove('hidden');
+                    statusBadge.textContent = "IDLE (ANIMATED GIF)";
+                    playGif();
+                } catch (err) {
+                    console.error("GIF decode failed:", err);
+                    alert("Failed to decode GIF. Using as static image.");
+                    useAsStaticImage(url);
+                }
+            } else if (file.type.startsWith('image/')) {
+                useAsStaticImage(url);
+            } else if (file.type.startsWith('video/')) {
+                sourceVideo.src = url;
+                sourceVideo.onloadedmetadata = () => {
+                    emptyState.classList.add('hidden');
+                    playbackBar.classList.remove('hidden');
+                    rangeControls.classList.remove('hidden');
+                    seekBar.max = sourceVideo.duration;
+                    exportEndInput.value = Math.min(5, sourceVideo.duration.toFixed(1));
+                    sourceVideo.play();
+                    playIcon.innerHTML = `<path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>`;
+                    statusBadge.classList.remove('hidden');
+                    statusBadge.textContent = "IDLE (VIDEO)";
+                };
+            }
+        }
+
+        function useAsStaticImage(url) {
+            isStaticImageSource = true;
+            sourceImg.src = url;
+            sourceImg.onload = () => {
+                emptyState.classList.add('hidden');
+                playbackBar.classList.add('hidden');
+                rangeControls.classList.add('hidden');
+                statusBadge.classList.remove('hidden');
+                statusBadge.textContent = "IDLE (STATIC IMAGE)";
+            };
+        }
+
+        function playGif() {
+            if (!isGifSource || gifFrames.length === 0) return;
+            const frame = gifFrames[currentGifFrameIndex];
+            playIcon.innerHTML = `<path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>`;
+            
+            let timeSum = 0;
+            for(let i=0; i<currentGifFrameIndex; i++) timeSum += gifFrames[i].delay;
+            seekBar.value = timeSum;
+            timeDisplay.textContent = `${formatTime(timeSum / 1000)} / ${formatTime(gifTotalDuration / 1000)}`;
+
+            gifPlayTimeout = setTimeout(() => {
+                currentGifFrameIndex = (currentGifFrameIndex + 1) % gifFrames.length;
+                playGif();
+            }, frame.delay);
+        }
+
+        function togglePlay() {
+            if (isStaticImageSource) return;
+            if (isGifSource) {
+                if (gifPlayTimeout) {
+                    clearTimeout(gifPlayTimeout);
+                    gifPlayTimeout = null;
+                    playIcon.innerHTML = `<path d="M8 5v14l11-7z"/>`;
+                } else {
+                    playGif();
+                }
+            } else {
+                if (sourceVideo.paused) {
+                    sourceVideo.play();
+                    playIcon.innerHTML = `<path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>`;
+                } else {
+                    sourceVideo.pause();
+                    playIcon.innerHTML = `<path d="M8 5v14l11-7z"/>`;
+                }
+            }
+        }
+
+        function updateSeek() {
+            if (!isBatching && !isGifSource && !isStaticImageSource) {
+                seekBar.value = sourceVideo.currentTime;
+                timeDisplay.textContent = `${formatTime(sourceVideo.currentTime)} / ${formatTime(sourceVideo.duration)}`;
+            }
+        }
+
+        function handleSeekBarInput() {
+            const val = parseFloat(seekBar.value);
+            if (isGifSource) {
+                if (gifPlayTimeout) clearTimeout(gifPlayTimeout);
+                gifPlayTimeout = null;
+                playIcon.innerHTML = `<path d="M8 5v14l11-7z"/>`;
+                let timeSum = 0;
+                for (let i = 0; i < gifFrames.length; i++) {
+                    timeSum += gifFrames[i].delay;
+                    if (timeSum >= val) {
+                        currentGifFrameIndex = i;
+                        break;
+                    }
+                }
+            } else if (!isStaticImageSource) {
+                sourceVideo.currentTime = val;
+            }
+        }
+
+        function formatTime(seconds) {
+            const mins = Math.floor(seconds / 60);
+            const secs = Math.floor(seconds % 60);
+            return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        }
+
+        function processFrame(ctx, options) {
+            const { resWidth, fontSize, fgColor, bgColor, isInverted, chars, crop, isTransparent, forGifExport } = options;
+            
+            let source;
+            let realW, realH;
+
+            if (isGifSource) {
+                if (gifFrames.length === 0) return;
+                source = gifFrames[currentGifFrameIndex].preRendered;
+                realW = source.width;
+                realH = source.height;
+            } else if (isStaticImageSource) {
+                source = sourceImg;
+                realW = source.naturalWidth;
+                realH = source.naturalHeight;
+            } else {
+                source = sourceVideo;
+                realW = source.videoWidth;
+                realH = source.videoHeight;
+                if (source.readyState < 2) return;
+            }
+
+            if (!realW || !realH) return;
+
+            const sx = (crop.x / 100) * realW;
+            const sy = (crop.y / 100) * realH;
+            const sw = (crop.w / 100) * realW;
+            const sh = (crop.h / 100) * realH;
+
+            const aspect = sh / sw;
+            const resHeight = Math.floor(resWidth * aspect * 0.55);
+            
+            bufferCanvas.width = resWidth;
+            bufferCanvas.height = resHeight;
+            const bctx = bufferCanvas.getContext('2d', { willReadFrequently: true });
+            bctx.drawImage(source, sx, sy, sw, sh, 0, 0, resWidth, resHeight);
+            const imageData = bctx.getImageData(0, 0, resWidth, resHeight).data;
+
+            const charWidth = fontSize * 0.6;
+            const outW = Math.floor(resWidth * charWidth);
+            const outH = Math.floor(resHeight * fontSize);
+
+            if (ctx.canvas.width !== outW || ctx.canvas.height !== outH) {
+                ctx.canvas.width = outW;
+                ctx.canvas.height = outH;
+            }
+
+            // Handling Background:
+            // For GIFs, we fill with Matte color (bgColor).
+            // For PNG/Preview, we Clear if transparent is checked.
+            if (isTransparent && !forGifExport) {
+                ctx.clearRect(0, 0, outW, outH);
+            } else {
+                ctx.fillStyle = bgColor;
+                ctx.fillRect(0, 0, outW, outH);
+            }
+
+            ctx.font = `${fontSize}px 'Fira Code', monospace`;
+            ctx.fillStyle = fgColor;
+            ctx.textBaseline = 'top';
+
+            const charset = isInverted ? chars.split('').reverse().join('') : chars;
+            for (let y = 0; y < resHeight; y++) {
+                for (let x = 0; x < resWidth; x++) {
+                    const i = (y * resWidth + x) * 4;
+                    const b = (imageData[i] + imageData[i+1] + imageData[i+2]) / 3;
+                    const charIndex = Math.floor((b / 255) * (charset.length - 1));
+                    const char = charset[Math.max(0, Math.min(charIndex, charset.length - 1))];
+                    ctx.fillText(char, x * charWidth, y * fontSize);
+                }
+            }
+        }
+
+        function livePreviewLoop() {
+            if (!isBatching && (isGifSource || isStaticImageSource || sourceVideo.readyState >= 2)) {
+                processFrame(outputCanvas.getContext('2d'), {
+                    resWidth: parseInt(resWidthInput.value) || 80,
+                    fontSize: parseInt(fontSizeInput.value) || 10,
+                    fgColor: fgHexInput.value,
+                    bgColor: bgHexInput.value,
+                    isInverted: invertCharsInput.checked,
+                    isTransparent: transparentBgInput.checked,
+                    forGifExport: false,
+                    chars: characterSet,
+                    crop: {
+                        x: parseInt(cropX.value),
+                        y: parseInt(cropY.value),
+                        w: parseInt(cropW.value),
+                        h: parseInt(cropH.value)
+                    }
+                });
+            }
+            requestAnimationFrame(livePreviewLoop);
+        }
+
+        function saveCurrentFrame() {
+            const link = document.createElement('a');
+            link.download = `ascii-frame-${Date.now()}.png`;
+            link.href = outputCanvas.toDataURL('image/png');
+            link.click();
+        }
+
+        async function startBatch(type) {
+            if (isStaticImageSource) {
+                saveCurrentFrame();
+                return;
+            }
+
+            const start = parseFloat(exportStartInput.value);
+            const end = parseFloat(exportEndInput.value);
+            const fps = parseInt(exportFpsInput.value);
+            
+            isBatching = true;
+            if (!isGifSource) sourceVideo.pause();
+            if (gifPlayTimeout) clearTimeout(gifPlayTimeout);
+            
+            loadingOverlay.classList.remove('hidden');
+            loadingTitle.textContent = "Batch Processing...";
+            progressText.textContent = "0%";
+
+            const offscreenCanvas = document.createElement('canvas');
+            const octx = offscreenCanvas.getContext('2d');
+            
+            let gifEncoder = null;
+            let zip = null;
+
+            if (type === 'gif') {
+                gifEncoder = new GIF({
+                    workers: 4,
+                    quality: 1, 
+                    width: outputCanvas.width,
+                    height: outputCanvas.height,
+                    transparent: transparentBgInput.checked ? parseInt(bgHexInput.value.replace('#', ''), 16) : null,
+                    dither: false, 
+                    workerScript: workerBlobUrl || 'https://cdnjs.cloudflare.com/ajax/libs/gif.js/0.2.0/gif.worker.js'
+                });
+            } else {
+                zip = new JSZip();
+            }
+
+            if (isGifSource) {
+                const startMs = start * 1000;
+                const endMs = end * 1000;
+                let currentMs = 0;
+
+                for (let i = 0; i < gifFrames.length; i++) {
+                    const frame = gifFrames[i];
+                    const frameDuration = frame.delay;
+                    if (currentMs + frameDuration > startMs && currentMs < endMs) {
+                        currentGifFrameIndex = i;
+                        processFrame(octx, {
+                            resWidth: parseInt(resWidthInput.value) || 80,
+                            fontSize: parseInt(fontSizeInput.value) || 10,
+                            fgColor: fgHexInput.value,
+                            bgColor: bgHexInput.value,
+                            isInverted: invertCharsInput.checked,
+                            isTransparent: transparentBgInput.checked,
+                            forGifExport: (type === 'gif'),
+                            chars: characterSet,
+                            crop: { x: parseInt(cropX.value), y: parseInt(cropY.value), w: parseInt(cropW.value), h: parseInt(cropH.value) }
+                        });
+                        if (type === 'gif') gifEncoder.addFrame(octx, { copy: true, delay: frameDuration });
+                        else {
+                            const data = offscreenCanvas.toDataURL('image/png').split(',')[1];
+                            zip.file(`frame_${i.toString().padStart(4, '0')}.png`, data, {base64: true});
+                        }
+                    }
+                    currentMs += frameDuration;
+                    progressText.textContent = `${Math.round((i / gifFrames.length) * 100)}%`;
+                }
+            } else {
+                const totalFrames = Math.floor((end - start) * fps);
+                const frameDelay = 1000 / fps;
+                for (let i = 0; i <= totalFrames; i++) {
+                    const time = start + (i / fps);
+                    if (time > end) break;
+                    sourceVideo.currentTime = time;
+                    await new Promise(r => {
+                        const os = () => { sourceVideo.removeEventListener('seeked', os); r(); };
+                        sourceVideo.addEventListener('seeked', os);
+                    });
+                    processFrame(octx, {
+                        resWidth: parseInt(resWidthInput.value) || 80,
+                        fontSize: parseInt(fontSizeInput.value) || 10,
+                        fgColor: fgHexInput.value,
+                        bgColor: bgHexInput.value,
+                        isInverted: invertCharsInput.checked,
+                        isTransparent: transparentBgInput.checked,
+                        forGifExport: (type === 'gif'),
+                        chars: characterSet,
+                        crop: { x: parseInt(cropX.value), y: parseInt(cropY.value), w: parseInt(cropW.value), h: parseInt(cropH.value) }
+                    });
+                    if (type === 'gif') gifEncoder.addFrame(octx, { copy: true, delay: frameDelay });
+                    else {
+                        const data = offscreenCanvas.toDataURL('image/png').split(',')[1];
+                        zip.file(`frame_${i.toString().padStart(4, '0')}.png`, data, {base64: true});
+                    }
+                    progressText.textContent = `${Math.round((i / totalFrames) * 100)}%`;
+                }
+            }
+
+            if (type === 'gif') {
+                gifEncoder.on('progress', p => progressText.textContent = `${Math.round(p * 100)}%`);
+                gifEncoder.on('finished', blob => {
+                    downloadBlob(blob, `ascii-matte-export-${Date.now()}.gif`);
+                    finishBatch();
+                });
+                gifEncoder.render();
+            } else {
+                const content = await zip.generateAsync({type:"blob"});
+                downloadBlob(content, `ascii-sequence-${Date.now()}.zip`);
+                finishBatch();
+            }
+        }
+
+        function downloadBlob(blob, name) {
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = name;
+            link.click();
+        }
+
+        function finishBatch() {
+            isBatching = false;
+            loadingOverlay.classList.add('hidden');
+            statusBadge.textContent = "IDLE";
+            if (isGifSource) playGif();
+            else if (sourceVideo.src) sourceVideo.play();
+        }
+
+        init();
+    </script>
+</body>
+</html>
