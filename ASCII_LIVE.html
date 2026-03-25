@@ -430,7 +430,9 @@
                 targetFps: 10,
                 pingTimer: null,
                 channel: null,
-                lastBroadcastMs: 0
+                lastBroadcastMs: 0,
+                lastPlaylistSig: '',
+                applyingRemotePlaylist: false
             },
             audio: {
                 active: false,
@@ -915,6 +917,39 @@
             });
         }
 
+        async function blobToPlaylistItem(meta) {
+            const blob = await idbGetBlob(meta.id);
+            if (!blob) return null;
+            const url = URL.createObjectURL(blob);
+            const item = {
+                id: meta.id,
+                name: meta.name,
+                url,
+                type: meta.type,
+                mime: meta.mime || (blob.type || ''),
+                thumb: null
+            };
+            if (meta.type === 'gif') {
+                try {
+                    const buffer = await blob.arrayBuffer();
+                    const gif = new window.GifReader(new Uint8Array(buffer));
+                    item.gifData = gif;
+                } catch (err) {
+                    try { URL.revokeObjectURL(url); } catch (e) { /* noop */ }
+                    return null;
+                }
+            }
+            return item;
+        }
+
+        function revokeNonCamObjectUrls() {
+            state.playlist.forEach(it => {
+                if (it && it.type !== 'cam' && it.url) {
+                    try { URL.revokeObjectURL(it.url); } catch (e) { /* noop */ }
+                }
+            });
+        }
+
         function persistPlaylistMeta() {
             try {
                 const persistItems = state.playlist
@@ -1221,8 +1256,35 @@
                 if (typeof s.resMax === 'number') state.resMax = s.resMax;
                 if (!state.lfo.res.active) state.res = staticDensityRes();
 
-                // Active playlist item sync (by id)
-                if (s.activeSourceId) {
+                // Playlist sync (IDs + order) — blobs are retrieved from shared IndexedDB.
+                if (Array.isArray(s.playlist) && !state.projector.applyingRemotePlaylist) {
+                    state.projector.applyingRemotePlaylist = true;
+                    (async () => {
+                        try {
+                            const camItems = state.playlist.filter(it => it.type === 'cam');
+                            // Rebuild playlist order from remote meta.
+                            revokeNonCamObjectUrls();
+                            const rebuilt = [];
+                            for (const meta of s.playlist) {
+                                if (!meta || !meta.id || meta.type === 'cam') continue;
+                                const item = await blobToPlaylistItem(meta);
+                                if (item) rebuilt.push(item);
+                            }
+                            state.playlist = camItems.concat(rebuilt);
+                            renderPlaylist();
+                            ensurePlaylistThumbs();
+                        } finally {
+                            state.projector.applyingRemotePlaylist = false;
+                        }
+
+                        // Active playlist item sync (by id)
+                        if (s.activeSourceId) {
+                            const idx = state.playlist.findIndex(it => it.id === s.activeSourceId);
+                            if (idx >= 0 && idx !== state.activeIndex) selectSource(idx);
+                        }
+                    })();
+                } else if (s.activeSourceId) {
+                    // Active playlist item sync (by id)
                     const idx = state.playlist.findIndex(it => it.id === s.activeSourceId);
                     if (idx >= 0 && idx !== state.activeIndex) selectSource(idx);
                 }
@@ -1280,6 +1342,12 @@
             if (state.activeIndex >= 0 && state.activeIndex < state.playlist.length) {
                 activeSourceId = state.playlist[state.activeIndex]?.id || null;
             }
+            const playlistMeta = state.playlist
+                .filter(it => it.type !== 'cam')
+                .map(it => ({ id: it.id, name: it.name, type: it.type, mime: it.mime || '' }));
+            const sig = playlistMeta.map(x => x.id).join('|');
+            const sendPlaylist = sig !== (state.projector.lastPlaylistSig || '');
+            if (sendPlaylist) state.projector.lastPlaylistSig = sig;
             try {
                 state.projector.channel.postMessage({
                     type: 'ascii-live-sync',
@@ -1292,7 +1360,8 @@
                         contrast: state.contrast,
                         resMin: state.resMin,
                         resMax: state.resMax,
-                        activeSourceId
+                        activeSourceId,
+                        playlist: sendPlaylist ? playlistMeta : undefined
                     }
                 });
             } catch (e) {
