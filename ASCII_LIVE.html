@@ -229,14 +229,18 @@
             </section>
         </aside>
 
-        <div class="flex-1 flex flex-col relative bg-black items-center justify-center overflow-hidden">
+        <div class="flex-1 flex flex-col relative bg-black items-center justify-center overflow-hidden min-w-0">
             <div id="viewport-container" class="relative w-full h-full flex items-center justify-center p-4">
                 <button id="projector-fullscreen-btn" type="button" class="hidden absolute top-3 right-3 z-50 text-[10px] font-black px-2 py-1 rounded border border-white/10 bg-black/50 hover:bg-black/70 text-white/80 hover:text-white transition-colors" title="Projector fullscreen">FULL</button>
                 <canvas id="output-canvas" class="shadow-2xl"></canvas>
                 <canvas id="projector-canvas" class="hidden absolute inset-0 w-full h-full" aria-label="Projector output"></canvas>
             </div>
-            <div id="controls-panel" class="absolute bottom-6 glass rounded-3xl p-5 flex gap-8 items-end border border-white/10 shadow-2xl max-w-[95vw] overflow-x-auto">
-                <div class="control-group min-w-[200px]">
+        </div>
+
+        <aside class="w-72 glass border-l border-slate-800 flex flex-col shrink-0 overflow-hidden">
+            <div id="controls-panel" class="flex-1 overflow-y-auto p-4 flex flex-col gap-5">
+                <h2 class="knob-label shrink-0 pb-3 border-b border-slate-800 text-slate-400">Output &amp; effects</h2>
+                <div class="control-group w-full">
                     <div class="flex justify-between items-center gap-2">
                         <label class="knob-label">Density <span id="lfo-res-led" class="lfo-indicator bg-slate-700"></span></label>
                         <span class="fira text-[9px] text-slate-400 tabular-nums"><span id="val-res-min">80</span>–<span id="val-res-max">80</span> <span class="text-slate-600">|</span> <span id="val-res" class="text-slate-300">80</span></span>
@@ -271,7 +275,7 @@
                         <label class="knob-label">Contrast <span id="lfo-contrast-led" class="lfo-indicator bg-slate-700"></span></label>
                         <span id="val-contrast" class="fira text-[10px]">1.2</span>
                     </div>
-                    <input type="range" id="param-contrast" min="0" max="4" step="0.1" value="1.2" class="w-32 h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer">
+                    <input type="range" id="param-contrast" min="0" max="4" step="0.1" value="1.2" class="w-full h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer">
                     <div class="flex flex-wrap gap-1.5 items-center">
                         <button type="button" id="lfo-contrast-btn" class="text-[8px] bg-slate-900 px-2 py-0.5 rounded border border-slate-700 hover:border-blue-500 transition-all">LFO</button>
                         <select id="lfo-contrast-shape" class="text-[8px] bg-slate-900 border border-slate-700 rounded px-1 py-0.5 text-slate-300 outline-none focus:border-blue-500 max-w-[4.75rem]">
@@ -290,7 +294,7 @@
                         <span id="val-lfo-contrast-wave-cycle" class="fira text-[7px] text-slate-500 w-6">3s</span>
                     </div>
                 </div>
-                <div class="control-group min-w-[200px]">
+                <div class="control-group w-full">
                     <div class="flex justify-between items-center">
                         <label class="knob-label">Characters <span id="lfo-charset-led" class="lfo-indicator bg-slate-700"></span></label>
                     </div>
@@ -360,7 +364,7 @@
                     </div>
                 </div>
             </div>
-        </div>
+        </aside>
     </main>
 
     <video id="hidden-video" class="hidden" crossorigin="anonymous" playsinline loop muted></video>
@@ -848,9 +852,23 @@
             state.audio.level = state.audio.beat;
         }
 
-        function randomDwellFromInput(rangeEl) {
-            const lo = parseFloat(rangeEl.min);
-            const hi = parseFloat(rangeEl.max);
+        /** Random seconds in [min,max] from a range input's attributes (works when the input is disabled). */
+        function randomDwellFromInput(rangeEl, bounds = { lo: 2, hi: 60 }) {
+            let lo = bounds.lo;
+            let hi = bounds.hi;
+            if (rangeEl) {
+                const a = rangeEl.getAttribute('min');
+                const b = rangeEl.getAttribute('max');
+                if (a != null && a !== '') {
+                    const v = parseFloat(a);
+                    if (Number.isFinite(v)) lo = v;
+                }
+                if (b != null && b !== '') {
+                    const v = parseFloat(b);
+                    if (Number.isFinite(v)) hi = v;
+                }
+            }
+            if (!Number.isFinite(lo) || !Number.isFinite(hi) || hi <= lo) return lo;
             return lo + Math.random() * (hi - lo);
         }
 
@@ -1156,19 +1174,25 @@
         function syncSourceIntervalSliderUI() {
             const el = document.getElementById('param-interval');
             const on = state.playlistSettings.jitter;
-            el.disabled = on;
-            el.classList.toggle('opacity-40', on);
-            el.classList.toggle('cursor-not-allowed', on);
-            document.getElementById('val-interval').textContent = on ? 'RND' : (state.playlistSettings.interval + 's');
+            if (el) {
+                el.disabled = on;
+                el.classList.toggle('opacity-40', on);
+                el.classList.toggle('cursor-not-allowed', on);
+            }
+            const valEl = document.getElementById('val-interval');
+            if (valEl) valEl.textContent = on ? 'RND' : (state.playlistSettings.interval + 's');
         }
 
         function syncPresetIntervalSliderUI() {
             const el = document.getElementById('param-preset-interval');
             const on = state.lfo.presets.jitter;
-            el.disabled = on;
-            el.classList.toggle('opacity-40', on);
-            el.classList.toggle('cursor-not-allowed', on);
-            document.getElementById('val-preset-interval').textContent = on ? 'RND' : (state.lfo.presets.interval + 's');
+            if (el) {
+                el.disabled = on;
+                el.classList.toggle('opacity-40', on);
+                el.classList.toggle('cursor-not-allowed', on);
+            }
+            const valEl = document.getElementById('val-preset-interval');
+            if (valEl) valEl.textContent = on ? 'RND' : (state.lfo.presets.interval + 's');
         }
 
         function updateJitterButton(el, on) {
@@ -1201,11 +1225,8 @@
         function setupProjectorReceiver(sessionId) {
             // Hide UI and show only the captured output stream.
             const header = document.querySelector('header');
-            const aside = document.querySelector('aside');
-            const controls = document.getElementById('controls-panel');
             if (header) header.style.display = 'none';
-            if (aside) aside.style.display = 'none';
-            if (controls) controls.style.display = 'none';
+            document.querySelectorAll('aside').forEach((el) => { el.style.display = 'none'; });
 
             // Remove padding so the stream fills the entire viewport.
             if (viewportContainer) {
@@ -1534,9 +1555,10 @@
 
             document.getElementById('btn-switch-jitter').onclick = (e) => {
                 state.playlistSettings.jitter = !state.playlistSettings.jitter;
+                state.playlistSettings.timer = 0;
                 const rangeEl = document.getElementById('param-interval');
                 state.playlistSettings.effectiveInterval = state.playlistSettings.jitter
-                    ? randomDwellFromInput(rangeEl)
+                    ? randomDwellFromInput(rangeEl, { lo: 2, hi: 60 })
                     : state.playlistSettings.interval;
                 updateJitterButton(e.currentTarget, state.playlistSettings.jitter);
                 syncSourceIntervalSliderUI();
@@ -1546,7 +1568,7 @@
                 state.playlistSettings.timer = 0;
                 const rangeEl = document.getElementById('param-interval');
                 state.playlistSettings.effectiveInterval = state.playlistSettings.jitter
-                    ? randomDwellFromInput(rangeEl)
+                    ? randomDwellFromInput(rangeEl, { lo: 2, hi: 60 })
                     : state.playlistSettings.interval;
                 e.target.textContent = state.playlistSettings.autoSwitch ? 'DISABLE' : 'ENABLE';
                 e.target.classList.toggle('text-blue-400', !state.playlistSettings.autoSwitch);
@@ -1554,16 +1576,18 @@
             };
             document.getElementById('param-interval').oninput = (e) => {
                 if (state.playlistSettings.jitter) return;
-                state.playlistSettings.interval = parseInt(e.target.value, 10);
+                const v = parseInt(e.target.value, 10);
+                state.playlistSettings.interval = Number.isFinite(v) ? v : 10;
                 document.getElementById('val-interval').textContent = state.playlistSettings.interval + 's';
                 state.playlistSettings.effectiveInterval = state.playlistSettings.interval;
             };
 
             document.getElementById('btn-preset-jitter').onclick = (e) => {
                 state.lfo.presets.jitter = !state.lfo.presets.jitter;
+                state.lfo.presets.timer = 0;
                 const rangeEl = document.getElementById('param-preset-interval');
                 state.lfo.presets.effectiveInterval = state.lfo.presets.jitter
-                    ? randomDwellFromInput(rangeEl)
+                    ? randomDwellFromInput(rangeEl, { lo: 1, hi: 30 })
                     : state.lfo.presets.interval;
                 updateJitterButton(e.currentTarget, state.lfo.presets.jitter);
                 syncPresetIntervalSliderUI();
@@ -1573,7 +1597,7 @@
                 state.lfo.presets.timer = 0;
                 const rangeEl = document.getElementById('param-preset-interval');
                 state.lfo.presets.effectiveInterval = state.lfo.presets.jitter
-                    ? randomDwellFromInput(rangeEl)
+                    ? randomDwellFromInput(rangeEl, { lo: 1, hi: 30 })
                     : state.lfo.presets.interval;
                 e.target.textContent = state.lfo.presets.active ? 'DISABLE' : 'ENABLE';
                 e.target.classList.toggle('text-blue-400', !state.lfo.presets.active);
@@ -1582,7 +1606,8 @@
             };
             document.getElementById('param-preset-interval').oninput = (e) => {
                 if (state.lfo.presets.jitter) return;
-                state.lfo.presets.interval = parseInt(e.target.value, 10);
+                const v = parseInt(e.target.value, 10);
+                state.lfo.presets.interval = Number.isFinite(v) ? v : 5;
                 document.getElementById('val-preset-interval').textContent = state.lfo.presets.interval + 's';
                 state.lfo.presets.effectiveInterval = state.lfo.presets.interval;
             };
@@ -1885,15 +1910,21 @@
 
             if (state.playlistSettings.autoSwitch && state.activeIndex !== -1) {
                 state.playlistSettings.timer += deltaSecs;
-                const eff = state.playlistSettings.effectiveInterval;
+                let eff = Number(state.playlistSettings.effectiveInterval);
+                if (!Number.isFinite(eff) || eff <= 0) {
+                    eff = state.playlistSettings.jitter
+                        ? randomDwellFromInput(document.getElementById('param-interval'), { lo: 2, hi: 60 })
+                        : (Number(state.playlistSettings.interval) || 10);
+                    state.playlistSettings.effectiveInterval = eff;
+                }
                 const prog = eff > 0 ? (state.playlistSettings.timer / eff) * 100 : 0;
                 const progBar = document.getElementById('timer-progress');
-                if (progBar) progBar.style.width = Math.min(prog, 100) + '%';
+                if (progBar && Number.isFinite(prog)) progBar.style.width = Math.min(prog, 100) + '%';
                 if (state.playlistSettings.timer >= eff) {
                     state.playlistSettings.timer = 0;
                     state.playlistSettings.effectiveInterval = state.playlistSettings.jitter
-                        ? randomDwellFromInput(document.getElementById('param-interval'))
-                        : state.playlistSettings.interval;
+                        ? randomDwellFromInput(document.getElementById('param-interval'), { lo: 2, hi: 60 })
+                        : (Number(state.playlistSettings.interval) || 10);
                     advancePlaylist();
                 }
             }
@@ -1901,12 +1932,18 @@
                 state.lfo.presets.timer += deltaSecs;
                 const wave = (Math.sin(time * 2 * Math.PI) + 1) / 2;
                 document.getElementById('lfo-preset-led').style.backgroundColor = `rgba(59, 130, 246, ${0.2 + wave * 0.8})`;
-                const eff = state.lfo.presets.effectiveInterval;
+                let eff = Number(state.lfo.presets.effectiveInterval);
+                if (!Number.isFinite(eff) || eff <= 0) {
+                    eff = state.lfo.presets.jitter
+                        ? randomDwellFromInput(document.getElementById('param-preset-interval'), { lo: 1, hi: 30 })
+                        : (Number(state.lfo.presets.interval) || 5);
+                    state.lfo.presets.effectiveInterval = eff;
+                }
                 if (state.lfo.presets.timer >= eff) {
                     state.lfo.presets.timer = 0;
                     state.lfo.presets.effectiveInterval = state.lfo.presets.jitter
-                        ? randomDwellFromInput(document.getElementById('param-preset-interval'))
-                        : state.lfo.presets.interval;
+                        ? randomDwellFromInput(document.getElementById('param-preset-interval'), { lo: 1, hi: 30 })
+                        : (Number(state.lfo.presets.interval) || 5);
                     advancePreset();
                 }
             }
