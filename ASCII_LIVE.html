@@ -167,13 +167,6 @@
             background: #171717 !important;
         }
         input[type=range] { accent-color: #e5e5e5; }
-        .lfo-indicator {
-            width: 6px; height: 6px; border-radius: 0;
-            display: inline-block; margin-left: 4px;
-            border: 1px solid #404040;
-            transition: background-color 0.1s ease;
-        }
-        .lfo-active { background-color: #fafafa !important; box-shadow: none; }
         #output-canvas {
             image-rendering: pixelated;
             max-width: 100%; max-height: 100%;
@@ -403,7 +396,7 @@
                 </div>
                 <div class="-mx-4 px-4 flex flex-col gap-1.5 mt-2 border-t border-neutral-800 pt-3">
                     <div class="flex justify-between items-center gap-2 min-h-[1.75rem]">
-                        <label class="knob-label shrink-0 min-w-0">Preset Cycle <span id="lfo-preset-led" class="lfo-indicator bg-neutral-600"></span></label>
+                        <label class="knob-label shrink-0 min-w-0">Preset Cycle</label>
                         <div class="flex items-center gap-1.5 shrink-0">
                             <button id="btn-preset-jitter" type="button" class="text-[8px] font-black px-1.5 py-0.5 rounded-none border-2 border-neutral-600 bg-black text-neutral-500 hover:border-white hover:text-white transition-colors hidden" title="Random dwell each cycle (1–30s); disables interval slider">RND</button>
                             <button id="btn-auto-preset" type="button" class="btn-brutal-latched">OFF</button>
@@ -485,7 +478,7 @@
             <div id="controls-panel" class="flex-1 overflow-y-auto min-h-0 px-4 pt-3 pb-4 flex flex-col gap-0">
                 <div class="control-group w-full">
                     <div class="control-row-head">
-                        <label class="knob-label min-w-0 truncate">Density <span id="lfo-res-led" class="lfo-indicator bg-neutral-600"></span></label>
+                        <label class="knob-label min-w-0 truncate">Density</label>
                         <div class="control-row-tools">
                             <span class="fira text-[9px] text-neutral-500 tabular-nums whitespace-nowrap"><span id="val-res-min">80</span>–<span id="val-res-max">80</span> <span class="text-neutral-600">|</span> <span id="val-res" class="text-neutral-300">80</span></span>
                             <button type="button" id="lfo-res-btn" class="btn-onoff" title="Density LFO">OFF</button>
@@ -515,23 +508,23 @@
                             <input type="range" id="lfo-res-wave-cycle" min="1" max="12" value="3" class="w-12 h-1 bg-neutral-900 rounded-none appearance-none" title="Seconds per wave shape">
                             <span id="val-lfo-res-wave-cycle" class="fira text-[7px] text-neutral-500 w-6">3s</span>
                         </div>
-                    </div>
-                    <div class="control-row-head mt-3">
-                        <span class="knob-label min-w-0 truncate">Density schedule</span>
-                        <div class="control-row-tools gap-1.5">
-                            <button type="button" id="btn-res-gate-jitter" class="text-[8px] font-black px-1.5 py-0.5 rounded-none border-2 border-neutral-600 bg-black text-neutral-500 hover:border-white hover:text-white transition-colors" title="Random cycle &amp; active duration from slider ranges">RND</button>
-                            <button type="button" id="btn-res-gate-enable" class="btn-brutal-latched">OFF</button>
+                        <div class="control-row-head mt-3">
+                            <span class="knob-label min-w-0 truncate">Density schedule</span>
+                            <div class="control-row-tools gap-1.5">
+                                <button type="button" id="btn-res-gate-jitter" class="text-[8px] font-black px-1.5 py-0.5 rounded-none border-2 border-neutral-600 bg-black text-neutral-500 hover:border-white hover:text-white transition-colors" title="Random cycle &amp; active duration from slider ranges">RND</button>
+                                <button type="button" id="btn-res-gate-enable" class="btn-brutal-latched">OFF</button>
+                            </div>
                         </div>
-                    </div>
-                    <div class="flex items-center gap-2 mt-2">
-                        <span class="fira text-[7px] text-neutral-600 w-14 shrink-0" title="Full loop length (s)">Cycle</span>
-                        <input type="range" id="param-res-gate-cycle" min="3" max="120" step="1" value="20" class="flex-1 min-w-0 h-1 bg-transparent rounded-none appearance-none">
-                        <span id="val-res-gate-cycle" class="fira text-[7px] text-neutral-500 w-10 shrink-0 tabular-nums">20s</span>
-                    </div>
-                    <div class="flex items-center gap-2 mt-1">
-                        <span class="fira text-[7px] text-neutral-600 w-14 shrink-0" title="Sliders + LFO apply for this long at cycle start">Active</span>
-                        <input type="range" id="param-res-gate-active" min="0.2" max="60" step="0.2" value="2" class="flex-1 min-w-0 h-1 bg-transparent rounded-none appearance-none">
-                        <span id="val-res-gate-active" class="fira text-[7px] text-neutral-500 w-10 shrink-0 tabular-nums">2s</span>
+                        <div class="flex items-center gap-2 mt-2">
+                            <span class="fira text-[7px] text-neutral-600 w-14 shrink-0" title="Full loop length (s)">Cycle</span>
+                            <input type="range" id="param-res-gate-cycle" min="3" max="120" step="1" value="20" class="flex-1 min-w-0 h-1 bg-transparent rounded-none appearance-none">
+                            <span id="val-res-gate-cycle" class="fira text-[7px] text-neutral-500 w-10 shrink-0 tabular-nums">20s</span>
+                        </div>
+                        <div class="flex items-center gap-2 mt-1">
+                            <span class="fira text-[7px] text-neutral-600 w-14 shrink-0" title="Sliders + LFO apply for this long at cycle start">Active</span>
+                            <input type="range" id="param-res-gate-active" min="0.2" max="60" step="0.2" value="2" class="flex-1 min-w-0 h-1 bg-transparent rounded-none appearance-none">
+                            <span id="val-res-gate-active" class="fira text-[7px] text-neutral-500 w-10 shrink-0 tabular-nums">2s</span>
+                        </div>
                     </div>
                 </div>
                 <div class="control-group w-full">
@@ -605,7 +598,7 @@
                         <span id="val-d3-rotate" class="fira text-[7px] text-neutral-500 w-9 shrink-0 tabular-nums">0°</span>
                     </div>
                     <div class="control-row-head mt-3">
-                        <label class="knob-label min-w-0 truncate">3D amount <span id="lfo-d3-led" class="lfo-indicator bg-neutral-600"></span></label>
+                        <label class="knob-label min-w-0 truncate">3D amount</label>
                         <div class="control-row-tools">
                             <span id="val-d3-mix" class="fira text-[9px] text-neutral-400 tabular-nums" title="LFO off = full 3D">1.00</span>
                         </div>
@@ -754,7 +747,7 @@
                 </div>
                 <div class="control-group">
                     <div class="control-row-head">
-                        <label class="knob-label min-w-0 truncate">Contrast <span id="lfo-contrast-led" class="lfo-indicator bg-neutral-600"></span></label>
+                        <label class="knob-label min-w-0 truncate">Contrast</label>
                         <div class="control-row-tools">
                             <span id="val-contrast" class="fira text-[9px] text-neutral-400 tabular-nums whitespace-nowrap">1.2</span>
                             <button type="button" id="lfo-contrast-btn" class="btn-onoff" title="Contrast LFO">OFF</button>
@@ -782,7 +775,7 @@
                 </div>
                 <div class="control-group w-full">
                     <div class="control-row-head">
-                        <label class="knob-label min-w-0 truncate">Characters <span id="lfo-charset-led" class="lfo-indicator bg-neutral-600"></span></label>
+                        <label class="knob-label min-w-0 truncate">Characters</label>
                         <div class="control-row-tools">
                             <button type="button" id="lfo-charset-btn" class="btn-onoff" title="Charset cycle LFO">OFF</button>
                         </div>
@@ -2407,7 +2400,6 @@
                     state.lfo[key].active = !state.lfo[key].active;
                     if (key === 'charset' && state.lfo.charset.active) state.lfo.charset.noiseAcc = 0;
                     updateOnOffToggleBtn(e.currentTarget, state.lfo[key].active);
-                    document.getElementById(`lfo-${key}-led`).classList.toggle('lfo-active', state.lfo[key].active);
                     if (key === 'res') {
                         if (!state.lfo.res.active) state.res = staticDensityRes();
                         else state.lfo.res.noiseAcc = 0;
@@ -2497,7 +2489,6 @@
                     : state.lfo.presets.interval;
                 e.target.textContent = state.lfo.presets.active ? 'ON' : 'OFF';
                 updateBrutalLatchedBtn(e.target, state.lfo.presets.active);
-                document.getElementById('lfo-preset-led').classList.toggle('lfo-active', state.lfo.presets.active);
                 syncAutomationPanels();
             };
             document.getElementById('param-preset-interval').oninput = (e) => {
@@ -2724,7 +2715,6 @@
             document.getElementById('lfo-d3-btn').onclick = (e) => {
                 state.d3.lfo.active = !state.d3.lfo.active;
                 updateBrutalLfoInlineBtn(e.currentTarget, state.d3.lfo.active);
-                document.getElementById('lfo-d3-led').classList.toggle('lfo-active', state.d3.lfo.active);
                 syncD3MixReadout();
             };
             document.getElementById('lfo-d3-shape').onchange = (ev) => {
@@ -2751,7 +2741,6 @@
             syncD3LfoRateLabel();
             updateAutoWaveBtn(document.getElementById('btn-lfo-d3-auto-wave'), state.d3.lfo.autoWave);
             updateBrutalLfoInlineBtn(document.getElementById('lfo-d3-btn'), state.d3.lfo.active);
-            document.getElementById('lfo-d3-led').classList.toggle('lfo-active', state.d3.lfo.active);
             syncD3MixReadout();
 
             document.getElementById('btn-d3-gate-enable').onclick = (e) => {
@@ -3079,8 +3068,6 @@
             }
             if (state.lfo.presets.active) {
                 state.lfo.presets.timer += deltaSecs;
-                const wave = (Math.sin(time * 2 * Math.PI) + 1) / 2;
-                document.getElementById('lfo-preset-led').style.backgroundColor = `rgba(59, 130, 246, ${0.2 + wave * 0.8})`;
                 let eff = Number(state.lfo.presets.effectiveInterval);
                 if (!Number.isFinite(eff) || eff <= 0) {
                     eff = state.lfo.presets.jitter
@@ -3097,7 +3084,7 @@
                 }
             }
 
-            if (state.resGate.enabled) {
+            if (state.lfo.res.active && state.resGate.enabled) {
                 let c = Math.max(0.5, Number(state.resGate.effectiveCycle) || 20);
                 let a = Math.min(Math.max(0.05, Number(state.resGate.effectiveActive) || 2), c * 0.99);
                 state.resGate.timer += deltaSecs;
@@ -3160,13 +3147,12 @@
                     state.res = clampResInt(Math.round(raw));
                 }
                 document.getElementById('val-res').textContent = state.res;
-                document.getElementById('lfo-res-led').style.backgroundColor = `rgba(59, 130, 246, ${0.2 + t01 * 0.8})`;
             } else {
                 state.res = staticDensityRes();
                 document.getElementById('val-res').textContent = state.res;
             }
 
-            if (state.resGate.enabled && !state.resGateOpen) {
+            if (state.lfo.res.active && state.resGate.enabled && !state.resGateOpen) {
                 state.res = clampResInt(state.resMin);
                 document.getElementById('val-res').textContent = state.res;
             }
@@ -3190,7 +3176,6 @@
                 }
                 state.contrast = state.lfo.contrast.base * (0.5 + wave);
                 document.getElementById('val-contrast').textContent = state.contrast.toFixed(1);
-                document.getElementById('lfo-contrast-led').style.backgroundColor = `rgba(59, 130, 246, ${0.2 + wave * 0.8})`;
             }
 
             if (state.d3.enabled && state.d3.lfo.active) {
@@ -3214,13 +3199,9 @@
                     mix01 = Math.min(1, Math.max(0, mix01));
                 }
                 state.d3.mix = mix01;
-                const ledD3 = document.getElementById('lfo-d3-led');
-                if (ledD3) ledD3.style.backgroundColor = `rgba(59, 130, 246, ${0.2 + mix01 * 0.8})`;
                 syncD3MixReadout();
             } else if (state.d3.enabled) {
                 state.d3.mix = 1;
-                const ledD3 = document.getElementById('lfo-d3-led');
-                if (ledD3 && !state.d3.lfo.active) ledD3.style.backgroundColor = '';
                 syncD3MixReadout();
             }
 
