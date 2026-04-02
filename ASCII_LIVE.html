@@ -464,6 +464,38 @@
                         <span class="fira text-[7px] text-slate-600 w-14 shrink-0">Speed</span>
                         <input type="range" id="param-glitch-rate" min="0.15" max="5" step="0.05" value="1" class="flex-1 min-w-0 h-1 bg-slate-800 rounded-lg appearance-none" title="How fast the damage pattern changes">
                     </div>
+                    <div class="flex items-center gap-2 mt-1">
+                        <span class="fira text-[7px] text-slate-600 w-14 shrink-0" title="Horizontal slice shift + band height">H size</span>
+                        <input type="range" id="param-glitch-h-size" min="0" max="1" step="0.02" value="0.65" class="flex-1 min-w-0 h-1 bg-slate-800 rounded-lg appearance-none">
+                    </div>
+                    <div class="flex items-center gap-2 mt-1">
+                        <span class="fira text-[7px] text-slate-600 w-14 shrink-0" title="Chroma channel offset">RGB</span>
+                        <input type="range" id="param-glitch-rgb" min="0" max="1" step="0.02" value="0.75" class="flex-1 min-w-0 h-1 bg-slate-800 rounded-lg appearance-none">
+                    </div>
+                    <div class="flex items-center gap-2 mt-1">
+                        <span class="fira text-[7px] text-slate-600 w-14 shrink-0" title="0 = off · Inverts colors on the beat">Strobe</span>
+                        <input type="range" id="param-glitch-strobe" min="0" max="16" step="0.25" value="0" class="flex-1 min-w-0 h-1 bg-slate-800 rounded-lg appearance-none">
+                        <span id="val-glitch-strobe" class="fira text-[7px] text-slate-500 w-10 shrink-0 tabular-nums">off</span>
+                    </div>
+                    <label class="text-[8px] text-slate-500 font-bold uppercase tracking-tighter block mt-2 mb-1">Glitch schedule</label>
+                    <p class="text-[7px] text-slate-600 mb-1 leading-snug">Glitch runs for <strong class="text-slate-400">Active</strong> s each <strong class="text-slate-400">Cycle</strong>; off the rest (main toggle still must be ON).</p>
+                    <div class="flex justify-between items-center gap-2">
+                        <label class="text-[9px] font-extrabold text-slate-500 uppercase tracking-tighter">Schedule</label>
+                        <div class="flex items-center gap-1.5">
+                            <button type="button" id="btn-glitch-gate-jitter" class="text-[8px] font-black px-1.5 py-0.5 rounded border border-slate-700 bg-slate-900 text-slate-500 hover:border-amber-500/60 hover:text-amber-400 transition-colors" title="Random cycle &amp; active from slider ranges">RND</button>
+                            <button type="button" id="btn-glitch-gate-enable" class="text-[9px] font-bold text-blue-400 hover:text-white transition-colors">ENABLE</button>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2 mt-2">
+                        <span class="fira text-[7px] text-slate-600 w-14 shrink-0">Cycle</span>
+                        <input type="range" id="param-glitch-gate-cycle" min="2" max="120" step="1" value="15" class="flex-1 min-w-0 h-1 bg-slate-800 rounded-lg appearance-none">
+                        <span id="val-glitch-gate-cycle" class="fira text-[7px] text-slate-500 w-10 shrink-0 tabular-nums">15s</span>
+                    </div>
+                    <div class="flex items-center gap-2 mt-1">
+                        <span class="fira text-[7px] text-slate-600 w-14 shrink-0">Active</span>
+                        <input type="range" id="param-glitch-gate-active" min="0.2" max="60" step="0.2" value="4" class="flex-1 min-w-0 h-1 bg-slate-800 rounded-lg appearance-none">
+                        <span id="val-glitch-gate-active" class="fira text-[7px] text-slate-500 w-10 shrink-0 tabular-nums">4s</span>
+                    </div>
                 </div>
                 <div class="control-group">
                     <div class="flex justify-between items-center gap-2">
@@ -627,7 +659,20 @@
             glitch: {
                 active: false,
                 intensity: 0.5,
-                rate: 1
+                rate: 1,
+                hSize: 0.65,
+                rgbSplit: 0.75,
+                strobeHz: 0,
+                gate: {
+                    enabled: false,
+                    jitter: false,
+                    cycleSec: 15,
+                    activeSec: 4,
+                    timer: 0,
+                    effectiveCycle: 15,
+                    effectiveActive: 4
+                },
+                gateOpen: true
             },
             colorMode: 'solid',
             charset: charSets.standard,
@@ -1055,6 +1100,54 @@
             const va = document.getElementById('val-d3-gate-active');
             if (vc) vc.textContent = on ? 'RND' : formatGateSec(state.d3.gate.cycleSec);
             if (va) va.textContent = on ? 'RND' : formatGateSec(state.d3.gate.activeSec);
+        }
+
+        function pickRandomGlitchGateDurations() {
+            const cEl = document.getElementById('param-glitch-gate-cycle');
+            const aEl = document.getElementById('param-glitch-gate-active');
+            state.glitch.gate.effectiveCycle = randomDwellFromInput(cEl, { lo: 2, hi: 120 });
+            let na = randomDwellFromInput(aEl, { lo: 0.2, hi: 60 });
+            state.glitch.gate.effectiveActive = Math.min(na, state.glitch.gate.effectiveCycle * 0.95);
+        }
+
+        function clampGlitchGateActiveToCycle() {
+            const c = Math.max(0.5, Number(state.glitch.gate.effectiveCycle) || 15);
+            const maxA = c * 0.99;
+            if (state.glitch.gate.activeSec > maxA) {
+                state.glitch.gate.activeSec = Math.floor(maxA * 10) / 10;
+                const aEl = document.getElementById('param-glitch-gate-active');
+                if (aEl) aEl.value = String(state.glitch.gate.activeSec);
+            }
+            state.glitch.gate.effectiveActive = Math.min(Number(state.glitch.gate.effectiveActive) || 4, maxA);
+            const vAct = document.getElementById('val-glitch-gate-active');
+            if (vAct && !state.glitch.gate.jitter) vAct.textContent = formatGateSec(state.glitch.gate.activeSec);
+        }
+
+        function syncGlitchGateIntervalSliderUI() {
+            const on = state.glitch.gate.jitter;
+            const cEl = document.getElementById('param-glitch-gate-cycle');
+            const aEl = document.getElementById('param-glitch-gate-active');
+            if (cEl) {
+                cEl.disabled = on;
+                cEl.classList.toggle('opacity-40', on);
+                cEl.classList.toggle('cursor-not-allowed', on);
+            }
+            if (aEl) {
+                aEl.disabled = on;
+                aEl.classList.toggle('opacity-40', on);
+                aEl.classList.toggle('cursor-not-allowed', on);
+            }
+            const vc = document.getElementById('val-glitch-gate-cycle');
+            const va = document.getElementById('val-glitch-gate-active');
+            if (vc) vc.textContent = on ? 'RND' : formatGateSec(state.glitch.gate.cycleSec);
+            if (va) va.textContent = on ? 'RND' : formatGateSec(state.glitch.gate.activeSec);
+        }
+
+        function syncGlitchStrobeReadout() {
+            const el = document.getElementById('val-glitch-strobe');
+            if (!el) return;
+            const hz = state.glitch.strobeHz;
+            el.textContent = hz < 0.05 ? 'off' : `${hz.toFixed(2)}Hz`;
         }
 
         function updateAutoWaveBtn(el, on) {
@@ -1664,6 +1757,19 @@
                     if (typeof g.active === 'boolean') state.glitch.active = g.active;
                     if (typeof g.intensity === 'number') state.glitch.intensity = g.intensity;
                     if (typeof g.rate === 'number') state.glitch.rate = g.rate;
+                    if (typeof g.hSize === 'number') state.glitch.hSize = g.hSize;
+                    if (typeof g.rgbSplit === 'number') state.glitch.rgbSplit = g.rgbSplit;
+                    if (typeof g.strobeHz === 'number') state.glitch.strobeHz = g.strobeHz;
+                    if (g.gate && typeof g.gate === 'object') {
+                        const gg = g.gate;
+                        if (typeof gg.enabled === 'boolean') state.glitch.gate.enabled = gg.enabled;
+                        if (typeof gg.jitter === 'boolean') state.glitch.gate.jitter = gg.jitter;
+                        if (typeof gg.cycleSec === 'number') state.glitch.gate.cycleSec = gg.cycleSec;
+                        if (typeof gg.activeSec === 'number') state.glitch.gate.activeSec = gg.activeSec;
+                        if (typeof gg.effectiveCycle === 'number') state.glitch.gate.effectiveCycle = gg.effectiveCycle;
+                        if (typeof gg.effectiveActive === 'number') state.glitch.gate.effectiveActive = gg.effectiveActive;
+                        state.glitch.gate.timer = 0;
+                    }
                 }
                 if (s.d3 && typeof s.d3 === 'object') {
                     const d = s.d3;
@@ -1824,7 +1930,18 @@
                     glitch: {
                         active: state.glitch.active,
                         intensity: state.glitch.intensity,
-                        rate: state.glitch.rate
+                        rate: state.glitch.rate,
+                        hSize: state.glitch.hSize,
+                        rgbSplit: state.glitch.rgbSplit,
+                        strobeHz: state.glitch.strobeHz,
+                        gate: {
+                            enabled: state.glitch.gate.enabled,
+                            jitter: state.glitch.gate.jitter,
+                            cycleSec: state.glitch.gate.cycleSec,
+                            activeSec: state.glitch.gate.activeSec,
+                            effectiveCycle: state.glitch.gate.effectiveCycle,
+                            effectiveActive: state.glitch.gate.effectiveActive
+                        }
                     },
                     d3: {
                         enabled: state.d3.enabled,
@@ -2087,8 +2204,64 @@
             document.getElementById('param-glitch-rate').oninput = (ev) => {
                 state.glitch.rate = parseFloat(ev.target.value);
             };
+            document.getElementById('param-glitch-h-size').oninput = (ev) => {
+                state.glitch.hSize = parseFloat(ev.target.value);
+            };
+            document.getElementById('param-glitch-rgb').oninput = (ev) => {
+                state.glitch.rgbSplit = parseFloat(ev.target.value);
+            };
+            document.getElementById('param-glitch-strobe').oninput = (ev) => {
+                state.glitch.strobeHz = parseFloat(ev.target.value);
+                syncGlitchStrobeReadout();
+            };
+            document.getElementById('btn-glitch-gate-enable').onclick = (e) => {
+                state.glitch.gate.enabled = !state.glitch.gate.enabled;
+                state.glitch.gate.timer = 0;
+                e.currentTarget.textContent = state.glitch.gate.enabled ? 'DISABLE' : 'ENABLE';
+                e.currentTarget.classList.toggle('text-blue-400', !state.glitch.gate.enabled);
+                e.currentTarget.classList.toggle('text-red-400', state.glitch.gate.enabled);
+            };
+            document.getElementById('btn-glitch-gate-jitter').onclick = (e) => {
+                state.glitch.gate.jitter = !state.glitch.gate.jitter;
+                state.glitch.gate.timer = 0;
+                updateJitterButton(e.currentTarget, state.glitch.gate.jitter);
+                if (state.glitch.gate.jitter) {
+                    pickRandomGlitchGateDurations();
+                } else {
+                    state.glitch.gate.effectiveCycle = state.glitch.gate.cycleSec;
+                    state.glitch.gate.effectiveActive = state.glitch.gate.activeSec;
+                    clampGlitchGateActiveToCycle();
+                }
+                syncGlitchGateIntervalSliderUI();
+            };
+            document.getElementById('param-glitch-gate-cycle').oninput = (ev) => {
+                if (state.glitch.gate.jitter) return;
+                state.glitch.gate.cycleSec = parseInt(ev.target.value, 10);
+                state.glitch.gate.effectiveCycle = state.glitch.gate.cycleSec;
+                clampGlitchGateActiveToCycle();
+                document.getElementById('val-glitch-gate-cycle').textContent = formatGateSec(state.glitch.gate.cycleSec);
+            };
+            document.getElementById('param-glitch-gate-active').oninput = (ev) => {
+                if (state.glitch.gate.jitter) return;
+                state.glitch.gate.activeSec = parseFloat(ev.target.value);
+                state.glitch.gate.effectiveActive = Math.min(state.glitch.gate.activeSec, state.glitch.gate.effectiveCycle * 0.99);
+                document.getElementById('val-glitch-gate-active').textContent = formatGateSec(state.glitch.gate.activeSec);
+            };
             document.getElementById('param-glitch-intensity').value = String(state.glitch.intensity);
             document.getElementById('param-glitch-rate').value = String(state.glitch.rate);
+            document.getElementById('param-glitch-h-size').value = String(state.glitch.hSize);
+            document.getElementById('param-glitch-rgb').value = String(state.glitch.rgbSplit);
+            document.getElementById('param-glitch-strobe').value = String(state.glitch.strobeHz);
+            syncGlitchStrobeReadout();
+            document.getElementById('param-glitch-gate-cycle').value = String(state.glitch.gate.cycleSec);
+            document.getElementById('param-glitch-gate-active').value = String(state.glitch.gate.activeSec);
+            document.getElementById('val-glitch-gate-cycle').textContent = formatGateSec(state.glitch.gate.cycleSec);
+            document.getElementById('val-glitch-gate-active').textContent = formatGateSec(state.glitch.gate.activeSec);
+            document.getElementById('btn-glitch-gate-enable').textContent = state.glitch.gate.enabled ? 'DISABLE' : 'ENABLE';
+            document.getElementById('btn-glitch-gate-enable').classList.toggle('text-blue-400', !state.glitch.gate.enabled);
+            document.getElementById('btn-glitch-gate-enable').classList.toggle('text-red-400', state.glitch.gate.enabled);
+            updateJitterButton(document.getElementById('btn-glitch-gate-jitter'), state.glitch.gate.jitter);
+            syncGlitchGateIntervalSliderUI();
             updateGlitchToggleBtn(document.getElementById('btn-glitch-toggle'), state.glitch.active);
 
             // Audio reactive controls
@@ -2677,6 +2850,24 @@
                 state.d3.gateOpen = true;
             }
 
+            if (state.glitch.gate.enabled) {
+                let c = Math.max(0.5, Number(state.glitch.gate.effectiveCycle) || 15);
+                let a = Math.min(Math.max(0.05, Number(state.glitch.gate.effectiveActive) || 4), c * 0.99);
+                state.glitch.gate.timer += deltaSecs;
+                while (state.glitch.gate.timer >= c) {
+                    state.glitch.gate.timer -= c;
+                    if (state.glitch.gate.jitter) {
+                        pickRandomGlitchGateDurations();
+                        c = Math.max(0.5, Number(state.glitch.gate.effectiveCycle) || 15);
+                    }
+                }
+                c = Math.max(0.5, Number(state.glitch.gate.effectiveCycle) || 15);
+                a = Math.min(Math.max(0.05, Number(state.glitch.gate.effectiveActive) || 4), c * 0.99);
+                state.glitch.gateOpen = state.glitch.gate.timer < a;
+            } else {
+                state.glitch.gateOpen = true;
+            }
+
             if (state.lfo.charset.active) {
                 const keys = Object.keys(charSets);
                 if (state.lfo.charset.shape === 'noise') {
@@ -2882,7 +3073,7 @@
             }
         }
 
-        function applyGlitchEffect(ctx, iw, ih, nowMs, intensity, rate) {
+        function applyGlitchEffect(ctx, iw, ih, nowMs, intensity, rate, hSize, rgbAmt, strobeHz) {
             const t = nowMs * 0.001 * rate;
             const id = ctx.getImageData(0, 0, iw, ih);
             const d = id.data;
@@ -2890,19 +3081,31 @@
             const h = ih;
             const stride = w * 4;
             const gh = glitchHash01;
-            const nBands = Math.floor(2 + intensity * 16);
-            for (let b = 0; b < nBands; b++) {
-                const y0 = (gh(b + 0.1, 1.2, t) * h) | 0;
-                const bh = 1 + ((gh(b + 0.2, 2.3, t) * (4 + intensity * 32)) | 0);
-                const dx = Math.round((gh(b + 0.3, 3.4, t) * 2 - 1) * intensity * (6 + gh(b + 0.4, 4.5, t) * 56));
-                if (y0 < h) shiftRowsHorizGlitch(d, w, h, y0, bh, dx);
+            const hS = clamp01(hSize);
+            const rgb = clamp01(rgbAmt);
+            if (hS > 0.02) {
+                const hMult = 0.25 + hS * 2.75;
+                const nBands = Math.floor(2 + intensity * (12 + 8 * hS));
+                for (let b = 0; b < nBands; b++) {
+                    const y0 = (gh(b + 0.1, 1.2, t) * h) | 0;
+                    const bh = 1 + ((gh(b + 0.2, 2.3, t) * (2 + intensity * (8 + 44 * hS))) | 0);
+                    const dx = Math.round(
+                        (gh(b + 0.3, 3.4, t) * 2 - 1) *
+                            intensity *
+                            hMult *
+                            (4 + gh(b + 0.4, 4.5, t) * 56 * hS)
+                    );
+                    if (y0 < h) shiftRowsHorizGlitch(d, w, h, y0, bh, dx);
+                }
             }
-            if (gh(5, 5, t) < intensity * 0.5) {
-                const y0 = (gh(6, 6, t) * h) | 0;
-                const ny = 1 + ((gh(7, 7, t) * (4 + intensity * 10)) | 0);
-                const dr = Math.round((gh(8, 8, t) - 0.5) * intensity * 14);
-                const db = Math.round((gh(9, 9, t) - 0.5) * intensity * 14);
-                for (let yy = y0; yy < Math.min(y0 + ny, h); yy++) rgbSplitRowGlitch(d, w, yy, dr, 0, db);
+            if (rgb > 0.004) {
+                const spread = Math.max(1, Math.round(rgb * (6 + intensity * 28)));
+                const gAmp = Math.round(rgb * spread * 0.4);
+                for (let yy = 0; yy < h; yy++) {
+                    const wob = Math.round((gh(yy * 0.073, 24.1, t) - 0.5) * rgb * 5);
+                    const dg = Math.round((gh(yy * 0.091, 24.2, t) - 0.5) * 2 * gAmp);
+                    rgbSplitRowGlitch(d, w, yy, spread + wob, dg, -spread + wob);
+                }
             }
             const scanStep = gh(10, 10, t) < 0.65 ? 2 + ((intensity * 5) | 0) : 999;
             if (scanStep < 16) {
@@ -2937,6 +3140,16 @@
                     d[j] = d[j2];
                     d[j + 1] = d[j2 + 1];
                     d[j + 2] = d[j2 + 2];
+                }
+            }
+            if (strobeHz > 0.05) {
+                const pulse = Math.sin(nowMs * 0.001 * Math.PI * 2 * strobeHz);
+                if (pulse > 0) {
+                    for (let p = 0; p < d.length; p += 4) {
+                        d[p] = 255 - d[p];
+                        d[p + 1] = 255 - d[p + 1];
+                        d[p + 2] = 255 - d[p + 2];
+                    }
                 }
             }
             ctx.putImageData(id, 0, 0);
@@ -3109,14 +3322,18 @@
                 outputCtx.textBaseline = 'top';
             }
 
-            if (state.glitch.active && state.glitch.intensity >= 0.02) {
+            const glitchInSchedule = !state.glitch.gate.enabled || state.glitch.gateOpen;
+            if (state.glitch.active && glitchInSchedule && state.glitch.intensity >= 0.02) {
                 applyGlitchEffect(
                     outputCtx,
                     outputCanvas.width,
                     outputCanvas.height,
                     now,
                     state.glitch.intensity,
-                    state.glitch.rate
+                    state.glitch.rate,
+                    state.glitch.hSize,
+                    state.glitch.rgbSplit,
+                    state.glitch.strobeHz
                 );
             }
 
