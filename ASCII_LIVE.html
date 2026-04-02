@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ASCII Live Visuals Engine v9.5</title>
+    <title>ASCII Live Visuals Engine v9.6</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/omggif@1.0.10/omggif.js"></script>
     <style>
@@ -88,7 +88,7 @@
         }
         .playlist-item:hover .item-delete-btn { display: flex; }
         .preset-grid { @apply grid grid-cols-2 gap-1.5; }
-        .preset-grid-wide { @apply grid grid-cols-3 gap-1.5 max-h-36 overflow-y-auto pr-0.5; }
+        .preset-grid-wide { @apply grid grid-cols-3 gap-1.5 max-h-44 overflow-y-auto pr-0.5; }
         .preset-btn {
             @apply text-[9px] font-black bg-slate-900 p-2 rounded border border-slate-800 hover:border-blue-500 transition-all uppercase tracking-tighter;
         }
@@ -127,7 +127,7 @@
 <body class="flex flex-col">
     <header class="h-12 glass border-b border-slate-800 flex items-center justify-between px-6 shrink-0 z-50">
         <div class="flex items-center gap-4">
-            <h1 class="font-black text-blue-500 tracking-tighter text-xl italic text-shadow-glow">ASCII_LIVE.v9.5</h1>
+            <h1 class="font-black text-blue-500 tracking-tighter text-xl italic text-shadow-glow">ASCII_LIVE.v9.6</h1>
             <div id="fps-counter" class="fira text-[10px] text-slate-500 bg-slate-900 px-2 py-0.5 rounded border border-slate-800">60 FPS</div>
         </div>
         <div class="flex items-center gap-3">
@@ -225,6 +225,11 @@
                     <button type="button" onclick="applyPreset('circuit')" class="preset-btn text-emerald-400" id="btn-pre-circuit">⌘ WIRE</button>
                     <button type="button" onclick="applyPreset('runes')" class="preset-btn text-stone-400" id="btn-pre-runes">ᚱ RUNES</button>
                     <button type="button" onclick="applyPreset('math')" class="preset-btn text-indigo-400" id="btn-pre-math">∑ MATH</button>
+                    <button type="button" onclick="applyPreset('cyrillic')" class="preset-btn text-sky-300" id="btn-pre-cyrillic">К CYR</button>
+                    <button type="button" onclick="applyPreset('crosses')" class="preset-btn text-stone-300" id="btn-pre-crosses">✝ CROSS</button>
+                    <button type="button" onclick="applyPreset('gothic')" class="preset-btn text-violet-300" id="btn-pre-gothic">𝔊 GOTH</button>
+                    <button type="button" onclick="applyPreset('dingbats')" class="preset-btn text-pink-300" id="btn-pre-dingbats">✿ DING</button>
+                    <button type="button" onclick="applyPreset('relics')" class="preset-btn text-teal-300" id="btn-pre-relics">⛧ RELIC</button>
                 </div>
             </section>
         </aside>
@@ -321,6 +326,145 @@
                         </div>
                     </div>
                 </div>
+                <div class="control-group w-full border-t border-slate-800 pt-4">
+                    <div class="flex justify-between items-center gap-2">
+                        <label class="knob-label">ASCII 3D</label>
+                        <button type="button" id="btn-d3-toggle" class="text-[8px] font-black px-2 py-0.5 rounded border border-slate-700 bg-slate-900 text-slate-500">OFF</button>
+                    </div>
+                    <p class="text-[7px] text-slate-600 mt-1 mb-2 leading-snug">Extrudes glyphs in Z from color luminance and source brightness. Toggle orbit / dolly axes; each axis has its own LFO (or continuous motion when LFO is off).</p>
+                    <label class="text-[8px] text-slate-500 font-bold uppercase tracking-tighter block mb-1">Camera</label>
+                    <p class="text-[7px] text-slate-600 mb-1 leading-snug">All axes off = static angle. Combine any of <strong class="text-slate-400">Orb H</strong>, <strong class="text-slate-400">Orb V</strong>, <strong class="text-slate-400">Dolly</strong>.</p>
+                    <div class="border border-slate-800/80 rounded px-1 py-1 mt-1 space-y-0.5">
+                        <div class="flex flex-wrap items-center gap-0.5">
+                            <span class="fira text-[7px] text-slate-500 font-bold w-9 shrink-0" title="Yaw">Orb H</span>
+                            <button type="button" id="btn-d3-orbit-h" class="text-[7px] font-black px-1 py-0.5 rounded border border-slate-700 bg-slate-900 text-slate-500">ON</button>
+                            <button type="button" id="lfo-d3-orbit-h-btn" class="text-[7px] bg-slate-900 px-1 py-0.5 rounded border border-slate-700">LFO</button>
+                            <select id="lfo-d3-orbit-h-shape" class="text-[7px] bg-slate-900 border border-slate-700 rounded px-0.5 py-0.5 text-slate-300 outline-none focus:border-blue-500 max-w-[3.25rem]">
+                                <option value="sine">Sin</option><option value="triangle">Tri</option><option value="saw">Saw</option><option value="square">Sqr</option><option value="pulse">Pls</option><option value="noise">Nse</option>
+                            </select>
+                            <span class="fira text-[7px] text-slate-600 w-3 shrink-0" id="lfo-d3-orbit-h-rate-label">∿</span>
+                            <input type="range" id="lfo-d3-orbit-h-rate" min="0.05" max="5" step="0.05" value="0.35" class="w-11 h-1 bg-slate-800 rounded-lg appearance-none flex-1 min-w-0" title="LFO off: spin speed · LFO on: wave speed / noise">
+                        </div>
+                        <div class="flex flex-wrap items-center gap-0.5 pl-9">
+                            <button type="button" id="btn-lfo-d3-orbit-h-auto-wave" class="text-[6px] font-black px-1 py-0.5 rounded border border-slate-700 bg-slate-900 text-slate-500">AUTO</button>
+                            <input type="range" id="lfo-d3-orbit-h-wave-cycle" min="1" max="12" value="3" class="w-10 h-1 bg-slate-800 rounded-lg appearance-none">
+                            <span id="val-lfo-d3-orbit-h-wave-cycle" class="fira text-[6px] text-slate-500 w-5">3s</span>
+                        </div>
+                    </div>
+                    <div class="border border-slate-800/80 rounded px-1 py-1 mt-1 space-y-0.5">
+                        <div class="flex flex-wrap items-center gap-0.5">
+                            <span class="fira text-[7px] text-slate-500 font-bold w-9 shrink-0" title="Pitch">Orb V</span>
+                            <button type="button" id="btn-d3-orbit-v" class="text-[7px] font-black px-1 py-0.5 rounded border border-slate-700 bg-slate-900 text-slate-500">ON</button>
+                            <button type="button" id="lfo-d3-orbit-v-btn" class="text-[7px] bg-slate-900 px-1 py-0.5 rounded border border-slate-700">LFO</button>
+                            <select id="lfo-d3-orbit-v-shape" class="text-[7px] bg-slate-900 border border-slate-700 rounded px-0.5 py-0.5 text-slate-300 outline-none focus:border-blue-500 max-w-[3.25rem]">
+                                <option value="sine">Sin</option><option value="triangle">Tri</option><option value="saw">Saw</option><option value="square">Sqr</option><option value="pulse">Pls</option><option value="noise">Nse</option>
+                            </select>
+                            <span class="fira text-[7px] text-slate-600 w-3 shrink-0" id="lfo-d3-orbit-v-rate-label">∿</span>
+                            <input type="range" id="lfo-d3-orbit-v-rate" min="0.05" max="5" step="0.05" value="0.35" class="w-11 h-1 bg-slate-800 rounded-lg appearance-none flex-1 min-w-0">
+                        </div>
+                        <div class="flex flex-wrap items-center gap-0.5 pl-9">
+                            <button type="button" id="btn-lfo-d3-orbit-v-auto-wave" class="text-[6px] font-black px-1 py-0.5 rounded border border-slate-700 bg-slate-900 text-slate-500">AUTO</button>
+                            <input type="range" id="lfo-d3-orbit-v-wave-cycle" min="1" max="12" value="3" class="w-10 h-1 bg-slate-800 rounded-lg appearance-none">
+                            <span id="val-lfo-d3-orbit-v-wave-cycle" class="fira text-[6px] text-slate-500 w-5">3s</span>
+                        </div>
+                    </div>
+                    <div class="border border-slate-800/80 rounded px-1 py-1 mt-1 space-y-0.5">
+                        <div class="flex flex-wrap items-center gap-0.5">
+                            <span class="fira text-[7px] text-slate-500 font-bold w-9 shrink-0" title="Distance">Dolly</span>
+                            <button type="button" id="btn-d3-dolly" class="text-[7px] font-black px-1 py-0.5 rounded border border-slate-700 bg-slate-900 text-slate-500">OFF</button>
+                            <button type="button" id="lfo-d3-dolly-btn" class="text-[7px] bg-slate-900 px-1 py-0.5 rounded border border-slate-700">LFO</button>
+                            <select id="lfo-d3-dolly-shape" class="text-[7px] bg-slate-900 border border-slate-700 rounded px-0.5 py-0.5 text-slate-300 outline-none focus:border-blue-500 max-w-[3.25rem]">
+                                <option value="sine">Sin</option><option value="triangle">Tri</option><option value="saw">Saw</option><option value="square">Sqr</option><option value="pulse">Pls</option><option value="noise">Nse</option>
+                            </select>
+                            <span class="fira text-[7px] text-slate-600 w-3 shrink-0" id="lfo-d3-dolly-rate-label">∿</span>
+                            <input type="range" id="lfo-d3-dolly-rate" min="0.05" max="5" step="0.05" value="0.35" class="w-11 h-1 bg-slate-800 rounded-lg appearance-none flex-1 min-w-0">
+                        </div>
+                        <div class="flex flex-wrap items-center gap-0.5 pl-9">
+                            <button type="button" id="btn-lfo-d3-dolly-auto-wave" class="text-[6px] font-black px-1 py-0.5 rounded border border-slate-700 bg-slate-900 text-slate-500">AUTO</button>
+                            <input type="range" id="lfo-d3-dolly-wave-cycle" min="1" max="12" value="3" class="w-10 h-1 bg-slate-800 rounded-lg appearance-none">
+                            <span id="val-lfo-d3-dolly-wave-cycle" class="fira text-[6px] text-slate-500 w-5">3s</span>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2 mt-2">
+                        <span class="fira text-[7px] text-slate-600 w-14 shrink-0" title="Closer / farther">Zoom</span>
+                        <input type="range" id="param-d3-zoom" min="0.72" max="4.2" step="0.05" value="1" class="flex-1 min-w-0 h-1 bg-slate-800 rounded-lg appearance-none" title="Higher = closer. Min = less zoom-out; max = more zoom-in.">
+                        <span id="val-d3-zoom" class="fira text-[7px] text-slate-500 w-9 shrink-0 tabular-nums">1.0</span>
+                    </div>
+                    <div class="flex items-center gap-2 mt-1">
+                        <span class="fira text-[7px] text-slate-600 w-14 shrink-0" title="Yaw offset">Rotate</span>
+                        <input type="range" id="param-d3-rotate" min="-180" max="180" step="1" value="0" class="flex-1 min-w-0 h-1 bg-slate-800 rounded-lg appearance-none">
+                        <span id="val-d3-rotate" class="fira text-[7px] text-slate-500 w-9 shrink-0 tabular-nums">0°</span>
+                    </div>
+                    <div class="flex justify-between items-center gap-2 mt-3">
+                        <label class="knob-label text-[9px]">3D amount <span id="lfo-d3-led" class="lfo-indicator bg-slate-700"></span></label>
+                        <span id="val-d3-mix" class="fira text-[8px] text-slate-400 tabular-nums" title="LFO off = full 3D">1.00</span>
+                    </div>
+                    <p class="text-[7px] text-slate-600 mb-1 leading-snug">LFO drives 0 → off (flat) up to full 3D. Off = always full 3D.</p>
+                    <div class="flex flex-wrap gap-1.5 items-center">
+                        <button type="button" id="lfo-d3-btn" class="text-[8px] bg-slate-900 px-2 py-0.5 rounded border border-slate-700 hover:border-blue-500 transition-all">LFO</button>
+                        <select id="lfo-d3-shape" class="text-[8px] bg-slate-900 border border-slate-700 rounded px-1 py-0.5 text-slate-300 outline-none focus:border-blue-500 max-w-[4.75rem]" title="Noise = smoothed random">
+                            <option value="sine">Sine</option>
+                            <option value="triangle">Tri</option>
+                            <option value="saw">Saw</option>
+                            <option value="square">Sqr</option>
+                            <option value="pulse">Pulse</option>
+                            <option value="noise">Noise</option>
+                        </select>
+                        <span class="fira text-[7px] text-slate-600 w-4 shrink-0" id="lfo-d3-rate-label" title="Periodic: speed · Noise: responsiveness">∿</span>
+                        <input type="range" id="lfo-d3-rate" min="0.1" max="5" step="0.1" value="1" class="w-14 h-1 bg-slate-800 rounded-lg appearance-none" title="Wave speed / noise smoothing">
+                    </div>
+                    <div class="flex flex-wrap items-center gap-1.5 mt-1">
+                        <button type="button" id="btn-lfo-d3-auto-wave" class="text-[7px] font-black px-1.5 py-0.5 rounded border border-slate-700 bg-slate-900 text-slate-500 hover:border-violet-500/60 hover:text-violet-300 transition-colors" title="Cycle wave shape automatically">WAVE AUTO</button>
+                        <input type="range" id="lfo-d3-wave-cycle" min="1" max="12" value="3" class="w-12 h-1 bg-slate-800 rounded-lg appearance-none" title="Seconds per wave shape">
+                        <span id="val-lfo-d3-wave-cycle" class="fira text-[7px] text-slate-500 w-6">3s</span>
+                    </div>
+                    <div class="flex items-center gap-2 mt-2">
+                        <span class="fira text-[7px] text-slate-600 w-14 shrink-0">Depth</span>
+                        <input type="range" id="param-d3-depth" min="0.2" max="2.5" step="0.05" value="1" class="flex-1 min-w-0 h-1 bg-slate-800 rounded-lg appearance-none">
+                    </div>
+                    <div class="flex items-center gap-2 mt-1">
+                        <span class="fira text-[7px] text-slate-600 w-14 shrink-0">Noise</span>
+                        <input type="range" id="param-d3-noise" min="0" max="0.55" step="0.01" value="0.12" class="flex-1 min-w-0 h-1 bg-slate-800 rounded-lg appearance-none">
+                    </div>
+                    <div class="flex items-center gap-2 mt-1">
+                        <span class="fira text-[7px] text-slate-600 w-14 shrink-0" title="Blend: source brightness vs glyph color">Color</span>
+                        <input type="range" id="param-d3-color-mix" min="0" max="1" step="0.05" value="0.65" class="flex-1 min-w-0 h-1 bg-slate-800 rounded-lg appearance-none">
+                    </div>
+                    <label class="text-[8px] text-slate-500 font-bold uppercase tracking-tighter block mt-3 mb-1">3D on/off schedule</label>
+                    <p class="text-[7px] text-slate-600 mb-2 leading-snug">3D is <strong class="text-slate-400">on</strong> for <strong class="text-slate-400">Active</strong> seconds, then flat for the rest of each <strong class="text-slate-400">Cycle</strong> (e.g. 2s on / 20s total). <strong class="text-slate-400">RND</strong> picks new cycle &amp; active lengths from each slider’s min–max after every cycle.</p>
+                    <div class="flex justify-between items-center gap-2">
+                        <label class="text-[9px] font-extrabold text-slate-500 uppercase tracking-tighter">Schedule</label>
+                        <div class="flex items-center gap-1.5">
+                            <button type="button" id="btn-d3-gate-jitter" class="text-[8px] font-black px-1.5 py-0.5 rounded border border-slate-700 bg-slate-900 text-slate-500 hover:border-amber-500/60 hover:text-amber-400 transition-colors" title="Random cycle &amp; active duration from slider ranges">RND</button>
+                            <button type="button" id="btn-d3-gate-enable" class="text-[9px] font-bold text-blue-400 hover:text-white transition-colors">ENABLE</button>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2 mt-2">
+                        <span class="fira text-[7px] text-slate-600 w-14 shrink-0" title="Full loop length (s)">Cycle</span>
+                        <input type="range" id="param-d3-gate-cycle" min="3" max="120" step="1" value="20" class="flex-1 min-w-0 h-1 bg-slate-800 rounded-lg appearance-none">
+                        <span id="val-d3-gate-cycle" class="fira text-[7px] text-slate-500 w-10 shrink-0 tabular-nums">20s</span>
+                    </div>
+                    <div class="flex items-center gap-2 mt-1">
+                        <span class="fira text-[7px] text-slate-600 w-14 shrink-0" title="3D on at start of each cycle">Active</span>
+                        <input type="range" id="param-d3-gate-active" min="0.2" max="60" step="0.2" value="2" class="flex-1 min-w-0 h-1 bg-slate-800 rounded-lg appearance-none">
+                        <span id="val-d3-gate-active" class="fira text-[7px] text-slate-500 w-10 shrink-0 tabular-nums">2s</span>
+                    </div>
+                </div>
+                <div class="control-group">
+                    <div class="flex justify-between items-center gap-2">
+                        <label class="knob-label">Glitch</label>
+                        <button type="button" id="btn-glitch-toggle" class="text-[8px] font-black px-2 py-0.5 rounded border border-slate-700 bg-slate-900 text-slate-500">OFF</button>
+                    </div>
+                    <p class="text-[7px] text-slate-600 mt-1 mb-1 leading-snug">Datamosh-style corruption: row shears, chroma tear, scanlines, static. Evolves over time.</p>
+                    <div class="flex items-center gap-2 mt-1">
+                        <span class="fira text-[7px] text-slate-600 w-14 shrink-0">Amount</span>
+                        <input type="range" id="param-glitch-intensity" min="0" max="1" step="0.02" value="0.5" class="flex-1 min-w-0 h-1 bg-slate-800 rounded-lg appearance-none">
+                    </div>
+                    <div class="flex items-center gap-2 mt-1">
+                        <span class="fira text-[7px] text-slate-600 w-14 shrink-0">Speed</span>
+                        <input type="range" id="param-glitch-rate" min="0.15" max="5" step="0.05" value="1" class="flex-1 min-w-0 h-1 bg-slate-800 rounded-lg appearance-none" title="How fast the damage pattern changes">
+                    </div>
+                </div>
                 <div class="control-group">
                     <div class="flex justify-between items-center gap-2">
                         <label class="knob-label">Audio Reactive</label>
@@ -386,12 +530,18 @@
             ocean: "🌊〜～⌇≈≋∿〰～～",
             circuit: "╱╲│─┼┌┐└┘╔╗╚╝║═⊙◎⌁╳╋",
             runes: "ᚠᚢᚦᚨᚱᚲᚷᚹᚺᚾᛁᛃᛇᛈᛉᛊᛏᛒᛖᛗᛚᛜᛝᛟ",
-            math: "∫∂∇∑∏√∞≈≠±×÷∮∯∀∃∈∉⊂⊃∧∨¬αβγδεθλμπωΩ"
+            math: "∫∂∇∑∏√∞≈≠±×÷∮∯∀∃∈∉⊂⊃∧∨¬αβγδεθλμπωΩ",
+            cyrillic: "ШЩЖЗМКНПСВФЦЧДБГРЛТХЪЫЭЮЯЁЙЬбвгджзклмнпрстфхцчшщъыьэюяёаеиоуАЕИОУ .·",
+            crosses: "✝✞✟☦☨☩♰♱†‡✙✚✛✜✢✣✤✥✦✧✠✡⋒⋓⨯+×⊹☓",
+            gothic: "𝔄𝔅ℭ𝔇𝔈𝔉𝔊ℌℑ𝔍𝔎𝔏𝔐𝔑𝔒𝔓𝔔ℜ𝔖𝔗𝔘𝔙𝔚𝔛𝔜ℨ𝔞𝔟𝔠𝔡𝔢𝔣𝔤𝔥𝔦𝔧𝔨𝔩𝔪𝔫𝔬𝔭𝔮𝔯𝔰𝔱𝔲𝔳𝔴𝔵𝔶𝔷",
+            dingbats: "✿❀❁❂❃❄❅❆❇❈❉❊❋✐✑✒✓✔✕✖✗✘✙✚✛✜✢✣✤✥✦✧✩✪✫✬✭✮✯",
+            relics: "☘☙⚚⚛⚜⚝⚞⚟⛀⛁⛂⛃⛉⛊⛏⛓⛧⛩⛯⛰⌘⎊⏣◈◉⬢⬡⎔⌬۞۩☸☯☮♲♳♶♹⚗⚘⛼"
         };
         const LFO_WAVE_SHAPES = ['sine', 'triangle', 'saw', 'square', 'pulse', 'noise'];
         const presetKeys = [
             'matrix', 'cyber', 'vaporwave', 'inferno', 'toxic', 'rgb', 'classic', 'dots',
-            'emoji', 'pixel', 'braille', 'hearts', 'arrows', 'ocean', 'circuit', 'runes', 'math'
+            'emoji', 'pixel', 'braille', 'hearts', 'arrows', 'ocean', 'circuit', 'runes', 'math',
+            'cyrillic', 'crosses', 'gothic', 'dingbats', 'relics'
         ];
         const defaultConfigs = {
             matrix: { charset: charSets.matrix, tint: "#00ff41", bg: "#000800", contrast: 2.2, resMin: 140, resMax: 140, mode: 'solid' },
@@ -410,7 +560,12 @@
             ocean: { charset: charSets.ocean, tint: "#22d3ee", bg: "#042f2e", contrast: 1.3, resMin: 90, resMax: 90, mode: 'vapor' },
             circuit: { charset: charSets.circuit, tint: "#34d399", bg: "#022c22", contrast: 2.0, resMin: 140, resMax: 140, mode: 'cyber' },
             runes: { charset: charSets.runes, tint: "#d6d3d1", bg: "#1c1917", contrast: 1.6, resMin: 88, resMax: 88, mode: 'solid' },
-            math: { charset: charSets.math, tint: "#818cf8", bg: "#0b0f1a", contrast: 1.7, resMin: 100, resMax: 100, mode: 'rgb-tiered' }
+            math: { charset: charSets.math, tint: "#818cf8", bg: "#0b0f1a", contrast: 1.7, resMin: 100, resMax: 100, mode: 'rgb-tiered' },
+            cyrillic: { charset: charSets.cyrillic, tint: "#93c5fd", bg: "#0f172a", contrast: 1.65, resMin: 96, resMax: 96, mode: 'solid' },
+            crosses: { charset: charSets.crosses, tint: "#d6d3d1", bg: "#0c0a09", contrast: 1.75, resMin: 110, resMax: 110, mode: 'solid' },
+            gothic: { charset: charSets.gothic, tint: "#c4b5fd", bg: "#1e1b2e", contrast: 1.55, resMin: 88, resMax: 88, mode: 'vapor' },
+            dingbats: { charset: charSets.dingbats, tint: "#f472b6", bg: "#28151f", contrast: 1.5, resMin: 104, resMax: 104, mode: 'vapor' },
+            relics: { charset: charSets.relics, tint: "#5eead4", bg: "#042f2e", contrast: 1.85, resMin: 100, resMax: 100, mode: 'cyber' }
         };
         let userConfigs = JSON.parse(JSON.stringify(defaultConfigs));
 
@@ -469,6 +624,11 @@
                 colorLitBase: 0.5,
                 swatchLastSyncMs: 0
             },
+            glitch: {
+                active: false,
+                intensity: 0.5,
+                rate: 1
+            },
             colorMode: 'solid',
             charset: charSets.standard,
             activePresetName: 'classic',
@@ -495,8 +655,70 @@
             camStream: null,
             cameras: [],
             currentGif: { frames: [], frameIndex: 0, nextFrameTime: 0, gif: null },
-            draggedItemIndex: null
+            draggedItemIndex: null,
+            d3: {
+                enabled: false,
+                depth: 1,
+                noise: 0.12,
+                colorMix: 0.65,
+                noiseSeed: 1337,
+                camYaw: 0,
+                camPitch: 0.35,
+                camDist: 2.75,
+                zoom: 1,
+                rotateDeg: 0,
+                _smoothDist: null,
+                _camDrivers: { orbitH: null, orbitV: null, dolly: null },
+                mix: 1,
+                lfo: {
+                    active: false,
+                    shape: 'sine',
+                    rate: 1,
+                    noiseAcc: 0,
+                    autoWave: false,
+                    waveTimer: 0,
+                    waveCycleSec: 3
+                },
+                orbitH: {
+                    enabled: true,
+                    lfo: { active: false, shape: 'sine', rate: 0.35, noiseAcc: 0, autoWave: false, waveTimer: 0, waveCycleSec: 3 }
+                },
+                orbitV: {
+                    enabled: true,
+                    lfo: { active: false, shape: 'sine', rate: 0.35, noiseAcc: 0, autoWave: false, waveTimer: 0, waveCycleSec: 3 }
+                },
+                dolly: {
+                    enabled: false,
+                    lfo: { active: false, shape: 'sine', rate: 0.35, noiseAcc: 0, autoWave: false, waveTimer: 0, waveCycleSec: 3 }
+                },
+                gate: {
+                    enabled: false,
+                    jitter: false,
+                    cycleSec: 20,
+                    activeSec: 2,
+                    timer: 0,
+                    effectiveCycle: 20,
+                    effectiveActive: 2
+                },
+                gateOpen: true
+            }
         };
+
+        /** Reused glyph slots for 3D pass (avoids per-frame object allocation). */
+        const d3GlyphBatch = [];
+        let glitchRowScratch = null;
+        let glitchBlockScratch = null;
+        const D3_SORT_BUCKETS = 384;
+        const d3SortBuckets = Array.from({ length: D3_SORT_BUCKETS }, () => []);
+        const D3_PROJ_MAX = 2.65;
+        const D3_DENOM_MIN = 0.42;
+        const D3_ZOOM_MIN = 0.72;
+        const D3_ZOOM_MAX = 4.2;
+        function clampD3Zoom(z) {
+            const n = Number(z);
+            if (!Number.isFinite(n)) return 1;
+            return Math.min(D3_ZOOM_MAX, Math.max(D3_ZOOM_MIN, n));
+        }
 
         const video = document.getElementById('hidden-video');
         const bufferCanvas = document.getElementById('buffer-canvas');
@@ -666,6 +888,173 @@
 
         function syncDensityLfoRateLabel() {
             document.getElementById('lfo-res-rate-label').textContent = state.lfo.res.shape === 'noise' ? 'A' : '∿';
+        }
+
+        function syncD3LfoRateLabel() {
+            const el = document.getElementById('lfo-d3-rate-label');
+            if (el) el.textContent = state.d3.lfo.shape === 'noise' ? 'A' : '∿';
+        }
+
+        function syncD3CamAxisRateLabel(shapeId) {
+            const sh = document.getElementById(shapeId);
+            const lab = document.getElementById(shapeId.replace('-shape', '-rate-label'));
+            if (sh && lab) lab.textContent = sh.value === 'noise' ? 'A' : '∿';
+        }
+
+        const D3_CAM_AXIS_NOISE = { orbitH: 'd3camH', orbitV: 'd3camV', dolly: 'd3camDolly' };
+
+        /** Returns 0..1 LFO driver when axis enabled and its LFO on; null = use continuous motion. */
+        function advanceD3CamAxis(axis, shapeSelectId, deltaSecs, time) {
+            const ax = state.d3[axis];
+            if (!state.d3.enabled || !ax.enabled) return null;
+            const lf = ax.lfo;
+            if (lf.active && lf.autoWave) {
+                lf.waveTimer += deltaSecs;
+                if (lf.waveTimer >= lf.waveCycleSec) {
+                    lf.waveTimer = 0;
+                    const i = Math.max(0, LFO_WAVE_SHAPES.indexOf(lf.shape));
+                    const ni = (i + 1) % LFO_WAVE_SHAPES.length;
+                    lf.shape = LFO_WAVE_SHAPES[ni];
+                    const sel = document.getElementById(shapeSelectId);
+                    if (sel) sel.value = lf.shape;
+                    syncD3CamAxisRateLabel(shapeSelectId);
+                }
+            }
+            if (!lf.active) return null;
+            if (lf.shape === 'noise') {
+                return stepSmoothedNoise(D3_CAM_AXIS_NOISE[axis], deltaSecs, 0.25 + lf.rate * 0.35);
+            }
+            let t01 = lfoPeriodicT01(lf.shape, time, lf.rate);
+            return Math.min(1, Math.max(0, t01));
+        }
+
+        function mergeD3CamAxis(dst, src) {
+            if (!src || typeof src !== 'object') return;
+            if (typeof src.enabled === 'boolean') dst.enabled = src.enabled;
+            if (src.lfo && typeof src.lfo === 'object') {
+                const lf = src.lfo;
+                if (typeof lf.active === 'boolean') dst.lfo.active = lf.active;
+                if (typeof lf.shape === 'string') dst.lfo.shape = lf.shape;
+                if (typeof lf.rate === 'number') dst.lfo.rate = lf.rate;
+                if (typeof lf.autoWave === 'boolean') dst.lfo.autoWave = lf.autoWave;
+                if (typeof lf.waveCycleSec === 'number') dst.lfo.waveCycleSec = lf.waveCycleSec;
+            }
+        }
+
+        function packD3CamAxis(ax) {
+            return {
+                enabled: ax.enabled,
+                lfo: {
+                    active: ax.lfo.active,
+                    shape: ax.lfo.shape,
+                    rate: ax.lfo.rate,
+                    autoWave: ax.lfo.autoWave,
+                    waveCycleSec: ax.lfo.waveCycleSec
+                }
+            };
+        }
+
+        function wireD3CamAxis(axisKey, ids) {
+            const ax = () => state.d3[axisKey];
+            document.getElementById(ids.btn).onclick = (e) => {
+                ax().enabled = !ax().enabled;
+                state.d3._smoothDist = null;
+                updateD3ToggleBtn(e.currentTarget, ax().enabled);
+            };
+            document.getElementById(ids.lfoBtn).onclick = (e) => {
+                ax().lfo.active = !ax().lfo.active;
+                e.currentTarget.classList.toggle('bg-blue-600', ax().lfo.active);
+                e.currentTarget.classList.toggle('text-white', ax().lfo.active);
+            };
+            document.getElementById(ids.shape).onchange = (ev) => {
+                ax().lfo.shape = ev.target.value;
+                syncD3CamAxisRateLabel(ids.shape);
+            };
+            document.getElementById(ids.rate).oninput = (ev) => {
+                ax().lfo.rate = parseFloat(ev.target.value);
+            };
+            document.getElementById(ids.autoBtn).onclick = (e) => {
+                ax().lfo.autoWave = !ax().lfo.autoWave;
+                ax().lfo.waveTimer = 0;
+                updateAutoWaveBtn(e.currentTarget, ax().lfo.autoWave);
+            };
+            document.getElementById(ids.waveCycle).oninput = (ev) => {
+                const v = parseInt(ev.target.value, 10);
+                ax().lfo.waveCycleSec = v;
+                document.getElementById(ids.valWave).textContent = v + 's';
+            };
+        }
+
+        function initD3CamAxisUI(axisKey, ids) {
+            const ax = state.d3[axisKey];
+            updateD3ToggleBtn(document.getElementById(ids.btn), ax.enabled);
+            const lfoB = document.getElementById(ids.lfoBtn);
+            lfoB.classList.toggle('bg-blue-600', ax.lfo.active);
+            lfoB.classList.toggle('text-white', ax.lfo.active);
+            document.getElementById(ids.shape).value = ax.lfo.shape;
+            document.getElementById(ids.rate).value = String(ax.lfo.rate);
+            document.getElementById(ids.waveCycle).value = String(ax.lfo.waveCycleSec);
+            document.getElementById(ids.valWave).textContent = ax.lfo.waveCycleSec + 's';
+            syncD3CamAxisRateLabel(ids.shape);
+            updateAutoWaveBtn(document.getElementById(ids.autoBtn), ax.lfo.autoWave);
+        }
+
+        function syncD3MixReadout() {
+            const el = document.getElementById('val-d3-mix');
+            if (!el) return;
+            if (!state.d3.enabled) {
+                el.textContent = '—';
+                return;
+            }
+            el.textContent = state.d3.lfo.active ? state.d3.mix.toFixed(2) : 'MAX';
+        }
+
+        function formatGateSec(s) {
+            const n = Number(s);
+            if (!Number.isFinite(n)) return '0s';
+            const t = Math.round(n * 10) / 10;
+            return (t % 1 === 0 ? String(Math.round(t)) : t.toFixed(1)) + 's';
+        }
+
+        function pickRandomD3GateDurations() {
+            const cEl = document.getElementById('param-d3-gate-cycle');
+            const aEl = document.getElementById('param-d3-gate-active');
+            state.d3.gate.effectiveCycle = randomDwellFromInput(cEl, { lo: 3, hi: 120 });
+            let na = randomDwellFromInput(aEl, { lo: 0.2, hi: 60 });
+            state.d3.gate.effectiveActive = Math.min(na, state.d3.gate.effectiveCycle * 0.95);
+        }
+
+        function clampD3GateActiveToCycle() {
+            const c = Math.max(0.5, Number(state.d3.gate.effectiveCycle) || 20);
+            const maxA = c * 0.99;
+            if (state.d3.gate.activeSec > maxA) {
+                state.d3.gate.activeSec = Math.floor(maxA * 10) / 10;
+                const aEl = document.getElementById('param-d3-gate-active');
+                if (aEl) aEl.value = String(state.d3.gate.activeSec);
+            }
+            state.d3.gate.effectiveActive = Math.min(Number(state.d3.gate.effectiveActive) || 2, maxA);
+            const vAct = document.getElementById('val-d3-gate-active');
+            if (vAct && !state.d3.gate.jitter) vAct.textContent = formatGateSec(state.d3.gate.activeSec);
+        }
+
+        function syncD3GateIntervalSliderUI() {
+            const on = state.d3.gate.jitter;
+            const cEl = document.getElementById('param-d3-gate-cycle');
+            const aEl = document.getElementById('param-d3-gate-active');
+            if (cEl) {
+                cEl.disabled = on;
+                cEl.classList.toggle('opacity-40', on);
+                cEl.classList.toggle('cursor-not-allowed', on);
+            }
+            if (aEl) {
+                aEl.disabled = on;
+                aEl.classList.toggle('opacity-40', on);
+                aEl.classList.toggle('cursor-not-allowed', on);
+            }
+            const vc = document.getElementById('val-d3-gate-cycle');
+            const va = document.getElementById('val-d3-gate-active');
+            if (vc) vc.textContent = on ? 'RND' : formatGateSec(state.d3.gate.cycleSec);
+            if (va) va.textContent = on ? 'RND' : formatGateSec(state.d3.gate.activeSec);
         }
 
         function updateAutoWaveBtn(el, on) {
@@ -1270,6 +1659,42 @@
                 if (typeof s.resMin === 'number') state.resMin = s.resMin;
                 if (typeof s.resMax === 'number') state.resMax = s.resMax;
                 if (!state.lfo.res.active) state.res = staticDensityRes();
+                if (s.glitch && typeof s.glitch === 'object') {
+                    const g = s.glitch;
+                    if (typeof g.active === 'boolean') state.glitch.active = g.active;
+                    if (typeof g.intensity === 'number') state.glitch.intensity = g.intensity;
+                    if (typeof g.rate === 'number') state.glitch.rate = g.rate;
+                }
+                if (s.d3 && typeof s.d3 === 'object') {
+                    const d = s.d3;
+                    if (typeof d.enabled === 'boolean') state.d3.enabled = d.enabled;
+                    if (typeof d.depth === 'number') state.d3.depth = d.depth;
+                    if (typeof d.noise === 'number') state.d3.noise = d.noise;
+                    if (typeof d.colorMix === 'number') state.d3.colorMix = d.colorMix;
+                    if (typeof d.zoom === 'number') state.d3.zoom = clampD3Zoom(d.zoom);
+                    if (typeof d.rotateDeg === 'number') state.d3.rotateDeg = d.rotateDeg;
+                    if (d.lfo && typeof d.lfo === 'object') {
+                        const lf = d.lfo;
+                        if (typeof lf.active === 'boolean') state.d3.lfo.active = lf.active;
+                        if (typeof lf.shape === 'string') state.d3.lfo.shape = lf.shape;
+                        if (typeof lf.rate === 'number') state.d3.lfo.rate = lf.rate;
+                        if (typeof lf.autoWave === 'boolean') state.d3.lfo.autoWave = lf.autoWave;
+                        if (typeof lf.waveCycleSec === 'number') state.d3.lfo.waveCycleSec = lf.waveCycleSec;
+                    }
+                    if (d.orbitH && typeof d.orbitH === 'object') mergeD3CamAxis(state.d3.orbitH, d.orbitH);
+                    if (d.orbitV && typeof d.orbitV === 'object') mergeD3CamAxis(state.d3.orbitV, d.orbitV);
+                    if (d.dolly && typeof d.dolly === 'object') mergeD3CamAxis(state.d3.dolly, d.dolly);
+                    if (d.gate && typeof d.gate === 'object') {
+                        const g = d.gate;
+                        if (typeof g.enabled === 'boolean') state.d3.gate.enabled = g.enabled;
+                        if (typeof g.jitter === 'boolean') state.d3.gate.jitter = g.jitter;
+                        if (typeof g.cycleSec === 'number') state.d3.gate.cycleSec = g.cycleSec;
+                        if (typeof g.activeSec === 'number') state.d3.gate.activeSec = g.activeSec;
+                        if (typeof g.effectiveCycle === 'number') state.d3.gate.effectiveCycle = g.effectiveCycle;
+                        if (typeof g.effectiveActive === 'number') state.d3.gate.effectiveActive = g.effectiveActive;
+                        state.d3.gate.timer = 0;
+                    }
+                }
 
                 // Playlist sync (IDs + order) — blobs are retrieved from shared IndexedDB (same origin).
                 if (Array.isArray(s.playlist) && !state.projector.applyingRemotePlaylist) {
@@ -1395,7 +1820,38 @@
                     resMin: state.resMin,
                     resMax: state.resMax,
                     activeSourceId,
-                    playlist: sendPlaylist ? playlistMeta : undefined
+                    playlist: sendPlaylist ? playlistMeta : undefined,
+                    glitch: {
+                        active: state.glitch.active,
+                        intensity: state.glitch.intensity,
+                        rate: state.glitch.rate
+                    },
+                    d3: {
+                        enabled: state.d3.enabled,
+                        depth: state.d3.depth,
+                        noise: state.d3.noise,
+                        colorMix: state.d3.colorMix,
+                        zoom: state.d3.zoom,
+                        rotateDeg: state.d3.rotateDeg,
+                        orbitH: packD3CamAxis(state.d3.orbitH),
+                        orbitV: packD3CamAxis(state.d3.orbitV),
+                        dolly: packD3CamAxis(state.d3.dolly),
+                        lfo: {
+                            active: state.d3.lfo.active,
+                            shape: state.d3.lfo.shape,
+                            rate: state.d3.lfo.rate,
+                            autoWave: state.d3.lfo.autoWave,
+                            waveCycleSec: state.d3.lfo.waveCycleSec
+                        },
+                        gate: {
+                            enabled: state.d3.gate.enabled,
+                            jitter: state.d3.gate.jitter,
+                            cycleSec: state.d3.gate.cycleSec,
+                            activeSec: state.d3.gate.activeSec,
+                            effectiveCycle: state.d3.gate.effectiveCycle,
+                            effectiveActive: state.d3.gate.effectiveActive
+                        }
+                    }
                 }
             };
 
@@ -1621,6 +2077,20 @@
             updateAutoWaveBtn(document.getElementById('btn-lfo-res-auto-wave'), state.lfo.res.autoWave);
             updateAutoWaveBtn(document.getElementById('btn-lfo-contrast-auto-wave'), state.lfo.contrast.autoWave);
 
+            document.getElementById('btn-glitch-toggle').onclick = (e) => {
+                state.glitch.active = !state.glitch.active;
+                updateGlitchToggleBtn(e.currentTarget, state.glitch.active);
+            };
+            document.getElementById('param-glitch-intensity').oninput = (ev) => {
+                state.glitch.intensity = parseFloat(ev.target.value);
+            };
+            document.getElementById('param-glitch-rate').oninput = (ev) => {
+                state.glitch.rate = parseFloat(ev.target.value);
+            };
+            document.getElementById('param-glitch-intensity').value = String(state.glitch.intensity);
+            document.getElementById('param-glitch-rate').value = String(state.glitch.rate);
+            updateGlitchToggleBtn(document.getElementById('btn-glitch-toggle'), state.glitch.active);
+
             // Audio reactive controls
             document.getElementById('btn-audio-react').onclick = () => {
                 if (state.audio.active) stopAudioReactive();
@@ -1684,6 +2154,133 @@
             };
             document.getElementById('val-audio-kick-low').textContent = String(state.audio.kickLowHz);
             document.getElementById('val-audio-kick-high').textContent = String(state.audio.kickHighHz);
+
+            document.getElementById('btn-d3-toggle').onclick = (e) => {
+                state.d3.enabled = !state.d3.enabled;
+                if (state.d3.enabled) state.d3._smoothDist = null;
+                updateD3ToggleBtn(e.currentTarget, state.d3.enabled);
+                syncD3MixReadout();
+            };
+            const d3CamIdsH = {
+                btn: 'btn-d3-orbit-h', lfoBtn: 'lfo-d3-orbit-h-btn', shape: 'lfo-d3-orbit-h-shape', rate: 'lfo-d3-orbit-h-rate',
+                autoBtn: 'btn-lfo-d3-orbit-h-auto-wave', waveCycle: 'lfo-d3-orbit-h-wave-cycle', valWave: 'val-lfo-d3-orbit-h-wave-cycle'
+            };
+            const d3CamIdsV = {
+                btn: 'btn-d3-orbit-v', lfoBtn: 'lfo-d3-orbit-v-btn', shape: 'lfo-d3-orbit-v-shape', rate: 'lfo-d3-orbit-v-rate',
+                autoBtn: 'btn-lfo-d3-orbit-v-auto-wave', waveCycle: 'lfo-d3-orbit-v-wave-cycle', valWave: 'val-lfo-d3-orbit-v-wave-cycle'
+            };
+            const d3CamIdsD = {
+                btn: 'btn-d3-dolly', lfoBtn: 'lfo-d3-dolly-btn', shape: 'lfo-d3-dolly-shape', rate: 'lfo-d3-dolly-rate',
+                autoBtn: 'btn-lfo-d3-dolly-auto-wave', waveCycle: 'lfo-d3-dolly-wave-cycle', valWave: 'val-lfo-d3-dolly-wave-cycle'
+            };
+            wireD3CamAxis('orbitH', d3CamIdsH);
+            wireD3CamAxis('orbitV', d3CamIdsV);
+            wireD3CamAxis('dolly', d3CamIdsD);
+            document.getElementById('param-d3-depth').oninput = (ev) => {
+                state.d3.depth = parseFloat(ev.target.value);
+            };
+            document.getElementById('param-d3-noise').oninput = (ev) => {
+                state.d3.noise = parseFloat(ev.target.value);
+            };
+            document.getElementById('param-d3-color-mix').oninput = (ev) => {
+                state.d3.colorMix = parseFloat(ev.target.value);
+            };
+            document.getElementById('param-d3-zoom').oninput = (ev) => {
+                state.d3.zoom = clampD3Zoom(parseFloat(ev.target.value));
+                document.getElementById('val-d3-zoom').textContent = state.d3.zoom.toFixed(2);
+            };
+            document.getElementById('param-d3-rotate').oninput = (ev) => {
+                state.d3.rotateDeg = parseInt(ev.target.value, 10);
+                document.getElementById('val-d3-rotate').textContent = `${state.d3.rotateDeg}°`;
+            };
+            initD3CamAxisUI('orbitH', d3CamIdsH);
+            initD3CamAxisUI('orbitV', d3CamIdsV);
+            initD3CamAxisUI('dolly', d3CamIdsD);
+            document.getElementById('param-d3-depth').value = String(state.d3.depth);
+            document.getElementById('param-d3-noise').value = String(state.d3.noise);
+            document.getElementById('param-d3-color-mix').value = String(state.d3.colorMix);
+            state.d3.zoom = clampD3Zoom(state.d3.zoom);
+            document.getElementById('param-d3-zoom').value = String(state.d3.zoom);
+            document.getElementById('param-d3-rotate').value = String(state.d3.rotateDeg);
+            document.getElementById('val-d3-zoom').textContent = state.d3.zoom.toFixed(2);
+            document.getElementById('val-d3-rotate').textContent = `${state.d3.rotateDeg}°`;
+            updateD3ToggleBtn(document.getElementById('btn-d3-toggle'), state.d3.enabled);
+
+            document.getElementById('lfo-d3-btn').onclick = (e) => {
+                state.d3.lfo.active = !state.d3.lfo.active;
+                e.currentTarget.classList.toggle('bg-blue-600', state.d3.lfo.active);
+                e.currentTarget.classList.toggle('text-white', state.d3.lfo.active);
+                document.getElementById('lfo-d3-led').classList.toggle('lfo-active', state.d3.lfo.active);
+                syncD3MixReadout();
+            };
+            document.getElementById('lfo-d3-shape').onchange = (ev) => {
+                state.d3.lfo.shape = ev.target.value;
+                syncD3LfoRateLabel();
+            };
+            document.getElementById('lfo-d3-rate').oninput = (ev) => {
+                state.d3.lfo.rate = parseFloat(ev.target.value);
+            };
+            document.getElementById('btn-lfo-d3-auto-wave').onclick = (e) => {
+                state.d3.lfo.autoWave = !state.d3.lfo.autoWave;
+                state.d3.lfo.waveTimer = 0;
+                updateAutoWaveBtn(e.currentTarget, state.d3.lfo.autoWave);
+            };
+            document.getElementById('lfo-d3-wave-cycle').oninput = (ev) => {
+                const v = parseInt(ev.target.value, 10);
+                state.d3.lfo.waveCycleSec = v;
+                document.getElementById('val-lfo-d3-wave-cycle').textContent = v + 's';
+            };
+            document.getElementById('lfo-d3-shape').value = state.d3.lfo.shape;
+            document.getElementById('lfo-d3-rate').value = String(state.d3.lfo.rate);
+            document.getElementById('lfo-d3-wave-cycle').value = String(state.d3.lfo.waveCycleSec);
+            document.getElementById('val-lfo-d3-wave-cycle').textContent = state.d3.lfo.waveCycleSec + 's';
+            syncD3LfoRateLabel();
+            updateAutoWaveBtn(document.getElementById('btn-lfo-d3-auto-wave'), state.d3.lfo.autoWave);
+            document.getElementById('lfo-d3-btn').classList.toggle('bg-blue-600', state.d3.lfo.active);
+            document.getElementById('lfo-d3-btn').classList.toggle('text-white', state.d3.lfo.active);
+            document.getElementById('lfo-d3-led').classList.toggle('lfo-active', state.d3.lfo.active);
+            syncD3MixReadout();
+
+            document.getElementById('btn-d3-gate-enable').onclick = (e) => {
+                state.d3.gate.enabled = !state.d3.gate.enabled;
+                state.d3.gate.timer = 0;
+                e.currentTarget.textContent = state.d3.gate.enabled ? 'DISABLE' : 'ENABLE';
+                e.currentTarget.classList.toggle('text-blue-400', !state.d3.gate.enabled);
+                e.currentTarget.classList.toggle('text-red-400', state.d3.gate.enabled);
+            };
+            document.getElementById('btn-d3-gate-jitter').onclick = (e) => {
+                state.d3.gate.jitter = !state.d3.gate.jitter;
+                state.d3.gate.timer = 0;
+                updateJitterButton(e.currentTarget, state.d3.gate.jitter);
+                if (state.d3.gate.jitter) {
+                    pickRandomD3GateDurations();
+                } else {
+                    state.d3.gate.effectiveCycle = state.d3.gate.cycleSec;
+                    state.d3.gate.effectiveActive = state.d3.gate.activeSec;
+                    clampD3GateActiveToCycle();
+                }
+                syncD3GateIntervalSliderUI();
+            };
+            document.getElementById('param-d3-gate-cycle').oninput = (ev) => {
+                if (state.d3.gate.jitter) return;
+                state.d3.gate.cycleSec = parseInt(ev.target.value, 10);
+                state.d3.gate.effectiveCycle = state.d3.gate.cycleSec;
+                clampD3GateActiveToCycle();
+                document.getElementById('val-d3-gate-cycle').textContent = formatGateSec(state.d3.gate.cycleSec);
+            };
+            document.getElementById('param-d3-gate-active').oninput = (ev) => {
+                if (state.d3.gate.jitter) return;
+                state.d3.gate.activeSec = parseFloat(ev.target.value);
+                state.d3.gate.effectiveActive = Math.min(state.d3.gate.activeSec, state.d3.gate.effectiveCycle * 0.99);
+                document.getElementById('val-d3-gate-active').textContent = formatGateSec(state.d3.gate.activeSec);
+            };
+            document.getElementById('param-d3-gate-cycle').value = String(state.d3.gate.cycleSec);
+            document.getElementById('param-d3-gate-active').value = String(state.d3.gate.activeSec);
+            document.getElementById('btn-d3-gate-enable').textContent = state.d3.gate.enabled ? 'DISABLE' : 'ENABLE';
+            document.getElementById('btn-d3-gate-enable').classList.toggle('text-blue-400', !state.d3.gate.enabled);
+            document.getElementById('btn-d3-gate-enable').classList.toggle('text-red-400', state.d3.gate.enabled);
+            updateJitterButton(document.getElementById('btn-d3-gate-jitter'), state.d3.gate.jitter);
+            syncD3GateIntervalSliderUI();
 
             // Playlist management
             const delAllBtn = document.getElementById('btn-delete-all');
@@ -2021,6 +2618,65 @@
                 document.getElementById('lfo-contrast-led').style.backgroundColor = `rgba(59, 130, 246, ${0.2 + wave * 0.8})`;
             }
 
+            if (state.d3.enabled && state.d3.lfo.active) {
+                if (state.d3.lfo.autoWave) {
+                    state.d3.lfo.waveTimer += deltaSecs;
+                    if (state.d3.lfo.waveTimer >= state.d3.lfo.waveCycleSec) {
+                        state.d3.lfo.waveTimer = 0;
+                        const i = Math.max(0, LFO_WAVE_SHAPES.indexOf(state.d3.lfo.shape));
+                        const ni = (i + 1) % LFO_WAVE_SHAPES.length;
+                        state.d3.lfo.shape = LFO_WAVE_SHAPES[ni];
+                        const sel = document.getElementById('lfo-d3-shape');
+                        if (sel) sel.value = state.d3.lfo.shape;
+                        syncD3LfoRateLabel();
+                    }
+                }
+                let mix01;
+                if (state.d3.lfo.shape === 'noise') {
+                    mix01 = stepSmoothedNoise('d3amount', deltaSecs, 0.25 + state.d3.lfo.rate * 0.35);
+                } else {
+                    mix01 = lfoPeriodicT01(state.d3.lfo.shape, time, state.d3.lfo.rate);
+                    mix01 = Math.min(1, Math.max(0, mix01));
+                }
+                state.d3.mix = mix01;
+                const ledD3 = document.getElementById('lfo-d3-led');
+                if (ledD3) ledD3.style.backgroundColor = `rgba(59, 130, 246, ${0.2 + mix01 * 0.8})`;
+                syncD3MixReadout();
+            } else if (state.d3.enabled) {
+                state.d3.mix = 1;
+                const ledD3 = document.getElementById('lfo-d3-led');
+                if (ledD3 && !state.d3.lfo.active) ledD3.style.backgroundColor = '';
+                syncD3MixReadout();
+            }
+
+            if (state.d3.enabled) {
+                const cd = state.d3._camDrivers;
+                cd.orbitH = advanceD3CamAxis('orbitH', 'lfo-d3-orbit-h-shape', deltaSecs, time);
+                cd.orbitV = advanceD3CamAxis('orbitV', 'lfo-d3-orbit-v-shape', deltaSecs, time);
+                cd.dolly = advanceD3CamAxis('dolly', 'lfo-d3-dolly-shape', deltaSecs, time);
+            } else {
+                const cd = state.d3._camDrivers;
+                cd.orbitH = cd.orbitV = cd.dolly = null;
+            }
+
+            if (state.d3.enabled && state.d3.gate.enabled) {
+                let c = Math.max(0.5, Number(state.d3.gate.effectiveCycle) || 20);
+                let a = Math.min(Math.max(0.05, Number(state.d3.gate.effectiveActive) || 2), c * 0.99);
+                state.d3.gate.timer += deltaSecs;
+                while (state.d3.gate.timer >= c) {
+                    state.d3.gate.timer -= c;
+                    if (state.d3.gate.jitter) {
+                        pickRandomD3GateDurations();
+                        c = Math.max(0.5, Number(state.d3.gate.effectiveCycle) || 20);
+                    }
+                }
+                c = Math.max(0.5, Number(state.d3.gate.effectiveCycle) || 20);
+                a = Math.min(Math.max(0.05, Number(state.d3.gate.effectiveActive) || 2), c * 0.99);
+                state.d3.gateOpen = state.d3.gate.timer < a;
+            } else {
+                state.d3.gateOpen = true;
+            }
+
             if (state.lfo.charset.active) {
                 const keys = Object.keys(charSets);
                 if (state.lfo.charset.shape === 'noise') {
@@ -2046,36 +2702,247 @@
             }
         }
 
-        function getASCIIColor(x, y, w, h, brightness, now) {
+        /** Single pass for canvas fillStyle + RGB (3D depth uses luminance without a second palette walk). */
+        function getASCIIColorData(x, y, w, h, brightness, now) {
             const time = now / 1000;
             switch (state.colorMode) {
-                case 'rainbow':
-                    return `hsl(${(x / w) * 360 + (time * 50)}, 70%, 60%)`;
+                case 'rainbow': {
+                    const hue = (x / w) * 360 + (time * 50);
+                    const [r, g, b] = hslToRgb(hue, 0.7, 0.6);
+                    return { css: `hsl(${hue}, 70%, 60%)`, r, g, b };
+                }
                 case 'heatmap': {
                     const hue = 240 - (brightness / 255) * 240;
-                    return `hsl(${hue}, 100%, 50%)`;
+                    const [r, g, b] = hslToRgb(hue, 1, 0.5);
+                    return { css: `hsl(${hue}, 100%, 50%)`, r, g, b };
                 }
                 case 'vapor': {
                     const vaporLeft = state.tint;
                     const vaporRight = adjustHue(state.tint, 180);
-                    return (x / w) < 0.5 ? vaporLeft : vaporRight;
+                    const css = (x / w) < 0.5 ? vaporLeft : vaporRight;
+                    const [r, g, b] = hexToRgb(css);
+                    return { css, r, g, b };
                 }
-                case 'cyber':
-                    if (brightness > 180) return state.tint;
-                    if (brightness > 90) return adjustHue(state.tint, -40);
-                    return adjustHue(state.tint, -80);
-                case 'rgb-tiered':
-                    if (brightness > 180) return state.tint;
-                    if (brightness > 80) return adjustHue(state.tint, 120);
-                    return adjustHue(state.tint, 240);
-                case 'toxic':
-                    return brightness > 120 ? state.tint : adjustHue(state.tint, 20);
-                default:
-                    return state.tint;
+                case 'cyber': {
+                    let css;
+                    if (brightness > 180) css = state.tint;
+                    else if (brightness > 90) css = adjustHue(state.tint, -40);
+                    else css = adjustHue(state.tint, -80);
+                    const [r, g, b] = hexToRgb(css);
+                    return { css, r, g, b };
+                }
+                case 'rgb-tiered': {
+                    let css;
+                    if (brightness > 180) css = state.tint;
+                    else if (brightness > 80) css = adjustHue(state.tint, 120);
+                    else css = adjustHue(state.tint, 240);
+                    const [r, g, b] = hexToRgb(css);
+                    return { css, r, g, b };
+                }
+                case 'toxic': {
+                    const css = brightness > 120 ? state.tint : adjustHue(state.tint, 20);
+                    const [r, g, b] = hexToRgb(css);
+                    return { css, r, g, b };
+                }
+                default: {
+                    const css = state.tint;
+                    const [r, g, b] = hexToRgb(css);
+                    return { css, r, g, b };
+                }
             }
         }
 
-        function processFrame(now) {
+        function getASCIIColor(x, y, w, h, brightness, now) {
+            return getASCIIColorData(x, y, w, h, brightness, now).css;
+        }
+
+        function d3Hash01(x, y) {
+            let n = (x * 73856093 ^ y * 19349663 ^ state.d3.noiseSeed) >>> 0;
+            n = Math.imul(n ^ (n >>> 15), 2246822519) >>> 0;
+            return (n % 1000000) / 1000000;
+        }
+
+        function updateD3Camera(now, deltaSecs) {
+            const t = now / 1000;
+            const baseYaw = 0.55;
+            const basePitch = 0.38;
+            const baseDist = 2.85;
+            let yaw = baseYaw;
+            let pitch = basePitch;
+            let targetDist = baseDist;
+            const d = state.d3._camDrivers;
+
+            if (state.d3.orbitH.enabled) {
+                const r = state.d3.orbitH.lfo.rate;
+                if (d.orbitH != null) {
+                    yaw += (d.orbitH - 0.5) * 2 * 1.25;
+                } else {
+                    yaw += t * r * 1.1;
+                }
+            }
+            if (state.d3.orbitV.enabled) {
+                const r = state.d3.orbitV.lfo.rate;
+                if (d.orbitV != null) {
+                    // Full vertical swing (±π) so one LFO cycle can cover a full flip; matches “full orbit” vs tiny bob.
+                    pitch += (d.orbitV - 0.5) * 2 * Math.PI;
+                } else {
+                    // Same continuous angular speed style as Orb H (full circles over time, not a small sine wobble).
+                    pitch += t * r * 1.1;
+                }
+            }
+            if (state.d3.dolly.enabled) {
+                const r = state.d3.dolly.lfo.rate;
+                if (d.dolly != null) {
+                    targetDist += (d.dolly - 0.5) * 2 * 0.95;
+                } else {
+                    targetDist += Math.sin(t * r * 0.52) * 0.85;
+                }
+            }
+
+            state.d3.camYaw = yaw;
+            state.d3.camPitch = pitch;
+
+            if (state.d3.dolly.enabled) {
+                if (state.d3._smoothDist == null) state.d3._smoothDist = targetDist;
+                const k = 1 - Math.exp(-Math.max(0, deltaSecs) * 10);
+                state.d3._smoothDist += (targetDist - state.d3._smoothDist) * k;
+                state.d3.camDist = state.d3._smoothDist;
+            } else {
+                state.d3.camDist = targetDist;
+                state.d3._smoothDist = targetDist;
+            }
+        }
+
+        function updateD3ToggleBtn(el, on) {
+            el.textContent = on ? 'ON' : 'OFF';
+            el.classList.toggle('border-cyan-500', on);
+            el.classList.toggle('text-cyan-300', on);
+            el.classList.toggle('bg-cyan-950/30', on);
+            el.classList.toggle('text-slate-500', !on);
+        }
+
+        function updateGlitchToggleBtn(el, on) {
+            el.textContent = on ? 'ON' : 'OFF';
+            el.classList.toggle('border-cyan-500', on);
+            el.classList.toggle('text-cyan-300', on);
+            el.classList.toggle('bg-cyan-950/30', on);
+            el.classList.toggle('text-slate-500', !on);
+        }
+
+        function glitchHash01(k1, k2, t) {
+            const u = Math.sin(k1 * 127.1 + k2 * 311.7 + t * 19.17) * 43758.5453;
+            return u - Math.floor(u);
+        }
+
+        function shiftRowsHorizGlitch(d, w, h, y0, bh, dx) {
+            const stride = w * 4;
+            const copyH = Math.min(bh, h - y0);
+            if (copyH <= 0) return;
+            const len = copyH * stride;
+            if (!glitchBlockScratch || glitchBlockScratch.length < len) glitchBlockScratch = new Uint8ClampedArray(len);
+            const tmp = glitchBlockScratch.subarray(0, len);
+            for (let i = 0; i < copyH; i++) {
+                const sy = y0 + i;
+                tmp.set(d.subarray(sy * stride, sy * stride + stride), i * stride);
+            }
+            for (let i = 0; i < copyH; i++) {
+                const dy = y0 + i;
+                const dstBase = dy * stride;
+                for (let x = 0; x < w; x++) {
+                    const di = dstBase + x * 4;
+                    const sx = x - dx;
+                    if (sx >= 0 && sx < w) {
+                        const ti = i * stride + sx * 4;
+                        d[di] = tmp[ti];
+                        d[di + 1] = tmp[ti + 1];
+                        d[di + 2] = tmp[ti + 2];
+                        d[di + 3] = tmp[ti + 3];
+                    } else {
+                        d[di] = d[di + 1] = d[di + 2] = 0;
+                        d[di + 3] = 255;
+                    }
+                }
+            }
+        }
+
+        function rgbSplitRowGlitch(d, w, y, dr, dg, db) {
+            const stride = w * 4;
+            if (!glitchRowScratch || glitchRowScratch.length < stride) glitchRowScratch = new Uint8ClampedArray(stride);
+            glitchRowScratch.set(d.subarray(y * stride, y * stride + stride));
+            const row = glitchRowScratch;
+            const base = y * stride;
+            for (let x = 0; x < w; x++) {
+                const di = base + x * 4;
+                const xr = x - dr;
+                const xg = x - dg;
+                const xb = x - db;
+                if (xr >= 0 && xr < w) d[di] = row[xr * 4];
+                if (xg >= 0 && xg < w) d[di + 1] = row[xg * 4 + 1];
+                if (xb >= 0 && xb < w) d[di + 2] = row[xb * 4 + 2];
+            }
+        }
+
+        function applyGlitchEffect(ctx, iw, ih, nowMs, intensity, rate) {
+            const t = nowMs * 0.001 * rate;
+            const id = ctx.getImageData(0, 0, iw, ih);
+            const d = id.data;
+            const w = iw;
+            const h = ih;
+            const stride = w * 4;
+            const gh = glitchHash01;
+            const nBands = Math.floor(2 + intensity * 16);
+            for (let b = 0; b < nBands; b++) {
+                const y0 = (gh(b + 0.1, 1.2, t) * h) | 0;
+                const bh = 1 + ((gh(b + 0.2, 2.3, t) * (4 + intensity * 32)) | 0);
+                const dx = Math.round((gh(b + 0.3, 3.4, t) * 2 - 1) * intensity * (6 + gh(b + 0.4, 4.5, t) * 56));
+                if (y0 < h) shiftRowsHorizGlitch(d, w, h, y0, bh, dx);
+            }
+            if (gh(5, 5, t) < intensity * 0.5) {
+                const y0 = (gh(6, 6, t) * h) | 0;
+                const ny = 1 + ((gh(7, 7, t) * (4 + intensity * 10)) | 0);
+                const dr = Math.round((gh(8, 8, t) - 0.5) * intensity * 14);
+                const db = Math.round((gh(9, 9, t) - 0.5) * intensity * 14);
+                for (let yy = y0; yy < Math.min(y0 + ny, h); yy++) rgbSplitRowGlitch(d, w, yy, dr, 0, db);
+            }
+            const scanStep = gh(10, 10, t) < 0.65 ? 2 + ((intensity * 5) | 0) : 999;
+            if (scanStep < 16) {
+                const dim = 0.25 + gh(11, 11, t) * 0.35;
+                for (let y = 0; y < h; y += scanStep) {
+                    for (let x = 0; x < w; x++) {
+                        const i = y * stride + x * 4;
+                        d[i] *= dim;
+                        d[i + 1] *= dim;
+                        d[i + 2] *= dim;
+                    }
+                }
+            }
+            const nStatic = Math.max(0, ((w * h * intensity * 0.01) | 0));
+            for (let i = 0; i < nStatic; i++) {
+                const x = (gh(i + 0.5, 12, t) * w) | 0;
+                const y = (gh(i + 0.6, 13, t) * h) | 0;
+                const j = y * stride + x * 4;
+                const mode = (gh(i, 14, t) * 4) | 0;
+                if (mode === 0) {
+                    const v = (gh(i, 15, t) * 255) | 0;
+                    d[j] = d[j + 1] = d[j + 2] = v;
+                } else if (mode === 1) {
+                    d[j] = 255 - d[j];
+                    d[j + 1] = 255 - d[j + 1];
+                    d[j + 2] = 255 - d[j + 2];
+                } else if (mode === 2) {
+                    d[j + 3] = ((gh(i, 16, t) * 200) | 0) + 40;
+                } else {
+                    const y2 = Math.min(h - 1, Math.max(0, y + ((gh(i, 17, t) * 6) | 0) - 3));
+                    const j2 = y2 * stride + x * 4;
+                    d[j] = d[j2];
+                    d[j + 1] = d[j2 + 1];
+                    d[j + 2] = d[j2 + 2];
+                }
+            }
+            ctx.putImageData(id, 0, 0);
+        }
+
+        function processFrame(now, deltaMs) {
             let sw, sh, activeSourceElement = null;
             if (state.sourceType === 'cam' || state.sourceType === 'video') {
                 if (video.paused || !video.videoWidth) return;
@@ -2117,21 +2984,140 @@
 
             outputCtx.fillStyle = state.bg;
             outputCtx.fillRect(0, 0, outputCanvas.width, outputCanvas.height);
-            outputCtx.font = `bold ${scale}px 'Fira Code', ui-monospace, monospace, 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji'`;
-            outputCtx.textAlign = "left";
-            outputCtx.textBaseline = "top";
 
             const glyphs = [...state.charset];
             const charLen = Math.max(1, glyphs.length);
-            for (let y = 0; y < h; y++) {
-                for (let x = 0; x < w; x++) {
-                    const i = (y * w + x) * 4;
-                    const brightness = pixels[i];
-                    const charIdx = Math.floor((brightness / 256) * charLen);
-                    const char = glyphs[charIdx] || glyphs[glyphs.length - 1];
-                    outputCtx.fillStyle = getASCIIColor(x, y, w, h, brightness, now);
-                    outputCtx.fillText(char, x * scale, y * scale);
+            const fontStack = `'Fira Code', ui-monospace, monospace, 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji'`;
+
+            const D3_MIX_EPS = 0.004;
+            let mix3d = (state.d3.enabled && state.d3.lfo.active)
+                ? clamp01(state.d3.mix)
+                : (state.d3.enabled ? 1 : 0);
+            if (state.d3.enabled && state.d3.gate.enabled && !state.d3.gateOpen) {
+                mix3d = 0;
+            }
+            outputCanvas.style.imageRendering = (state.d3.enabled && mix3d >= D3_MIX_EPS) ? 'auto' : 'pixelated';
+
+            if (!state.d3.enabled || mix3d < D3_MIX_EPS) {
+                outputCtx.font = `bold ${scale}px ${fontStack}`;
+                outputCtx.textAlign = 'left';
+                outputCtx.textBaseline = 'top';
+                for (let y = 0; y < h; y++) {
+                    for (let x = 0; x < w; x++) {
+                        const i = (y * w + x) * 4;
+                        const brightness = pixels[i];
+                        const charIdx = Math.floor((brightness / 256) * charLen);
+                        const char = glyphs[charIdx] || glyphs[glyphs.length - 1];
+                        outputCtx.fillStyle = getASCIIColor(x, y, w, h, brightness, now);
+                        outputCtx.fillText(char, x * scale, y * scale);
+                    }
                 }
+            } else {
+                const dSec = Math.max(0, (deltaMs == null ? 16 : deltaMs) / 1000);
+                updateD3Camera(now, dSec);
+                const rot = (state.d3.rotateDeg * Math.PI) / 180;
+                const yaw = state.d3.camYaw + rot;
+                const pitch = state.d3.camPitch;
+                const camDist = state.d3.camDist / Math.max(0.22, state.d3.zoom);
+                const cosY = Math.cos(yaw);
+                const sinY = Math.sin(yaw);
+                const cosP = Math.cos(pitch);
+                const sinP = Math.sin(pitch);
+                const focal = 1.35;
+                // ~Match 2D grid size at nominal orbit distance; per-pixel `proj` still tracks real `camDist` (manual zoom).
+                const d3LayoutRefDist = 2.75;
+                const projLayout = focal / Math.max(0.2, d3LayoutRefDist);
+                const ar = w / h;
+                const depthMul = state.d3.depth;
+                const noiseAmt = state.d3.noise;
+                const cm = state.d3.colorMix;
+                const screenMul = (h * scale) / (2 * projLayout);
+                const hw = outputCanvas.width * 0.5;
+                const hh = outputCanvas.height * 0.5;
+                const cw = outputCanvas.width;
+                const ch = outputCanvas.height;
+                const invMix = 1 - mix3d;
+                for (let b = 0; b < D3_SORT_BUCKETS; b++) d3SortBuckets[b].length = 0;
+                let bi = 0;
+                for (let y = 0; y < h; y++) {
+                    for (let x = 0; x < w; x++) {
+                        const idx = (y * w + x) * 4;
+                        const brightness = pixels[idx];
+                        const charIdx = Math.floor((brightness / 256) * charLen);
+                        const char = glyphs[charIdx] || glyphs[glyphs.length - 1];
+                        const br = brightness / 255;
+                        let col = null;
+                        let lum = br;
+                        if (cm > 0.001) {
+                            col = getASCIIColorData(x, y, w, h, brightness, now);
+                            lum = (0.299 * col.r + 0.587 * col.g + 0.114 * col.b) / 255;
+                        }
+                        const h01 = d3Hash01(x, y);
+                        let z01 = cm * lum + (1 - cm) * br + noiseAmt * ((h01 - 0.5) * 2);
+                        z01 = clamp01(z01);
+                        const wx = ((x + 0.5) / w - 0.5) * 2 * ar;
+                        const wy = ((y + 0.5) / h - 0.5) * 2; // grid y matches canvas (no negation — avoids vertical flip vs 2D)
+                        const wz = (z01 - 0.5) * 2 * depthMul;
+                        const cx = wx * cosY + wz * sinY;
+                        const cz = -wx * sinY + wz * cosY;
+                        const cy = wy;
+                        const py = cy * cosP - cz * sinP;
+                        const pz = cy * sinP + cz * cosP;
+                        const px = cx;
+                        const denom = Math.max(D3_DENOM_MIN, camDist - pz);
+                        const proj = Math.min(D3_PROJ_MAX, focal / denom);
+                        const sx3d = hw + px * proj * screenMul;
+                        const sy3d = hh + py * proj * screenMul;
+                        const fs3d = Math.max(3, Math.round(scale * (proj / projLayout) * 4) / 4);
+                        const flatCx = x * scale + scale * 0.5;
+                        const flatCy = y * scale + scale * 0.5;
+                        const sx = flatCx * invMix + sx3d * mix3d;
+                        const sy = flatCy * invMix + sy3d * mix3d;
+                        const fs = Math.max(3, scale * invMix + fs3d * mix3d);
+                        const pad = Math.max(8, fs * 0.58);
+                        if (sx < -pad || sx > cw + pad || sy < -pad || sy > ch + pad) continue;
+                        if (!col) col = getASCIIColorData(x, y, w, h, brightness, now);
+                        let slot = d3GlyphBatch[bi];
+                        if (!slot) slot = d3GlyphBatch[bi] = { sx: 0, sy: 0, fs: 0, fillStyle: '', char: '' };
+                        slot.sx = sx;
+                        slot.sy = sy;
+                        slot.fs = fs;
+                        slot.fillStyle = col.css;
+                        slot.char = char;
+                        const bk = Math.min(D3_SORT_BUCKETS - 1, Math.max(0, ((proj - 0.22) * 165) | 0));
+                        d3SortBuckets[bk].push(slot);
+                        bi++;
+                    }
+                }
+                d3GlyphBatch.length = bi;
+                outputCtx.textAlign = 'center';
+                outputCtx.textBaseline = 'middle';
+                let lastFs = -1;
+                for (let bk = 0; bk < D3_SORT_BUCKETS; bk++) {
+                    const bin = d3SortBuckets[bk];
+                    for (let j = 0, lj = bin.length; j < lj; j++) {
+                        const g = bin[j];
+                        if (g.fs !== lastFs) {
+                            lastFs = g.fs;
+                            outputCtx.font = `bold ${g.fs}px ${fontStack}`;
+                        }
+                        outputCtx.fillStyle = g.fillStyle;
+                        outputCtx.fillText(g.char, g.sx, g.sy);
+                    }
+                }
+                outputCtx.textAlign = 'left';
+                outputCtx.textBaseline = 'top';
+            }
+
+            if (state.glitch.active && state.glitch.intensity >= 0.02) {
+                applyGlitchEffect(
+                    outputCtx,
+                    outputCanvas.width,
+                    outputCanvas.height,
+                    now,
+                    state.glitch.intensity,
+                    state.glitch.rate
+                );
             }
 
             // Audio-reactive overlay (draw after ASCII so it reads like a flash)
@@ -2170,7 +3156,7 @@
             if (now % 20 < 1) fpsEl.textContent = `${state.fps || 0} FPS`;
             updateAudioReactive(deltaSecs);
             updateLFOs(now, delta);
-            processFrame(now);
+            processFrame(now, delta);
             maybeBroadcastProjectorState(now);
             requestAnimationFrame(renderLoop);
         }
