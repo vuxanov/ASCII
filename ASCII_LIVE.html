@@ -9,80 +9,150 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;700&family=Inter:wght@400;600;800&display=swap');
         :root {
-            --accent: #3b82f6;
-            --accent-glow: rgba(59, 130, 246, 0.5);
-            --bg-dark: #020617;
-            --panel-bg: rgba(15, 23, 42, 0.95);
+            --accent: #e5e5e5;
+            --accent-glow: rgba(255, 255, 255, 0.15);
+            --bg-dark: #050505;
+            --panel-bg: #0a0a0a;
         }
         body {
             background-color: var(--bg-dark);
-            color: #f8fafc;
+            color: #fafafa;
             font-family: 'Inter', sans-serif;
             overflow: hidden;
             height: 100vh;
         }
         .fira { font-family: 'Fira Code', monospace; }
-        ::-webkit-scrollbar { width: 4px; }
-        ::-webkit-scrollbar-track { background: #0f172a; }
-        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 2px; }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #0a0a0a; }
+        ::-webkit-scrollbar-thumb { background: #525252; border-radius: 0; }
         .glass {
             background: var(--panel-bg);
-            backdrop-filter: blur(20px);
-            border: 1px solid rgba(255,255,255,0.08);
+            backdrop-filter: none;
+            border: 2px solid #404040;
         }
-        .knob-label { font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.1em; color: #64748b; font-weight: 800; }
-        input[type=range] { accent-color: var(--accent); }
+        header.glass { border-width: 0 0 2px 0; border-color: #fafafa; }
+        aside.glass { border-color: #525252; }
+        .knob-label { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.14em; color: #a3a3a3; font-weight: 900; }
+        #controls-panel .control-group {
+            border-bottom: 2px solid #262626;
+            padding-bottom: 1rem;
+            margin-bottom: 0;
+        }
+        /* Focused / keyboard-active form controls — high contrast */
+        #controls-panel input[type="text"]:focus-visible {
+            border-color: #fafafa !important;
+            box-shadow: 0 0 0 2px #000, 0 0 0 4px #fafafa;
+            color: #fff;
+        }
+        #controls-panel select:focus-visible {
+            border-color: #fafafa !important;
+            box-shadow: 0 0 0 2px #000, 0 0 0 4px #fafafa;
+        }
+        #controls-panel .palette-swatch-wrap:has(.palette-color-input:focus-visible) {
+            outline: 2px solid #fafafa;
+            outline-offset: 3px;
+            background: #0a0a0a;
+        }
+        #controls-panel .palette-color-input:focus-visible {
+            border-color: #fafafa !important;
+        }
+        #controls-panel input[type="range"]:focus-visible {
+            outline: 2px solid #fafafa;
+            outline-offset: 6px;
+        }
+        #controls-panel input[type="range"]:focus-visible::-webkit-slider-thumb {
+            background: #ffff00;
+            border-color: #000;
+        }
+        #controls-panel input[type="range"]:focus-visible::-moz-range-thumb {
+            background: #ffff00;
+            border-color: #000;
+        }
+        .btn-onoff {
+            font-size: 8px; font-weight: 900; padding: 0.25rem 0.5rem;
+            border: 2px solid #525252; background: #000; color: #737373;
+            border-radius: 0; text-transform: uppercase; letter-spacing: 0.05em;
+            transition: color 0.1s, border-color 0.1s, background 0.1s;
+        }
+        .btn-onoff.on { border-color: #fafafa; color: #fafafa; background: #171717; }
+        .btn-brutal-latched {
+            font-size: 9px;
+            font-weight: 900;
+            padding: 0.125rem 0.375rem;
+            border: 2px solid #525252;
+            background: #000;
+            color: #737373;
+            border-radius: 0;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            transition: border-color 0.1s, color 0.1s, background 0.1s;
+        }
+        .btn-brutal-latched:hover { color: #e5e5e5; border-color: #a3a3a3; }
+        .btn-brutal-latched.is-latched {
+            border-color: #fafafa;
+            color: #fafafa;
+            background: #171717;
+        }
+        .brutal-lfo-inline.on {
+            border-color: #fafafa !important;
+            color: #fafafa !important;
+            background: #171717 !important;
+        }
+        input[type=range] { accent-color: #e5e5e5; }
         .lfo-indicator {
-            width: 6px; height: 6px; border-radius: 50%;
+            width: 6px; height: 6px; border-radius: 0;
             display: inline-block; margin-left: 4px;
+            border: 1px solid #404040;
             transition: background-color 0.1s ease;
         }
-        .lfo-active { box-shadow: 0 0 8px var(--accent-glow); }
+        .lfo-active { background-color: #fafafa !important; box-shadow: none; }
         #output-canvas {
             image-rendering: pixelated;
             max-width: 100%; max-height: 100%;
             object-fit: contain;
         }
         .playlist-item {
-            @apply p-1.5 rounded-lg text-[10px] cursor-pointer border flex items-center gap-2.5 group transition-all relative overflow-hidden border-l-4;
+            @apply p-1.5 rounded-none text-[10px] cursor-pointer border-2 flex items-center gap-2.5 group transition-all relative overflow-hidden border-l-4;
             user-select: none;
         }
         .active-item {
-            @apply border-blue-500 bg-blue-500/30 text-blue-100 ring-2 ring-blue-500/20 border-l-blue-400 shadow-[0_0_20px_rgba(59,130,246,0.3)];
-            animation: pulse-active 2s infinite ease-in-out;
+            @apply border-white bg-neutral-950 text-white;
+            border-left-width: 6px;
+            animation: none;
+            box-shadow: inset 0 0 0 1px rgba(250, 250, 250, 0.35) !important;
         }
         @keyframes pulse-active {
-            0%, 100% { border-left-color: #3b82f6; box-shadow: 0 0 15px rgba(59,130,246,0.1); }
-            50% { border-left-color: #60a5fa; box-shadow: 0 0 25px rgba(59,130,246,0.3); }
+            0%, 100% { opacity: 1; }
+            50% { opacity: 1; }
         }
         .inactive-item {
-            @apply border-slate-800 bg-slate-900/40 hover:bg-slate-800 text-slate-500 border-l-transparent;
+            @apply border-neutral-800 bg-black hover:bg-neutral-950 text-neutral-500 border-l-transparent;
         }
-        .dragging { opacity: 0.5; transform: scale(0.98); border: 1px dashed #3b82f6 !important; }
-        .drag-over { border-top: 2px solid #3b82f6 !important; }
+        .dragging { opacity: 0.5; transform: scale(0.98); border: 2px dashed #fafafa !important; }
+        .drag-over { border-top: 2px solid #fafafa !important; }
         .progress-bar {
             position: absolute; bottom: 0; left: 0; height: 2px;
-            background: #60a5fa; transition: width 0.1s linear; z-index: 10;
+            background: #e5e5e5; transition: width 0.1s linear; z-index: 10;
         }
-        .icon-btn { @apply p-2 rounded-lg border transition-all flex items-center justify-center; }
-        .icon-btn-active { @apply bg-blue-600 border-blue-400 text-white shadow-[0_0_10px_rgba(59,130,246,0.5)]; }
-        .icon-btn-inactive { @apply bg-slate-800 border-slate-700 text-slate-400 hover:border-slate-500; }
+        .icon-btn { @apply p-2 rounded-none border-2 transition-all flex items-center justify-center; }
+        .icon-btn-active { @apply bg-white border-white text-black; }
+        .icon-btn-inactive { @apply bg-black border-neutral-600 text-neutral-500 hover:border-neutral-400; }
         .thumbnail-box {
-            @apply w-10 h-7 rounded bg-black flex-shrink-0 border border-white/5 overflow-hidden flex items-center justify-center;
+            @apply w-10 h-7 rounded-none bg-black flex-shrink-0 border-2 border-neutral-700 overflow-hidden flex items-center justify-center;
         }
         .item-delete-btn {
             position: static;
             width: 18px;
             height: 18px;
-            border-radius: 5px;
+            border-radius: 0;
             display: none;
             align-items: center;
             justify-content: center;
             font-size: 12px;
             line-height: 1;
-            background: rgba(2, 6, 23, 0.65);
-            border: 1px solid rgba(255, 255, 255, 0.12);
-            color: #fb7185;
+            background: #0a0a0a;
+            border: 2px solid #525252;
+            color: #fca5a5;
             z-index: 30;
             pointer-events: auto;
         }
@@ -90,19 +160,19 @@
         .preset-grid { @apply grid grid-cols-2 gap-1.5; }
         .preset-grid-wide { @apply grid grid-cols-3 gap-1.5 max-h-44 overflow-y-auto pr-0.5; }
         .preset-btn {
-            @apply text-[9px] font-black bg-slate-900 p-2 rounded border border-slate-800 hover:border-blue-500 transition-all uppercase tracking-tighter;
+            @apply text-[9px] font-black bg-black p-2 rounded-none border-2 border-neutral-700 text-neutral-300 hover:border-white hover:text-white transition-all uppercase tracking-tighter;
         }
         .preset-active {
-            @apply border-blue-500 bg-blue-900/30 text-blue-100 shadow-[0_0_10px_rgba(59,130,246,0.2)];
+            @apply border-white bg-neutral-900 text-white shadow-none;
         }
         .density-dual-range { position: relative; height: 28px; width: 100%; min-width: 128px; }
         .density-dual-range .density-range-track-bg {
             position: absolute; left: 0; right: 0; top: 50%; transform: translateY(-50%);
-            height: 6px; border-radius: 9999px; background: #1e293b; pointer-events: none;
+            height: 4px; border-radius: 0; background: #262626; pointer-events: none;
         }
         .density-dual-range .density-range-fill {
             position: absolute; top: 50%; transform: translateY(-50%);
-            height: 6px; border-radius: 9999px; background: rgba(59, 130, 246, 0.45); pointer-events: none;
+            height: 4px; border-radius: 0; background: #d4d4d4; pointer-events: none;
         }
         .density-dual-range input[type=range] {
             position: absolute; left: 0; width: 100%; min-width: 128px; margin: 0; height: 28px;
@@ -114,39 +184,80 @@
         .density-dual-range input[type=range]::-moz-range-track { height: 6px; background: transparent; }
         .density-dual-range input[type=range]::-webkit-slider-thumb {
             -webkit-appearance: none; appearance: none;
-            width: 14px; height: 14px; border-radius: 50%; background: #3b82f6;
-            border: 2px solid #1e3a8a; cursor: grab; pointer-events: auto; margin-top: -4px;
+            width: 12px; height: 14px; border-radius: 0; background: #fafafa;
+            border: 2px solid #000; cursor: grab; pointer-events: auto; margin-top: -5px;
         }
         .density-dual-range input[type=range]::-moz-range-thumb {
-            width: 14px; height: 14px; border-radius: 50%; background: #3b82f6;
-            border: 2px solid #1e3a8a; cursor: grab; pointer-events: auto;
+            width: 12px; height: 14px; border-radius: 0; background: #fafafa;
+            border: 2px solid #000; cursor: grab; pointer-events: auto;
         }
         .density-dual-range input[type=range]:focus { outline: none; }
+
+        main > aside:first-of-type input[type=range],
+        #controls-panel input[type=range]:not(#param-res-min):not(#param-res-max) {
+            -webkit-appearance: none;
+            appearance: none;
+            background: transparent;
+            min-height: 14px;
+        }
+        main > aside:first-of-type input[type=range]::-webkit-slider-runnable-track,
+        #controls-panel input[type=range]:not(#param-res-min):not(#param-res-max)::-webkit-slider-runnable-track {
+            height: 4px;
+            border-radius: 0;
+            background: #262626;
+        }
+        main > aside:first-of-type input[type=range]::-webkit-slider-thumb,
+        #controls-panel input[type=range]:not(#param-res-min):not(#param-res-max)::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 10px;
+            height: 12px;
+            margin-top: -4px;
+            border-radius: 0;
+            background: #fafafa;
+            border: 2px solid #000;
+            cursor: pointer;
+        }
+        main > aside:first-of-type input[type=range]::-moz-range-track,
+        #controls-panel input[type=range]:not(#param-res-min):not(#param-res-max)::-moz-range-track {
+            height: 4px;
+            border-radius: 0;
+            background: #262626;
+        }
+        main > aside:first-of-type input[type=range]::-moz-range-thumb,
+        #controls-panel input[type=range]:not(#param-res-min):not(#param-res-max)::-moz-range-thumb {
+            width: 10px;
+            height: 12px;
+            border-radius: 0;
+            background: #fafafa;
+            border: 2px solid #000;
+            cursor: pointer;
+        }
     </style>
 </head>
 <body class="flex flex-col">
-    <header class="h-12 glass border-b border-slate-800 flex items-center justify-between px-6 shrink-0 z-50">
+    <header class="h-12 glass flex items-center justify-between px-6 shrink-0 z-50 bg-black">
         <div class="flex items-center gap-4">
-            <h1 class="font-black text-blue-500 tracking-tighter text-xl italic text-shadow-glow">ASCII_LIVE.v9.6</h1>
-            <div id="fps-counter" class="fira text-[10px] text-slate-500 bg-slate-900 px-2 py-0.5 rounded border border-slate-800">60 FPS</div>
+            <h1 class="font-black text-white tracking-tighter text-xl italic">ASCII_LIVE.v9.6</h1>
+            <div id="fps-counter" class="fira text-[10px] text-neutral-400 bg-black px-2 py-0.5 rounded-none border-2 border-neutral-600 tabular-nums">60 FPS</div>
         </div>
         <div class="flex items-center gap-3">
             <div id="dim-info" class="text-[10px] fira text-slate-400 mr-4">0 x 0</div>
-            <span id="source-status" class="px-2 py-0.5 rounded bg-slate-800 text-[10px] font-bold uppercase tracking-widest text-slate-400">Standby</span>
-            <button id="fullscreen-btn" type="button" class="hover:text-blue-400 transition-colors p-1" title="Fullscreen canvas area">
+            <span id="source-status" class="px-2 py-0.5 rounded-none bg-black border-2 border-neutral-600 text-[10px] font-black uppercase tracking-widest text-neutral-400">Standby</span>
+            <button id="fullscreen-btn" type="button" class="hover:text-white text-neutral-400 transition-colors p-1 rounded-none" title="Fullscreen canvas area">
                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M21 8V5a2 2 0 0 0-2-2h-3"/><path d="M3 16v3a2 2 0 0 0 2 2h3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/></svg>
             </button>
-            <button id="projector-btn" type="button" class="hover:text-violet-300 transition-colors p-1" title="Open projector window (no UI)">
+            <button id="projector-btn" type="button" class="hover:text-white text-neutral-400 transition-colors p-1 rounded-none" title="Open projector window (no UI)">
                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 3h6l2 4h14v10a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V3z"/><path d="M8 21h8"/></svg>
             </button>
         </div>
     </header>
 
     <main class="flex flex-1 overflow-hidden">
-        <aside class="w-72 glass border-r border-slate-800 flex flex-col p-4 gap-4 shrink-0 overflow-y-auto">
+        <aside class="w-72 glass border-r-2 flex flex-col p-4 gap-4 shrink-0 overflow-y-auto">
             <section>
                 <h2 class="knob-label mb-2">Import Content</h2>
-                <label class="w-full py-2 bg-slate-800 hover:bg-blue-600/20 border border-slate-700 rounded text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer shadow-inner">
+                <label class="w-full py-2 bg-black hover:bg-neutral-900 border-2 border-neutral-600 rounded-none text-xs font-black uppercase tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer">
                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
                     ADD MP4/GIF
                     <input type="file" id="playlist-upload" multiple accept="video/*,image/gif" class="hidden">
@@ -155,24 +266,16 @@
 
             <section class="flex flex-col gap-2 border-t border-slate-800 pt-3">
                 <h2 class="knob-label mb-1 text-slate-400">Performance Automation</h2>
-                <div class="flex gap-2">
-                    <button id="btn-shuffle" type="button" class="icon-btn icon-btn-inactive flex-1" title="Shuffle Playlist">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/><line x1="4" y1="4" x2="9" y2="9"/></svg>
-                    </button>
-                    <button id="btn-repeat" type="button" class="icon-btn icon-btn-inactive flex-1" title="Repeat Current">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
-                    </button>
-                </div>
                 <div class="flex flex-col gap-1.5 mt-2">
                     <div class="flex justify-between items-center">
                         <label class="text-[9px] font-extrabold text-slate-500 uppercase tracking-tighter">Source Switch</label>
                         <div class="flex items-center gap-1.5">
-                            <button id="btn-switch-jitter" type="button" class="text-[8px] font-black px-1.5 py-0.5 rounded border border-slate-700 bg-slate-900 text-slate-500 hover:border-amber-500/60 hover:text-amber-400 transition-colors" title="Random dwell each cycle (2–60s); disables interval slider">RND</button>
-                            <button id="btn-auto-switch" type="button" class="text-[9px] font-bold text-blue-400 hover:text-white transition-colors">ENABLE</button>
+                            <button id="btn-switch-jitter" type="button" class="text-[8px] font-black px-1.5 py-0.5 rounded-none border-2 border-neutral-600 bg-black text-neutral-500 hover:border-white hover:text-white transition-colors" title="Random dwell each cycle (2–60s); disables interval slider">RND</button>
+                            <button id="btn-auto-switch" type="button" class="btn-brutal-latched">ENABLE</button>
                         </div>
                     </div>
                     <div class="flex items-center gap-2">
-                        <input type="range" id="param-interval" min="2" max="60" value="10" class="flex-1 h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer">
+                        <input type="range" id="param-interval" min="2" max="60" value="10" class="flex-1 h-1 bg-transparent rounded-none appearance-none cursor-pointer">
                         <span id="val-interval" class="fira text-[9px] min-w-[2rem] text-right text-slate-400">10s</span>
                     </div>
                 </div>
@@ -180,12 +283,12 @@
                     <div class="flex justify-between items-center">
                         <label class="text-[9px] font-extrabold text-slate-500 uppercase tracking-tighter">Preset Cycle <span id="lfo-preset-led" class="lfo-indicator bg-slate-700"></span></label>
                         <div class="flex items-center gap-1.5">
-                            <button id="btn-preset-jitter" type="button" class="text-[8px] font-black px-1.5 py-0.5 rounded border border-slate-700 bg-slate-900 text-slate-500 hover:border-amber-500/60 hover:text-amber-400 transition-colors" title="Random dwell each cycle (1–30s); disables interval slider">RND</button>
-                            <button id="btn-auto-preset" type="button" class="text-[9px] font-bold text-blue-400 hover:text-white transition-colors">ENABLE</button>
+                            <button id="btn-preset-jitter" type="button" class="text-[8px] font-black px-1.5 py-0.5 rounded-none border-2 border-neutral-600 bg-black text-neutral-500 hover:border-white hover:text-white transition-colors" title="Random dwell each cycle (1–30s); disables interval slider">RND</button>
+                            <button id="btn-auto-preset" type="button" class="btn-brutal-latched">ENABLE</button>
                         </div>
                     </div>
                     <div class="flex items-center gap-2">
-                        <input type="range" id="param-preset-interval" min="1" max="30" value="5" class="flex-1 h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer">
+                        <input type="range" id="param-preset-interval" min="1" max="30" value="5" class="flex-1 h-1 bg-transparent rounded-none appearance-none cursor-pointer">
                         <span id="val-preset-interval" class="fira text-[9px] min-w-[2rem] text-right text-slate-400">5s</span>
                     </div>
                 </div>
@@ -194,15 +297,15 @@
             <section class="flex-1 flex flex-col overflow-hidden border-t border-slate-800 pt-3">
                 <div class="flex justify-between items-center mb-2">
                     <h2 class="knob-label">Source Queue</h2>
-                    <button id="btn-delete-all" type="button" class="text-[8px] font-black px-1.5 py-0.5 rounded border border-slate-700 bg-slate-900 text-slate-500 hover:border-red-500 hover:text-red-300 transition-colors" title="Delete all uploaded items">DELETE ALL</button>
+                    <button id="btn-delete-all" type="button" class="text-[8px] font-black px-1.5 py-0.5 rounded-none border-2 border-neutral-600 bg-black text-neutral-500 hover:border-red-500 hover:text-red-300 transition-colors" title="Delete all uploaded items">DELETE ALL</button>
                 </div>
                 <div id="playlist-container" class="flex-1 overflow-y-auto space-y-2 pr-1"></div>
             </section>
 
             <section class="border-t border-slate-800 pt-3">
                 <div class="flex justify-between items-center mb-2">
-                    <h2 class="knob-label text-blue-400">Style Presets</h2>
-                    <button type="button" onclick="resetPresets()" class="text-[8px] px-1.5 py-0.5 rounded border border-slate-700 bg-slate-800 hover:bg-red-900/40 hover:text-red-400 hover:border-red-500 transition-all font-bold">RESET ALL</button>
+                    <h2 class="knob-label text-white">Style Presets</h2>
+                    <button type="button" onclick="resetPresets()" class="text-[8px] px-1.5 py-0.5 rounded-none border-2 border-neutral-600 bg-black hover:bg-neutral-950 hover:text-red-400 hover:border-red-500 transition-all font-black uppercase">RESET ALL</button>
                 </div>
                 <div class="preset-grid">
                     <button type="button" onclick="applyPreset('matrix')" class="preset-btn" id="btn-pre-matrix">MATRIX</button>
@@ -236,19 +339,22 @@
 
         <div class="flex-1 flex flex-col relative bg-black items-center justify-center overflow-hidden min-w-0">
             <div id="viewport-container" class="relative w-full h-full flex items-center justify-center p-4">
-                <button id="projector-fullscreen-btn" type="button" class="hidden absolute top-3 right-3 z-50 text-[10px] font-black px-2 py-1 rounded border border-white/10 bg-black/50 hover:bg-black/70 text-white/80 hover:text-white transition-colors" title="Projector fullscreen">FULL</button>
+                <button id="projector-fullscreen-btn" type="button" class="hidden absolute top-3 right-3 z-50 text-[10px] font-black px-2 py-1 rounded-none border-2 border-white bg-black hover:bg-neutral-900 text-white transition-colors" title="Projector fullscreen">FULL</button>
                 <canvas id="output-canvas" class="shadow-2xl"></canvas>
                 <canvas id="projector-canvas" class="hidden absolute inset-0 w-full h-full" aria-label="Projector output"></canvas>
             </div>
         </div>
 
-        <aside class="w-72 glass border-l border-slate-800 flex flex-col shrink-0 overflow-hidden">
-            <div id="controls-panel" class="flex-1 overflow-y-auto p-4 flex flex-col gap-5">
-                <h2 class="knob-label shrink-0 pb-3 border-b border-slate-800 text-slate-400">Output &amp; effects</h2>
+        <aside class="w-72 glass border-l-2 flex flex-col shrink-0 overflow-hidden">
+            <div id="controls-panel" class="flex-1 overflow-y-auto p-4 flex flex-col gap-0">
+                <h2 class="knob-label shrink-0 pb-3 border-b-2 border-neutral-700 text-neutral-400">Output &amp; effects</h2>
                 <div class="control-group w-full">
                     <div class="flex justify-between items-center gap-2">
                         <label class="knob-label">Density <span id="lfo-res-led" class="lfo-indicator bg-slate-700"></span></label>
-                        <span class="fira text-[9px] text-slate-400 tabular-nums"><span id="val-res-min">80</span>–<span id="val-res-max">80</span> <span class="text-slate-600">|</span> <span id="val-res" class="text-slate-300">80</span></span>
+                        <div class="flex items-center gap-2 shrink-0">
+                            <span class="fira text-[9px] text-neutral-500 tabular-nums"><span id="val-res-min">80</span>–<span id="val-res-max">80</span> <span class="text-neutral-600">|</span> <span id="val-res" class="text-neutral-300">80</span></span>
+                            <button type="button" id="lfo-res-btn" class="btn-onoff" title="Density LFO">OFF</button>
+                        </div>
                     </div>
                     <div class="density-dual-range mt-1">
                         <div class="density-range-track-bg" aria-hidden="true"></div>
@@ -256,153 +362,101 @@
                         <input type="range" id="param-res-min" min="4" max="250" value="80">
                         <input type="range" id="param-res-max" min="4" max="250" value="80">
                     </div>
-                    <div class="flex flex-wrap gap-1.5 items-center mt-1">
-                        <button type="button" id="lfo-res-btn" class="text-[8px] bg-slate-900 px-2 py-0.5 rounded border border-slate-700 hover:border-blue-500 transition-all">LFO</button>
-                        <select id="lfo-res-shape" class="text-[8px] bg-slate-900 border border-slate-700 rounded px-1 py-0.5 text-slate-300 outline-none focus:border-blue-500 max-w-[4.75rem]" title="Wave shape (use WAVE AUTO to cycle)">
-                            <option value="sine">Sine</option>
-                            <option value="triangle">Tri</option>
-                            <option value="saw">Saw</option>
-                            <option value="square">Sqr</option>
-                            <option value="pulse">Pulse</option>
-                            <option value="noise">Noise</option>
-                        </select>
-                        <span class="fira text-[7px] text-slate-600 w-4 shrink-0" id="lfo-res-rate-label" title="Periodic: speed · Noise: amplitude">∿</span>
-                        <input type="range" id="lfo-res-rate" min="0.1" max="5" step="0.1" value="1" class="w-14 h-1 bg-slate-800 rounded-lg appearance-none" title="Periodic waves: frequency · Noise: jump spread">
-                    </div>
-                    <div class="flex flex-wrap items-center gap-1.5 mt-1">
-                        <button type="button" id="btn-lfo-res-auto-wave" class="text-[7px] font-black px-1.5 py-0.5 rounded border border-slate-700 bg-slate-900 text-slate-500 hover:border-violet-500/60 hover:text-violet-300 transition-colors" title="Cycle wave shape automatically">WAVE AUTO</button>
-                        <input type="range" id="lfo-res-wave-cycle" min="1" max="12" value="3" class="w-12 h-1 bg-slate-800 rounded-lg appearance-none" title="Seconds per wave shape">
-                        <span id="val-lfo-res-wave-cycle" class="fira text-[7px] text-slate-500 w-6">3s</span>
-                    </div>
-                </div>
-                <div class="control-group">
-                    <div class="flex justify-between items-center">
-                        <label class="knob-label">Contrast <span id="lfo-contrast-led" class="lfo-indicator bg-slate-700"></span></label>
-                        <span id="val-contrast" class="fira text-[10px]">1.2</span>
-                    </div>
-                    <input type="range" id="param-contrast" min="0" max="4" step="0.1" value="1.2" class="w-full h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer">
-                    <div class="flex flex-wrap gap-1.5 items-center">
-                        <button type="button" id="lfo-contrast-btn" class="text-[8px] bg-slate-900 px-2 py-0.5 rounded border border-slate-700 hover:border-blue-500 transition-all">LFO</button>
-                        <select id="lfo-contrast-shape" class="text-[8px] bg-slate-900 border border-slate-700 rounded px-1 py-0.5 text-slate-300 outline-none focus:border-blue-500 max-w-[4.75rem]">
-                            <option value="sine">Sine</option>
-                            <option value="triangle">Tri</option>
-                            <option value="saw">Saw</option>
-                            <option value="square">Sqr</option>
-                            <option value="pulse">Pulse</option>
-                            <option value="noise">Noise</option>
-                        </select>
-                        <input type="range" id="lfo-contrast-rate" min="0.1" max="5" step="0.1" value="1" class="w-14 h-1 bg-slate-800 rounded-lg appearance-none">
-                    </div>
-                    <div class="flex flex-wrap items-center gap-1.5 mt-1">
-                        <button type="button" id="btn-lfo-contrast-auto-wave" class="text-[7px] font-black px-1.5 py-0.5 rounded border border-slate-700 bg-slate-900 text-slate-500 hover:border-violet-500/60 hover:text-violet-300 transition-colors" title="Cycle contrast wave automatically">WAVE AUTO</button>
-                        <input type="range" id="lfo-contrast-wave-cycle" min="1" max="12" value="3" class="w-12 h-1 bg-slate-800 rounded-lg appearance-none">
-                        <span id="val-lfo-contrast-wave-cycle" class="fira text-[7px] text-slate-500 w-6">3s</span>
-                    </div>
-                </div>
-                <div class="control-group w-full">
-                    <div class="flex justify-between items-center">
-                        <label class="knob-label">Characters <span id="lfo-charset-led" class="lfo-indicator bg-slate-700"></span></label>
-                    </div>
-                    <input type="text" id="param-charset" value="@%#*+=-:. " class="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-[10px] fira focus:border-blue-500 outline-none text-blue-400">
-                    <div class="flex flex-wrap gap-1.5 items-center">
-                        <button type="button" id="lfo-charset-btn" class="text-[8px] bg-slate-900 px-2 py-0.5 rounded border border-slate-700 hover:border-blue-500 transition-all uppercase font-bold">Cycle</button>
-                        <select id="lfo-charset-shape" class="text-[8px] bg-slate-900 border border-slate-700 rounded px-1 py-0.5 text-slate-300 outline-none focus:border-blue-500 max-w-[4.5rem]">
-                            <option value="sine">Order</option>
-                            <option value="noise">Random</option>
-                        </select>
-                        <input type="range" id="lfo-charset-rate" min="0.1" max="10" step="0.1" value="2" class="w-14 h-1 bg-slate-800 rounded-lg appearance-none">
-                    </div>
-                </div>
-                <div class="control-group">
-                    <label class="knob-label">Palette</label>
-                    <div class="flex gap-2">
-                        <div class="relative">
-                            <input type="color" id="param-color" value="#3b82f6" class="w-8 h-8 rounded bg-transparent border-none cursor-pointer">
-                            <div class="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-blue-500 border border-black pointer-events-none"></div>
+                    <div id="density-lfo-body" class="hidden">
+                        <div class="flex flex-wrap gap-1.5 items-center mt-1">
+                            <select id="lfo-res-shape" class="text-[8px] bg-black border-2 border-neutral-700 rounded-none px-1 py-0.5 text-neutral-300 outline-none focus:border-white max-w-[4.75rem]" title="Wave shape (use WAVE AUTO to cycle)">
+                                <option value="sine">Sine</option>
+                                <option value="triangle">Tri</option>
+                                <option value="saw">Saw</option>
+                                <option value="square">Sqr</option>
+                                <option value="pulse">Pulse</option>
+                                <option value="noise">Noise</option>
+                            </select>
+                            <span class="fira text-[7px] text-neutral-600 w-4 shrink-0" id="lfo-res-rate-label" title="Periodic: speed · Noise: amplitude">∿</span>
+                            <input type="range" id="lfo-res-rate" min="0.1" max="5" step="0.1" value="1" class="w-14 h-1 bg-neutral-900 rounded-none appearance-none" title="Periodic waves: frequency · Noise: jump spread">
                         </div>
-                        <div class="relative">
-                            <input type="color" id="param-bg" value="#000000" class="w-8 h-8 rounded bg-transparent border-none cursor-pointer">
-                            <div class="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-slate-500 border border-black pointer-events-none"></div>
+                        <div class="flex flex-wrap items-center gap-1.5 mt-1">
+                            <button type="button" id="btn-lfo-res-auto-wave" class="text-[7px] font-black px-1.5 py-0.5 border-2 border-neutral-700 bg-black text-neutral-500 hover:border-white hover:text-white rounded-none" title="Cycle wave shape automatically">WAVE AUTO</button>
+                            <input type="range" id="lfo-res-wave-cycle" min="1" max="12" value="3" class="w-12 h-1 bg-neutral-900 rounded-none appearance-none" title="Seconds per wave shape">
+                            <span id="val-lfo-res-wave-cycle" class="fira text-[7px] text-neutral-500 w-6">3s</span>
                         </div>
                     </div>
                 </div>
-                <div class="control-group w-full border-t border-slate-800 pt-4">
+                <div class="control-group w-full border-t-2 border-neutral-800 pt-4">
                     <div class="flex justify-between items-center gap-2">
                         <label class="knob-label">ASCII 3D</label>
-                        <button type="button" id="btn-d3-toggle" class="text-[8px] font-black px-2 py-0.5 rounded border border-slate-700 bg-slate-900 text-slate-500">OFF</button>
+                        <button type="button" id="btn-d3-toggle" class="btn-onoff">OFF</button>
                     </div>
-                    <p class="text-[7px] text-slate-600 mt-1 mb-2 leading-snug">Extrudes glyphs in Z from color luminance and source brightness. Toggle orbit / dolly axes; each axis has its own LFO (or continuous motion when LFO is off).</p>
-                    <label class="text-[8px] text-slate-500 font-bold uppercase tracking-tighter block mb-1">Camera</label>
-                    <p class="text-[7px] text-slate-600 mb-1 leading-snug">All axes off = static angle. Combine any of <strong class="text-slate-400">Orb H</strong>, <strong class="text-slate-400">Orb V</strong>, <strong class="text-slate-400">Dolly</strong>.</p>
-                    <div class="border border-slate-800/80 rounded px-1 py-1 mt-1 space-y-0.5">
+                    <div id="d3-section-body" class="hidden">
+                    <label class="text-[8px] text-neutral-500 font-black uppercase tracking-tighter block mb-1 mt-2">Camera</label>
+                    <div class="border-2 border-neutral-800 rounded-none px-1 py-1 mt-1 space-y-0.5">
                         <div class="flex flex-wrap items-center gap-0.5">
                             <span class="fira text-[7px] text-slate-500 font-bold w-9 shrink-0" title="Yaw">Orb H</span>
-                            <button type="button" id="btn-d3-orbit-h" class="text-[7px] font-black px-1 py-0.5 rounded border border-slate-700 bg-slate-900 text-slate-500">ON</button>
-                            <button type="button" id="lfo-d3-orbit-h-btn" class="text-[7px] bg-slate-900 px-1 py-0.5 rounded border border-slate-700">LFO</button>
-                            <select id="lfo-d3-orbit-h-shape" class="text-[7px] bg-slate-900 border border-slate-700 rounded px-0.5 py-0.5 text-slate-300 outline-none focus:border-blue-500 max-w-[3.25rem]">
+                            <button type="button" id="btn-d3-orbit-h" class="btn-onoff text-[7px] py-0.5 px-1">ON</button>
+                            <button type="button" id="lfo-d3-orbit-h-btn" class="brutal-lfo-inline text-[7px] bg-black px-1 py-0.5 rounded-none border-2 border-neutral-600">LFO</button>
+                            <select id="lfo-d3-orbit-h-shape" class="text-[7px] bg-black border-2 border-neutral-600 rounded-none px-0.5 py-0.5 text-neutral-300 outline-none focus:border-white max-w-[3.25rem]">
                                 <option value="sine">Sin</option><option value="triangle">Tri</option><option value="saw">Saw</option><option value="square">Sqr</option><option value="pulse">Pls</option><option value="noise">Nse</option>
                             </select>
                             <span class="fira text-[7px] text-slate-600 w-3 shrink-0" id="lfo-d3-orbit-h-rate-label">∿</span>
-                            <input type="range" id="lfo-d3-orbit-h-rate" min="0.05" max="5" step="0.05" value="0.35" class="w-11 h-1 bg-slate-800 rounded-lg appearance-none flex-1 min-w-0" title="LFO off: spin speed · LFO on: wave speed / noise">
+                            <input type="range" id="lfo-d3-orbit-h-rate" min="0.05" max="5" step="0.05" value="0.35" class="w-11 h-1 bg-transparent rounded-none appearance-none flex-1 min-w-0" title="LFO off: spin speed · LFO on: wave speed / noise">
                         </div>
                         <div class="flex flex-wrap items-center gap-0.5 pl-9">
-                            <button type="button" id="btn-lfo-d3-orbit-h-auto-wave" class="text-[6px] font-black px-1 py-0.5 rounded border border-slate-700 bg-slate-900 text-slate-500">AUTO</button>
-                            <input type="range" id="lfo-d3-orbit-h-wave-cycle" min="1" max="12" value="3" class="w-10 h-1 bg-slate-800 rounded-lg appearance-none">
+                            <button type="button" id="btn-lfo-d3-orbit-h-auto-wave" class="text-[6px] font-black px-1 py-0.5 rounded-none border-2 border-neutral-600 bg-black text-neutral-500">AUTO</button>
+                            <input type="range" id="lfo-d3-orbit-h-wave-cycle" min="1" max="12" value="3" class="w-10 h-1 bg-transparent rounded-none appearance-none">
                             <span id="val-lfo-d3-orbit-h-wave-cycle" class="fira text-[6px] text-slate-500 w-5">3s</span>
                         </div>
                     </div>
-                    <div class="border border-slate-800/80 rounded px-1 py-1 mt-1 space-y-0.5">
+                    <div class="border-2 border-neutral-800 rounded-none px-1 py-1 mt-1 space-y-0.5">
                         <div class="flex flex-wrap items-center gap-0.5">
                             <span class="fira text-[7px] text-slate-500 font-bold w-9 shrink-0" title="Pitch">Orb V</span>
-                            <button type="button" id="btn-d3-orbit-v" class="text-[7px] font-black px-1 py-0.5 rounded border border-slate-700 bg-slate-900 text-slate-500">ON</button>
-                            <button type="button" id="lfo-d3-orbit-v-btn" class="text-[7px] bg-slate-900 px-1 py-0.5 rounded border border-slate-700">LFO</button>
-                            <select id="lfo-d3-orbit-v-shape" class="text-[7px] bg-slate-900 border border-slate-700 rounded px-0.5 py-0.5 text-slate-300 outline-none focus:border-blue-500 max-w-[3.25rem]">
+                            <button type="button" id="btn-d3-orbit-v" class="btn-onoff text-[7px] py-0.5 px-1">ON</button>
+                            <button type="button" id="lfo-d3-orbit-v-btn" class="brutal-lfo-inline text-[7px] bg-black px-1 py-0.5 rounded-none border-2 border-neutral-600">LFO</button>
+                            <select id="lfo-d3-orbit-v-shape" class="text-[7px] bg-black border-2 border-neutral-600 rounded-none px-0.5 py-0.5 text-neutral-300 outline-none focus:border-white max-w-[3.25rem]">
                                 <option value="sine">Sin</option><option value="triangle">Tri</option><option value="saw">Saw</option><option value="square">Sqr</option><option value="pulse">Pls</option><option value="noise">Nse</option>
                             </select>
                             <span class="fira text-[7px] text-slate-600 w-3 shrink-0" id="lfo-d3-orbit-v-rate-label">∿</span>
-                            <input type="range" id="lfo-d3-orbit-v-rate" min="0.05" max="5" step="0.05" value="0.35" class="w-11 h-1 bg-slate-800 rounded-lg appearance-none flex-1 min-w-0">
+                            <input type="range" id="lfo-d3-orbit-v-rate" min="0.05" max="5" step="0.05" value="0.35" class="w-11 h-1 bg-transparent rounded-none appearance-none flex-1 min-w-0">
                         </div>
                         <div class="flex flex-wrap items-center gap-0.5 pl-9">
-                            <button type="button" id="btn-lfo-d3-orbit-v-auto-wave" class="text-[6px] font-black px-1 py-0.5 rounded border border-slate-700 bg-slate-900 text-slate-500">AUTO</button>
-                            <input type="range" id="lfo-d3-orbit-v-wave-cycle" min="1" max="12" value="3" class="w-10 h-1 bg-slate-800 rounded-lg appearance-none">
+                            <button type="button" id="btn-lfo-d3-orbit-v-auto-wave" class="text-[6px] font-black px-1 py-0.5 rounded-none border-2 border-neutral-600 bg-black text-neutral-500">AUTO</button>
+                            <input type="range" id="lfo-d3-orbit-v-wave-cycle" min="1" max="12" value="3" class="w-10 h-1 bg-transparent rounded-none appearance-none">
                             <span id="val-lfo-d3-orbit-v-wave-cycle" class="fira text-[6px] text-slate-500 w-5">3s</span>
                         </div>
                     </div>
-                    <div class="border border-slate-800/80 rounded px-1 py-1 mt-1 space-y-0.5">
+                    <div class="border-2 border-neutral-800 rounded-none px-1 py-1 mt-1 space-y-0.5">
                         <div class="flex flex-wrap items-center gap-0.5">
                             <span class="fira text-[7px] text-slate-500 font-bold w-9 shrink-0" title="Distance">Dolly</span>
-                            <button type="button" id="btn-d3-dolly" class="text-[7px] font-black px-1 py-0.5 rounded border border-slate-700 bg-slate-900 text-slate-500">OFF</button>
-                            <button type="button" id="lfo-d3-dolly-btn" class="text-[7px] bg-slate-900 px-1 py-0.5 rounded border border-slate-700">LFO</button>
-                            <select id="lfo-d3-dolly-shape" class="text-[7px] bg-slate-900 border border-slate-700 rounded px-0.5 py-0.5 text-slate-300 outline-none focus:border-blue-500 max-w-[3.25rem]">
+                            <button type="button" id="btn-d3-dolly" class="btn-onoff text-[7px] py-0.5 px-1">OFF</button>
+                            <button type="button" id="lfo-d3-dolly-btn" class="brutal-lfo-inline text-[7px] bg-black px-1 py-0.5 rounded-none border-2 border-neutral-600">LFO</button>
+                            <select id="lfo-d3-dolly-shape" class="text-[7px] bg-black border-2 border-neutral-600 rounded-none px-0.5 py-0.5 text-neutral-300 outline-none focus:border-white max-w-[3.25rem]">
                                 <option value="sine">Sin</option><option value="triangle">Tri</option><option value="saw">Saw</option><option value="square">Sqr</option><option value="pulse">Pls</option><option value="noise">Nse</option>
                             </select>
                             <span class="fira text-[7px] text-slate-600 w-3 shrink-0" id="lfo-d3-dolly-rate-label">∿</span>
-                            <input type="range" id="lfo-d3-dolly-rate" min="0.05" max="5" step="0.05" value="0.35" class="w-11 h-1 bg-slate-800 rounded-lg appearance-none flex-1 min-w-0">
+                            <input type="range" id="lfo-d3-dolly-rate" min="0.05" max="5" step="0.05" value="0.35" class="w-11 h-1 bg-transparent rounded-none appearance-none flex-1 min-w-0">
                         </div>
                         <div class="flex flex-wrap items-center gap-0.5 pl-9">
-                            <button type="button" id="btn-lfo-d3-dolly-auto-wave" class="text-[6px] font-black px-1 py-0.5 rounded border border-slate-700 bg-slate-900 text-slate-500">AUTO</button>
-                            <input type="range" id="lfo-d3-dolly-wave-cycle" min="1" max="12" value="3" class="w-10 h-1 bg-slate-800 rounded-lg appearance-none">
+                            <button type="button" id="btn-lfo-d3-dolly-auto-wave" class="text-[6px] font-black px-1 py-0.5 rounded-none border-2 border-neutral-600 bg-black text-neutral-500">AUTO</button>
+                            <input type="range" id="lfo-d3-dolly-wave-cycle" min="1" max="12" value="3" class="w-10 h-1 bg-transparent rounded-none appearance-none">
                             <span id="val-lfo-d3-dolly-wave-cycle" class="fira text-[6px] text-slate-500 w-5">3s</span>
                         </div>
                     </div>
                     <div class="flex items-center gap-2 mt-2">
                         <span class="fira text-[7px] text-slate-600 w-14 shrink-0" title="Closer / farther">Zoom</span>
-                        <input type="range" id="param-d3-zoom" min="0.72" max="4.2" step="0.05" value="1" class="flex-1 min-w-0 h-1 bg-slate-800 rounded-lg appearance-none" title="Higher = closer. Min = less zoom-out; max = more zoom-in.">
+                        <input type="range" id="param-d3-zoom" min="0.72" max="4.2" step="0.05" value="1" class="flex-1 min-w-0 h-1 bg-transparent rounded-none appearance-none" title="Higher = closer. Min = less zoom-out; max = more zoom-in.">
                         <span id="val-d3-zoom" class="fira text-[7px] text-slate-500 w-9 shrink-0 tabular-nums">1.0</span>
                     </div>
                     <div class="flex items-center gap-2 mt-1">
                         <span class="fira text-[7px] text-slate-600 w-14 shrink-0" title="Yaw offset">Rotate</span>
-                        <input type="range" id="param-d3-rotate" min="-180" max="180" step="1" value="0" class="flex-1 min-w-0 h-1 bg-slate-800 rounded-lg appearance-none">
+                        <input type="range" id="param-d3-rotate" min="-180" max="180" step="1" value="0" class="flex-1 min-w-0 h-1 bg-transparent rounded-none appearance-none">
                         <span id="val-d3-rotate" class="fira text-[7px] text-slate-500 w-9 shrink-0 tabular-nums">0°</span>
                     </div>
                     <div class="flex justify-between items-center gap-2 mt-3">
                         <label class="knob-label text-[9px]">3D amount <span id="lfo-d3-led" class="lfo-indicator bg-slate-700"></span></label>
                         <span id="val-d3-mix" class="fira text-[8px] text-slate-400 tabular-nums" title="LFO off = full 3D">1.00</span>
                     </div>
-                    <p class="text-[7px] text-slate-600 mb-1 leading-snug">LFO drives 0 → off (flat) up to full 3D. Off = always full 3D.</p>
                     <div class="flex flex-wrap gap-1.5 items-center">
-                        <button type="button" id="lfo-d3-btn" class="text-[8px] bg-slate-900 px-2 py-0.5 rounded border border-slate-700 hover:border-blue-500 transition-all">LFO</button>
-                        <select id="lfo-d3-shape" class="text-[8px] bg-slate-900 border border-slate-700 rounded px-1 py-0.5 text-slate-300 outline-none focus:border-blue-500 max-w-[4.75rem]" title="Noise = smoothed random">
+                        <button type="button" id="lfo-d3-btn" class="brutal-lfo-inline text-[8px] bg-black px-2 py-0.5 border-2 border-neutral-600 hover:border-neutral-400 rounded-none">LFO</button>
+                        <select id="lfo-d3-shape" class="text-[8px] bg-black border-2 border-neutral-600 rounded-none px-1 py-0.5 text-neutral-300 outline-none focus:border-white max-w-[4.75rem]" title="Noise = smoothed random">
                             <option value="sine">Sine</option>
                             <option value="triangle">Tri</option>
                             <option value="saw">Saw</option>
@@ -411,104 +465,104 @@
                             <option value="noise">Noise</option>
                         </select>
                         <span class="fira text-[7px] text-slate-600 w-4 shrink-0" id="lfo-d3-rate-label" title="Periodic: speed · Noise: responsiveness">∿</span>
-                        <input type="range" id="lfo-d3-rate" min="0.1" max="5" step="0.1" value="1" class="w-14 h-1 bg-slate-800 rounded-lg appearance-none" title="Wave speed / noise smoothing">
+                        <input type="range" id="lfo-d3-rate" min="0.1" max="5" step="0.1" value="1" class="w-14 h-1 bg-transparent rounded-none appearance-none" title="Wave speed / noise smoothing">
                     </div>
                     <div class="flex flex-wrap items-center gap-1.5 mt-1">
-                        <button type="button" id="btn-lfo-d3-auto-wave" class="text-[7px] font-black px-1.5 py-0.5 rounded border border-slate-700 bg-slate-900 text-slate-500 hover:border-violet-500/60 hover:text-violet-300 transition-colors" title="Cycle wave shape automatically">WAVE AUTO</button>
-                        <input type="range" id="lfo-d3-wave-cycle" min="1" max="12" value="3" class="w-12 h-1 bg-slate-800 rounded-lg appearance-none" title="Seconds per wave shape">
+                        <button type="button" id="btn-lfo-d3-auto-wave" class="text-[7px] font-black px-1.5 py-0.5 rounded-none border-2 border-neutral-600 bg-black text-neutral-500 hover:border-white hover:text-neutral-100 transition-colors" title="Cycle wave shape automatically">WAVE AUTO</button>
+                        <input type="range" id="lfo-d3-wave-cycle" min="1" max="12" value="3" class="w-12 h-1 bg-transparent rounded-none appearance-none" title="Seconds per wave shape">
                         <span id="val-lfo-d3-wave-cycle" class="fira text-[7px] text-slate-500 w-6">3s</span>
                     </div>
                     <div class="flex items-center gap-2 mt-2">
                         <span class="fira text-[7px] text-slate-600 w-14 shrink-0">Depth</span>
-                        <input type="range" id="param-d3-depth" min="0.2" max="2.5" step="0.05" value="1" class="flex-1 min-w-0 h-1 bg-slate-800 rounded-lg appearance-none">
+                        <input type="range" id="param-d3-depth" min="0.2" max="2.5" step="0.05" value="1" class="flex-1 min-w-0 h-1 bg-transparent rounded-none appearance-none">
                     </div>
                     <div class="flex items-center gap-2 mt-1">
                         <span class="fira text-[7px] text-slate-600 w-14 shrink-0">Noise</span>
-                        <input type="range" id="param-d3-noise" min="0" max="0.55" step="0.01" value="0.12" class="flex-1 min-w-0 h-1 bg-slate-800 rounded-lg appearance-none">
+                        <input type="range" id="param-d3-noise" min="0" max="0.55" step="0.01" value="0.12" class="flex-1 min-w-0 h-1 bg-transparent rounded-none appearance-none">
                     </div>
                     <div class="flex items-center gap-2 mt-1">
                         <span class="fira text-[7px] text-slate-600 w-14 shrink-0" title="Blend: source brightness vs glyph color">Color</span>
-                        <input type="range" id="param-d3-color-mix" min="0" max="1" step="0.05" value="0.65" class="flex-1 min-w-0 h-1 bg-slate-800 rounded-lg appearance-none">
+                        <input type="range" id="param-d3-color-mix" min="0" max="1" step="0.05" value="0.65" class="flex-1 min-w-0 h-1 bg-transparent rounded-none appearance-none">
                     </div>
-                    <label class="text-[8px] text-slate-500 font-bold uppercase tracking-tighter block mt-3 mb-1">3D on/off schedule</label>
-                    <p class="text-[7px] text-slate-600 mb-2 leading-snug">3D is <strong class="text-slate-400">on</strong> for <strong class="text-slate-400">Active</strong> seconds, then flat for the rest of each <strong class="text-slate-400">Cycle</strong> (e.g. 2s on / 20s total). <strong class="text-slate-400">RND</strong> picks new cycle &amp; active lengths from each slider’s min–max after every cycle.</p>
+                    <label class="text-[8px] text-neutral-500 font-black uppercase tracking-tighter block mt-3 mb-1">3D schedule</label>
                     <div class="flex justify-between items-center gap-2">
                         <label class="text-[9px] font-extrabold text-slate-500 uppercase tracking-tighter">Schedule</label>
                         <div class="flex items-center gap-1.5">
-                            <button type="button" id="btn-d3-gate-jitter" class="text-[8px] font-black px-1.5 py-0.5 rounded border border-slate-700 bg-slate-900 text-slate-500 hover:border-amber-500/60 hover:text-amber-400 transition-colors" title="Random cycle &amp; active duration from slider ranges">RND</button>
-                            <button type="button" id="btn-d3-gate-enable" class="text-[9px] font-bold text-blue-400 hover:text-white transition-colors">ENABLE</button>
+                            <button type="button" id="btn-d3-gate-jitter" class="text-[8px] font-black px-1.5 py-0.5 rounded-none border-2 border-neutral-600 bg-black text-neutral-500 hover:border-white hover:text-white transition-colors" title="Random cycle &amp; active duration from slider ranges">RND</button>
+                            <button type="button" id="btn-d3-gate-enable" class="btn-brutal-latched">ENABLE</button>
                         </div>
                     </div>
                     <div class="flex items-center gap-2 mt-2">
                         <span class="fira text-[7px] text-slate-600 w-14 shrink-0" title="Full loop length (s)">Cycle</span>
-                        <input type="range" id="param-d3-gate-cycle" min="3" max="120" step="1" value="20" class="flex-1 min-w-0 h-1 bg-slate-800 rounded-lg appearance-none">
+                        <input type="range" id="param-d3-gate-cycle" min="3" max="120" step="1" value="20" class="flex-1 min-w-0 h-1 bg-transparent rounded-none appearance-none">
                         <span id="val-d3-gate-cycle" class="fira text-[7px] text-slate-500 w-10 shrink-0 tabular-nums">20s</span>
                     </div>
                     <div class="flex items-center gap-2 mt-1">
                         <span class="fira text-[7px] text-slate-600 w-14 shrink-0" title="3D on at start of each cycle">Active</span>
-                        <input type="range" id="param-d3-gate-active" min="0.2" max="60" step="0.2" value="2" class="flex-1 min-w-0 h-1 bg-slate-800 rounded-lg appearance-none">
+                        <input type="range" id="param-d3-gate-active" min="0.2" max="60" step="0.2" value="2" class="flex-1 min-w-0 h-1 bg-transparent rounded-none appearance-none">
                         <span id="val-d3-gate-active" class="fira text-[7px] text-slate-500 w-10 shrink-0 tabular-nums">2s</span>
+                    </div>
                     </div>
                 </div>
                 <div class="control-group">
                     <div class="flex justify-between items-center gap-2">
                         <label class="knob-label">Glitch</label>
-                        <button type="button" id="btn-glitch-toggle" class="text-[8px] font-black px-2 py-0.5 rounded border border-slate-700 bg-slate-900 text-slate-500">OFF</button>
+                        <button type="button" id="btn-glitch-toggle" class="btn-onoff">OFF</button>
                     </div>
-                    <p class="text-[7px] text-slate-600 mt-1 mb-1 leading-snug">Datamosh-style corruption: row shears, chroma tear, scanlines, static. Evolves over time.</p>
+                    <div id="glitch-section-body" class="hidden">
                     <div class="flex items-center gap-2 mt-1">
                         <span class="fira text-[7px] text-slate-600 w-14 shrink-0">Amount</span>
-                        <input type="range" id="param-glitch-intensity" min="0" max="1" step="0.02" value="0.5" class="flex-1 min-w-0 h-1 bg-slate-800 rounded-lg appearance-none">
+                        <input type="range" id="param-glitch-intensity" min="0" max="1" step="0.02" value="0.5" class="flex-1 min-w-0 h-1 bg-transparent rounded-none appearance-none">
                     </div>
                     <div class="flex items-center gap-2 mt-1">
                         <span class="fira text-[7px] text-slate-600 w-14 shrink-0">Speed</span>
-                        <input type="range" id="param-glitch-rate" min="0.15" max="5" step="0.05" value="1" class="flex-1 min-w-0 h-1 bg-slate-800 rounded-lg appearance-none" title="How fast the damage pattern changes">
+                        <input type="range" id="param-glitch-rate" min="0.15" max="5" step="0.05" value="1" class="flex-1 min-w-0 h-1 bg-transparent rounded-none appearance-none" title="How fast the damage pattern changes">
                     </div>
                     <div class="flex items-center gap-2 mt-1">
                         <span class="fira text-[7px] text-slate-600 w-14 shrink-0" title="Horizontal slice shift + band height">H size</span>
-                        <input type="range" id="param-glitch-h-size" min="0" max="1" step="0.02" value="0.65" class="flex-1 min-w-0 h-1 bg-slate-800 rounded-lg appearance-none">
+                        <input type="range" id="param-glitch-h-size" min="0" max="1" step="0.02" value="0.65" class="flex-1 min-w-0 h-1 bg-transparent rounded-none appearance-none">
                     </div>
                     <div class="flex items-center gap-2 mt-1">
                         <span class="fira text-[7px] text-slate-600 w-14 shrink-0" title="Chroma channel offset">RGB</span>
-                        <input type="range" id="param-glitch-rgb" min="0" max="1" step="0.02" value="0.75" class="flex-1 min-w-0 h-1 bg-slate-800 rounded-lg appearance-none">
+                        <input type="range" id="param-glitch-rgb" min="0" max="1" step="0.02" value="0.75" class="flex-1 min-w-0 h-1 bg-transparent rounded-none appearance-none">
                     </div>
                     <div class="flex items-center gap-2 mt-1">
                         <span class="fira text-[7px] text-slate-600 w-14 shrink-0" title="0 = off · Inverts colors on the beat">Strobe</span>
-                        <input type="range" id="param-glitch-strobe" min="0" max="16" step="0.25" value="0" class="flex-1 min-w-0 h-1 bg-slate-800 rounded-lg appearance-none">
+                        <input type="range" id="param-glitch-strobe" min="0" max="16" step="0.25" value="0" class="flex-1 min-w-0 h-1 bg-transparent rounded-none appearance-none">
                         <span id="val-glitch-strobe" class="fira text-[7px] text-slate-500 w-10 shrink-0 tabular-nums">off</span>
                     </div>
-                    <label class="text-[8px] text-slate-500 font-bold uppercase tracking-tighter block mt-2 mb-1">Glitch schedule</label>
-                    <p class="text-[7px] text-slate-600 mb-1 leading-snug">Glitch runs for <strong class="text-slate-400">Active</strong> s each <strong class="text-slate-400">Cycle</strong>; off the rest (main toggle still must be ON).</p>
+                    <label class="text-[8px] text-neutral-500 font-black uppercase tracking-tighter block mt-2 mb-1">Glitch schedule</label>
                     <div class="flex justify-between items-center gap-2">
                         <label class="text-[9px] font-extrabold text-slate-500 uppercase tracking-tighter">Schedule</label>
                         <div class="flex items-center gap-1.5">
-                            <button type="button" id="btn-glitch-gate-jitter" class="text-[8px] font-black px-1.5 py-0.5 rounded border border-slate-700 bg-slate-900 text-slate-500 hover:border-amber-500/60 hover:text-amber-400 transition-colors" title="Random cycle &amp; active from slider ranges">RND</button>
-                            <button type="button" id="btn-glitch-gate-enable" class="text-[9px] font-bold text-blue-400 hover:text-white transition-colors">ENABLE</button>
+                            <button type="button" id="btn-glitch-gate-jitter" class="text-[8px] font-black px-1.5 py-0.5 rounded-none border-2 border-neutral-600 bg-black text-neutral-500 hover:border-white hover:text-white transition-colors" title="Random cycle &amp; active from slider ranges">RND</button>
+                            <button type="button" id="btn-glitch-gate-enable" class="btn-brutal-latched">ENABLE</button>
                         </div>
                     </div>
                     <div class="flex items-center gap-2 mt-2">
                         <span class="fira text-[7px] text-slate-600 w-14 shrink-0">Cycle</span>
-                        <input type="range" id="param-glitch-gate-cycle" min="2" max="120" step="1" value="15" class="flex-1 min-w-0 h-1 bg-slate-800 rounded-lg appearance-none">
+                        <input type="range" id="param-glitch-gate-cycle" min="2" max="120" step="1" value="15" class="flex-1 min-w-0 h-1 bg-transparent rounded-none appearance-none">
                         <span id="val-glitch-gate-cycle" class="fira text-[7px] text-slate-500 w-10 shrink-0 tabular-nums">15s</span>
                     </div>
                     <div class="flex items-center gap-2 mt-1">
                         <span class="fira text-[7px] text-slate-600 w-14 shrink-0">Active</span>
-                        <input type="range" id="param-glitch-gate-active" min="0.2" max="60" step="0.2" value="4" class="flex-1 min-w-0 h-1 bg-slate-800 rounded-lg appearance-none">
+                        <input type="range" id="param-glitch-gate-active" min="0.2" max="60" step="0.2" value="4" class="flex-1 min-w-0 h-1 bg-transparent rounded-none appearance-none">
                         <span id="val-glitch-gate-active" class="fira text-[7px] text-slate-500 w-10 shrink-0 tabular-nums">4s</span>
+                    </div>
                     </div>
                 </div>
                 <div class="control-group">
                     <div class="flex justify-between items-center gap-2">
                         <label class="knob-label">Audio Reactive</label>
-                        <span id="audio-status" class="fira text-[8px] text-slate-500 tabular-nums">OFF</span>
+                        <button type="button" id="btn-audio-react" class="btn-onoff" title="Microphone input">OFF</button>
                     </div>
+                    <div id="audio-section-body" class="hidden">
                     <div class="flex flex-wrap gap-2 items-center mt-1">
-                        <button type="button" id="btn-audio-react" class="text-[8px] bg-slate-900 px-2 py-0.5 rounded border border-slate-700 hover:border-blue-500 transition-all font-bold">MIC</button>
                         <div class="relative">
-                            <input type="color" id="audio-overlay-color" value="#ff00ff" class="w-8 h-8 rounded bg-transparent border-none cursor-pointer">
+                            <input type="color" id="audio-overlay-color" value="#ff00ff" class="w-8 h-8 rounded-none bg-black border-2 border-neutral-600 cursor-pointer">
                         </div>
-                        <button type="button" id="btn-audio-color-auto" class="text-[7px] font-black px-1.5 py-0.5 rounded border border-slate-700 bg-slate-900 text-slate-500 hover:border-violet-500/60 hover:text-violet-300 transition-colors" title="Auto-animate overlay color">COLOR AUTO</button>
-                        <select id="audio-blend-mode" class="text-[8px] bg-slate-900 border border-slate-700 rounded px-1 py-0.5 text-slate-300 outline-none focus:border-blue-500 max-w-[5.5rem]" title="Canvas blend mode">
+                        <button type="button" id="btn-audio-color-auto" class="text-[7px] font-black px-1.5 py-0.5 rounded-none border-2 border-neutral-600 bg-black text-neutral-500 hover:border-white hover:text-neutral-100 transition-colors" title="Auto-animate overlay color">COLOR AUTO</button>
+                        <select id="audio-blend-mode" class="text-[8px] bg-black border-2 border-neutral-600 rounded-none px-1 py-0.5 text-neutral-300 outline-none focus:border-white max-w-[5.5rem]" title="Canvas blend mode">
                             <option value="screen">Screen</option>
                             <option value="multiply">Multiply</option>
                             <option value="difference">Difference</option>
@@ -523,20 +577,78 @@
                     </div>
                     <div class="flex flex-wrap items-center gap-2 mt-1">
                         <span class="fira text-[7px] text-slate-600 w-16">Strength</span>
-                        <input type="range" id="audio-strength" min="0" max="2" step="0.01" value="1" class="w-24 h-1 bg-slate-800 rounded-lg appearance-none">
+                        <input type="range" id="audio-strength" min="0" max="2" step="0.01" value="1" class="w-24 h-1 bg-transparent rounded-none appearance-none">
                         <span id="val-audio-strength" class="fira text-[7px] text-slate-500 tabular-nums w-6">1.00</span>
                     </div>
                     <div class="flex flex-wrap items-center gap-2 mt-1">
                         <span class="fira text-[7px] text-slate-600 w-16">Color Cycle</span>
-                        <input type="range" id="audio-color-cycle" min="1" max="20" step="0.1" value="5" class="w-24 h-1 bg-slate-800 rounded-lg appearance-none" title="Seconds per full color cycle">
+                        <input type="range" id="audio-color-cycle" min="1" max="20" step="0.1" value="5" class="w-24 h-1 bg-transparent rounded-none appearance-none" title="Seconds per full color cycle">
                         <span id="val-audio-color-cycle" class="fira text-[7px] text-slate-500 tabular-nums w-6">5s</span>
                     </div>
                     <div class="flex flex-wrap items-center gap-2 mt-1">
                         <span class="fira text-[7px] text-slate-600 w-16">Kick Hz</span>
-                        <input type="range" id="audio-kick-low" min="20" max="250" step="1" value="60" class="w-24 h-1 bg-slate-800 rounded-lg appearance-none" title="Kick band low cutoff (Hz)">
+                        <input type="range" id="audio-kick-low" min="20" max="250" step="1" value="60" class="w-24 h-1 bg-transparent rounded-none appearance-none" title="Kick band low cutoff (Hz)">
                         <span id="val-audio-kick-low" class="fira text-[7px] text-slate-500 tabular-nums w-8">60</span>
-                        <input type="range" id="audio-kick-high" min="80" max="400" step="1" value="200" class="w-24 h-1 bg-slate-800 rounded-lg appearance-none" title="Kick band high cutoff (Hz)">
+                        <input type="range" id="audio-kick-high" min="80" max="400" step="1" value="200" class="w-24 h-1 bg-transparent rounded-none appearance-none" title="Kick band high cutoff (Hz)">
                         <span id="val-audio-kick-high" class="fira text-[7px] text-slate-500 tabular-nums w-8">200</span>
+                    </div>
+                    </div>
+                </div>
+                <div class="control-group">
+                    <div class="flex justify-between items-center gap-2">
+                        <label class="knob-label">Contrast <span id="lfo-contrast-led" class="lfo-indicator bg-slate-700"></span></label>
+                        <div class="flex items-center gap-2 shrink-0">
+                            <span id="val-contrast" class="fira text-[10px] text-neutral-400">1.2</span>
+                            <button type="button" id="lfo-contrast-btn" class="btn-onoff" title="Contrast LFO">OFF</button>
+                        </div>
+                    </div>
+                    <input type="range" id="param-contrast" min="0" max="4" step="0.1" value="1.2" class="w-full h-1 bg-neutral-900 rounded-none appearance-none cursor-pointer mt-1">
+                    <div id="contrast-lfo-body" class="hidden">
+                        <div class="flex flex-wrap gap-1.5 items-center mt-1">
+                            <select id="lfo-contrast-shape" class="text-[8px] bg-black border-2 border-neutral-700 rounded-none px-1 py-0.5 text-neutral-300 outline-none focus:border-white max-w-[4.75rem]">
+                                <option value="sine">Sine</option>
+                                <option value="triangle">Tri</option>
+                                <option value="saw">Saw</option>
+                                <option value="square">Sqr</option>
+                                <option value="pulse">Pulse</option>
+                                <option value="noise">Noise</option>
+                            </select>
+                            <input type="range" id="lfo-contrast-rate" min="0.1" max="5" step="0.1" value="1" class="w-14 h-1 bg-neutral-900 rounded-none appearance-none">
+                        </div>
+                        <div class="flex flex-wrap items-center gap-1.5 mt-1">
+                            <button type="button" id="btn-lfo-contrast-auto-wave" class="text-[7px] font-black px-1.5 py-0.5 border-2 border-neutral-700 bg-black text-neutral-500 hover:border-white hover:text-white rounded-none" title="Cycle contrast wave automatically">WAVE AUTO</button>
+                            <input type="range" id="lfo-contrast-wave-cycle" min="1" max="12" value="3" class="w-12 h-1 bg-neutral-900 rounded-none appearance-none">
+                            <span id="val-lfo-contrast-wave-cycle" class="fira text-[7px] text-neutral-500 w-6">3s</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="control-group w-full">
+                    <div class="flex justify-between items-center gap-2">
+                        <label class="knob-label">Characters <span id="lfo-charset-led" class="lfo-indicator bg-slate-700"></span></label>
+                        <button type="button" id="lfo-charset-btn" class="btn-onoff shrink-0" title="Charset cycle LFO">OFF</button>
+                    </div>
+                    <input type="text" id="param-charset" value="@%#*+=-:. " class="w-full bg-black border-2 border-neutral-700 rounded-none px-2 py-1 text-[10px] fira focus:border-white outline-none text-neutral-200 mt-1">
+                    <div id="charset-lfo-body" class="hidden">
+                        <div class="flex flex-wrap gap-1.5 items-center mt-1">
+                            <select id="lfo-charset-shape" class="text-[8px] bg-black border-2 border-neutral-700 rounded-none px-1 py-0.5 text-neutral-300 outline-none focus:border-white max-w-[4.5rem]">
+                                <option value="sine">Order</option>
+                                <option value="noise">Random</option>
+                            </select>
+                            <input type="range" id="lfo-charset-rate" min="0.1" max="10" step="0.1" value="2" class="w-14 h-1 bg-neutral-900 rounded-none appearance-none">
+                        </div>
+                    </div>
+                </div>
+                <div class="control-group">
+                    <label class="knob-label">Palette</label>
+                    <div class="flex gap-2 mt-1">
+                        <div class="relative palette-swatch-wrap">
+                            <input type="color" id="param-color" value="#3b82f6" class="w-8 h-8 rounded-none bg-black border-2 border-neutral-600 cursor-pointer palette-color-input" title="Foreground / tint">
+                            <div class="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-none bg-white border border-black pointer-events-none" aria-hidden="true"></div>
+                        </div>
+                        <div class="relative palette-swatch-wrap">
+                            <input type="color" id="param-bg" value="#000000" class="w-8 h-8 rounded-none bg-black border-2 border-neutral-600 cursor-pointer palette-color-input" title="Background">
+                            <div class="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-none bg-neutral-400 border border-black pointer-events-none" aria-hidden="true"></div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -896,10 +1008,10 @@
         }
 
         function updateAudioColorAutoBtn(el, on) {
-            el.classList.toggle('border-violet-500', on);
-            el.classList.toggle('text-violet-300', on);
-            el.classList.toggle('bg-violet-950/40', on);
-            el.classList.toggle('text-slate-500', !on);
+            el.classList.toggle('border-white', on);
+            el.classList.toggle('text-white', on);
+            el.classList.toggle('bg-neutral-900', on);
+            el.classList.toggle('text-neutral-500', !on);
         }
 
         /** 0..1 periodic LFO (not noise). `rate` scales angular speed like sine. */
@@ -1008,8 +1120,7 @@
             };
             document.getElementById(ids.lfoBtn).onclick = (e) => {
                 ax().lfo.active = !ax().lfo.active;
-                e.currentTarget.classList.toggle('bg-blue-600', ax().lfo.active);
-                e.currentTarget.classList.toggle('text-white', ax().lfo.active);
+                updateBrutalLfoInlineBtn(e.currentTarget, ax().lfo.active);
             };
             document.getElementById(ids.shape).onchange = (ev) => {
                 ax().lfo.shape = ev.target.value;
@@ -1034,8 +1145,7 @@
             const ax = state.d3[axisKey];
             updateD3ToggleBtn(document.getElementById(ids.btn), ax.enabled);
             const lfoB = document.getElementById(ids.lfoBtn);
-            lfoB.classList.toggle('bg-blue-600', ax.lfo.active);
-            lfoB.classList.toggle('text-white', ax.lfo.active);
+            updateBrutalLfoInlineBtn(lfoB, ax.lfo.active);
             document.getElementById(ids.shape).value = ax.lfo.shape;
             document.getElementById(ids.rate).value = String(ax.lfo.rate);
             document.getElementById(ids.waveCycle).value = String(ax.lfo.waveCycleSec);
@@ -1151,10 +1261,10 @@
         }
 
         function updateAutoWaveBtn(el, on) {
-            el.classList.toggle('border-violet-500', on);
-            el.classList.toggle('text-violet-300', on);
-            el.classList.toggle('bg-violet-950/40', on);
-            el.classList.toggle('text-slate-500', !on);
+            el.classList.toggle('border-white', on);
+            el.classList.toggle('text-white', on);
+            el.classList.toggle('bg-neutral-900', on);
+            el.classList.toggle('text-neutral-500', !on);
         }
 
         function updateDensityRangeFill() {
@@ -1188,17 +1298,14 @@
         async function startAudioReactive() {
             if (state.audio.active) return;
             const btn = document.getElementById('btn-audio-react');
-            const status = document.getElementById('audio-status');
 
             try {
                 // If we already have an allowed microphone stream, just resume.
                 if (state.audio.stream && state.audio.analyser && state.audio.audioCtx) {
                     state.audio.active = true;
                     await state.audio.audioCtx.resume();
-                    status.textContent = 'ON';
-                    status.className = 'fira text-[8px] text-green-400 tabular-nums';
-                    btn.classList.add('border-blue-500', 'text-blue-300');
-                    btn.classList.remove('text-slate-500');
+                    updateOnOffToggleBtn(btn, true);
+                    syncCollapsiblePanels();
                     return;
                 }
 
@@ -1234,16 +1341,13 @@
                 state.audio.kickSmoothed = 0;
                 state.audio.kickFloor = 0;
 
-                status.textContent = 'ON';
-                status.className = 'fira text-[8px] text-green-400 tabular-nums';
-                btn.classList.add('border-blue-500', 'text-blue-300');
-                btn.classList.remove('text-slate-500');
+                updateOnOffToggleBtn(btn, true);
+                syncCollapsiblePanels();
             } catch (err) {
                 console.warn('Mic denied/unavailable', err);
                 state.audio.active = false;
-                const statusEl = document.getElementById('audio-status');
-                statusEl.textContent = 'DENIED';
-                statusEl.className = 'fira text-[8px] text-red-400 tabular-nums';
+                updateOnOffToggleBtn(btn, false);
+                syncCollapsiblePanels();
             }
         }
 
@@ -1261,10 +1365,8 @@
             state.audio.kickFloor = state.audio.kickFloor || 0;
 
             const btn = document.getElementById('btn-audio-react');
-            const status = document.getElementById('audio-status');
-            status.textContent = 'OFF';
-            status.className = 'fira text-[8px] text-slate-500 tabular-nums';
-            btn.classList.remove('border-blue-500', 'text-blue-300');
+            updateOnOffToggleBtn(btn, false);
+            syncCollapsiblePanels();
         }
 
         function updateAudioReactive(deltaSecs) {
@@ -1678,10 +1780,10 @@
         }
 
         function updateJitterButton(el, on) {
-            el.classList.toggle('border-amber-500', on);
-            el.classList.toggle('text-amber-400', on);
-            el.classList.toggle('bg-amber-950/40', on);
-            el.classList.toggle('text-slate-500', !on);
+            el.classList.toggle('border-white', on);
+            el.classList.toggle('text-white', on);
+            el.classList.toggle('bg-neutral-900', on);
+            el.classList.toggle('text-neutral-500', !on);
         }
 
         async function toggleFullscreen() {
@@ -2074,13 +2176,13 @@
                 document.getElementById(`lfo-${key}-btn`).onclick = (e) => {
                     state.lfo[key].active = !state.lfo[key].active;
                     if (key === 'charset' && state.lfo.charset.active) state.lfo.charset.noiseAcc = 0;
-                    e.currentTarget.classList.toggle('bg-blue-600', state.lfo[key].active);
-                    e.currentTarget.classList.toggle('text-white', state.lfo[key].active);
+                    updateOnOffToggleBtn(e.currentTarget, state.lfo[key].active);
                     document.getElementById(`lfo-${key}-led`).classList.toggle('lfo-active', state.lfo[key].active);
                     if (key === 'res') {
                         if (!state.lfo.res.active) state.res = staticDensityRes();
                         else state.lfo.res.noiseAcc = 0;
                     }
+                    syncCollapsiblePanels();
                 };
                 document.getElementById(`lfo-${key}-rate`).oninput = e => state.lfo[key].rate = parseFloat(e.target.value);
             });
@@ -2117,15 +2219,6 @@
                 state.lfo.charset.noiseAcc = 0;
             };
 
-            document.getElementById('btn-shuffle').onclick = (e) => {
-                state.playlistSettings.shuffle = !state.playlistSettings.shuffle;
-                e.currentTarget.className = `icon-btn ${state.playlistSettings.shuffle ? 'icon-btn-active' : 'icon-btn-inactive'} flex-1`;
-            };
-            document.getElementById('btn-repeat').onclick = (e) => {
-                state.playlistSettings.repeat = !state.playlistSettings.repeat;
-                e.currentTarget.className = `icon-btn ${state.playlistSettings.repeat ? 'icon-btn-active' : 'icon-btn-inactive'} flex-1`;
-            };
-
             document.getElementById('btn-switch-jitter').onclick = (e) => {
                 state.playlistSettings.jitter = !state.playlistSettings.jitter;
                 state.playlistSettings.timer = 0;
@@ -2144,8 +2237,7 @@
                     ? randomDwellFromInput(rangeEl, { lo: 2, hi: 60 })
                     : state.playlistSettings.interval;
                 e.target.textContent = state.playlistSettings.autoSwitch ? 'DISABLE' : 'ENABLE';
-                e.target.classList.toggle('text-blue-400', !state.playlistSettings.autoSwitch);
-                e.target.classList.toggle('text-red-400', state.playlistSettings.autoSwitch);
+                updateBrutalLatchedBtn(e.target, state.playlistSettings.autoSwitch);
             };
             document.getElementById('param-interval').oninput = (e) => {
                 if (state.playlistSettings.jitter) return;
@@ -2173,8 +2265,7 @@
                     ? randomDwellFromInput(rangeEl, { lo: 1, hi: 30 })
                     : state.lfo.presets.interval;
                 e.target.textContent = state.lfo.presets.active ? 'DISABLE' : 'ENABLE';
-                e.target.classList.toggle('text-blue-400', !state.lfo.presets.active);
-                e.target.classList.toggle('text-red-400', state.lfo.presets.active);
+                updateBrutalLatchedBtn(e.target, state.lfo.presets.active);
                 document.getElementById('lfo-preset-led').classList.toggle('lfo-active', state.lfo.presets.active);
             };
             document.getElementById('param-preset-interval').oninput = (e) => {
@@ -2189,7 +2280,21 @@
             document.getElementById('fullscreen-btn').onclick = () => { toggleFullscreen(); };
 
             syncSourceIntervalSliderUI();
+            {
+                const el = document.getElementById('btn-auto-switch');
+                if (el) {
+                    el.textContent = state.playlistSettings.autoSwitch ? 'DISABLE' : 'ENABLE';
+                    updateBrutalLatchedBtn(el, state.playlistSettings.autoSwitch);
+                }
+            }
             syncPresetIntervalSliderUI();
+            {
+                const el = document.getElementById('btn-auto-preset');
+                if (el) {
+                    el.textContent = state.lfo.presets.active ? 'DISABLE' : 'ENABLE';
+                    updateBrutalLatchedBtn(el, state.lfo.presets.active);
+                }
+            }
             syncDensityLfoRateLabel();
             updateAutoWaveBtn(document.getElementById('btn-lfo-res-auto-wave'), state.lfo.res.autoWave);
             updateAutoWaveBtn(document.getElementById('btn-lfo-contrast-auto-wave'), state.lfo.contrast.autoWave);
@@ -2197,6 +2302,7 @@
             document.getElementById('btn-glitch-toggle').onclick = (e) => {
                 state.glitch.active = !state.glitch.active;
                 updateGlitchToggleBtn(e.currentTarget, state.glitch.active);
+                syncCollapsiblePanels();
             };
             document.getElementById('param-glitch-intensity').oninput = (ev) => {
                 state.glitch.intensity = parseFloat(ev.target.value);
@@ -2218,8 +2324,7 @@
                 state.glitch.gate.enabled = !state.glitch.gate.enabled;
                 state.glitch.gate.timer = 0;
                 e.currentTarget.textContent = state.glitch.gate.enabled ? 'DISABLE' : 'ENABLE';
-                e.currentTarget.classList.toggle('text-blue-400', !state.glitch.gate.enabled);
-                e.currentTarget.classList.toggle('text-red-400', state.glitch.gate.enabled);
+                updateBrutalLatchedBtn(e.currentTarget, state.glitch.gate.enabled);
             };
             document.getElementById('btn-glitch-gate-jitter').onclick = (e) => {
                 state.glitch.gate.jitter = !state.glitch.gate.jitter;
@@ -2258,11 +2363,14 @@
             document.getElementById('val-glitch-gate-cycle').textContent = formatGateSec(state.glitch.gate.cycleSec);
             document.getElementById('val-glitch-gate-active').textContent = formatGateSec(state.glitch.gate.activeSec);
             document.getElementById('btn-glitch-gate-enable').textContent = state.glitch.gate.enabled ? 'DISABLE' : 'ENABLE';
-            document.getElementById('btn-glitch-gate-enable').classList.toggle('text-blue-400', !state.glitch.gate.enabled);
-            document.getElementById('btn-glitch-gate-enable').classList.toggle('text-red-400', state.glitch.gate.enabled);
+            updateBrutalLatchedBtn(document.getElementById('btn-glitch-gate-enable'), state.glitch.gate.enabled);
             updateJitterButton(document.getElementById('btn-glitch-gate-jitter'), state.glitch.gate.jitter);
             syncGlitchGateIntervalSliderUI();
             updateGlitchToggleBtn(document.getElementById('btn-glitch-toggle'), state.glitch.active);
+            updateOnOffToggleBtn(document.getElementById('lfo-res-btn'), state.lfo.res.active);
+            updateOnOffToggleBtn(document.getElementById('lfo-contrast-btn'), state.lfo.contrast.active);
+            updateOnOffToggleBtn(document.getElementById('lfo-charset-btn'), state.lfo.charset.active);
+            updateOnOffToggleBtn(document.getElementById('btn-audio-react'), state.audio.active);
 
             // Audio reactive controls
             document.getElementById('btn-audio-react').onclick = () => {
@@ -2333,6 +2441,7 @@
                 if (state.d3.enabled) state.d3._smoothDist = null;
                 updateD3ToggleBtn(e.currentTarget, state.d3.enabled);
                 syncD3MixReadout();
+                syncCollapsiblePanels();
             };
             const d3CamIdsH = {
                 btn: 'btn-d3-orbit-h', lfoBtn: 'lfo-d3-orbit-h-btn', shape: 'lfo-d3-orbit-h-shape', rate: 'lfo-d3-orbit-h-rate',
@@ -2381,8 +2490,7 @@
 
             document.getElementById('lfo-d3-btn').onclick = (e) => {
                 state.d3.lfo.active = !state.d3.lfo.active;
-                e.currentTarget.classList.toggle('bg-blue-600', state.d3.lfo.active);
-                e.currentTarget.classList.toggle('text-white', state.d3.lfo.active);
+                updateBrutalLfoInlineBtn(e.currentTarget, state.d3.lfo.active);
                 document.getElementById('lfo-d3-led').classList.toggle('lfo-active', state.d3.lfo.active);
                 syncD3MixReadout();
             };
@@ -2409,8 +2517,7 @@
             document.getElementById('val-lfo-d3-wave-cycle').textContent = state.d3.lfo.waveCycleSec + 's';
             syncD3LfoRateLabel();
             updateAutoWaveBtn(document.getElementById('btn-lfo-d3-auto-wave'), state.d3.lfo.autoWave);
-            document.getElementById('lfo-d3-btn').classList.toggle('bg-blue-600', state.d3.lfo.active);
-            document.getElementById('lfo-d3-btn').classList.toggle('text-white', state.d3.lfo.active);
+            updateBrutalLfoInlineBtn(document.getElementById('lfo-d3-btn'), state.d3.lfo.active);
             document.getElementById('lfo-d3-led').classList.toggle('lfo-active', state.d3.lfo.active);
             syncD3MixReadout();
 
@@ -2418,8 +2525,7 @@
                 state.d3.gate.enabled = !state.d3.gate.enabled;
                 state.d3.gate.timer = 0;
                 e.currentTarget.textContent = state.d3.gate.enabled ? 'DISABLE' : 'ENABLE';
-                e.currentTarget.classList.toggle('text-blue-400', !state.d3.gate.enabled);
-                e.currentTarget.classList.toggle('text-red-400', state.d3.gate.enabled);
+                updateBrutalLatchedBtn(e.currentTarget, state.d3.gate.enabled);
             };
             document.getElementById('btn-d3-gate-jitter').onclick = (e) => {
                 state.d3.gate.jitter = !state.d3.gate.jitter;
@@ -2450,14 +2556,15 @@
             document.getElementById('param-d3-gate-cycle').value = String(state.d3.gate.cycleSec);
             document.getElementById('param-d3-gate-active').value = String(state.d3.gate.activeSec);
             document.getElementById('btn-d3-gate-enable').textContent = state.d3.gate.enabled ? 'DISABLE' : 'ENABLE';
-            document.getElementById('btn-d3-gate-enable').classList.toggle('text-blue-400', !state.d3.gate.enabled);
-            document.getElementById('btn-d3-gate-enable').classList.toggle('text-red-400', state.d3.gate.enabled);
+            updateBrutalLatchedBtn(document.getElementById('btn-d3-gate-enable'), state.d3.gate.enabled);
             updateJitterButton(document.getElementById('btn-d3-gate-jitter'), state.d3.gate.jitter);
             syncD3GateIntervalSliderUI();
 
             // Playlist management
             const delAllBtn = document.getElementById('btn-delete-all');
             if (delAllBtn) delAllBtn.onclick = () => deleteAllPlaylistItems();
+
+            syncCollapsiblePanels();
         }
 
         async function startCamera(deviceId = null) {
@@ -2479,7 +2586,7 @@
                 state.playlist.find(p => p.id === 'cam').isStreaming = true;
                 state.playlist.find(p => p.id === 'cam').deviceId = deviceId;
                 statusEl.textContent = "LIVE CAM";
-                statusEl.className = "px-2 py-0.5 rounded bg-green-900/40 text-[10px] font-bold uppercase tracking-widest text-green-400 border border-green-500/50";
+                statusEl.className = "px-2 py-0.5 rounded-none bg-black text-[10px] font-black uppercase tracking-widest text-green-400 border-2 border-green-600";
                 renderPlaylist();
             } catch (err) { console.error("Camera denied", err); }
         }
@@ -2494,7 +2601,7 @@
             if (state.activeIndex === state.playlist.findIndex(p => p.id === 'cam')) {
                 state.sourceType = 'none';
                 statusEl.textContent = "IDLE";
-                statusEl.className = "px-2 py-0.5 rounded bg-slate-800 text-[10px] font-bold uppercase tracking-widest text-slate-400";
+                statusEl.className = "px-2 py-0.5 rounded-none bg-black border-2 border-neutral-600 text-[10px] font-black uppercase tracking-widest text-neutral-400";
             }
             renderPlaylist();
         }
@@ -2590,10 +2697,10 @@
                 div.ondrop = (e) => handleDrop(e, idx);
                 div.ondragend = () => document.querySelectorAll('.playlist-item').forEach(i => i.classList.remove('dragging', 'drag-over'));
                 let thumbHtml = item.type === 'cam' ? `
-                        <div class="thumbnail-box text-blue-500 bg-blue-500/10 border-blue-500/30">
+                        <div class="thumbnail-box text-white bg-neutral-950 border-neutral-500">
                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
                         </div>
-                    ` : (item.thumb ? `<div class="thumbnail-box"><img src="${item.thumb}" class="w-full h-full object-cover"></div>` : `<div class="thumbnail-box bg-slate-800 animate-pulse"></div>`);
+                    ` : (item.thumb ? `<div class="thumbnail-box"><img src="${item.thumb}" class="w-full h-full object-cover"></div>` : `<div class="thumbnail-box bg-neutral-900 animate-pulse"></div>`);
                 let extraControls = '';
                 const deleteBtnHtml = item.type !== 'cam'
                     ? `<button class="item-delete-btn ml-2" title="Delete" onclick="event.stopPropagation(); deletePlaylistItem(${idx})">×</button>`
@@ -2602,11 +2709,11 @@
                     const camOptions = state.cameras.map(c => `<option value="${c.deviceId}" ${item.deviceId === c.deviceId ? 'selected' : ''}>${c.label || 'CAM ' + (state.cameras.indexOf(c)+1)}</option>`).join('');
                     extraControls = `
                         <div class="flex gap-1 w-full mt-0.5">
-                            <select class="text-[7px] bg-black/60 border border-white/5 rounded px-1 outline-none text-slate-300 flex-1 h-3.5" onchange="startCamera(this.value)">
+                            <select class="text-[7px] bg-black border-2 border-neutral-600 rounded-none px-1 outline-none text-neutral-300 flex-1 h-4 focus:border-white" onchange="startCamera(this.value)">
                                 <option value="">Auto Select</option>
                                 ${camOptions}
                             </select>
-                            <button class="text-[7px] bg-black/60 px-1.5 rounded border border-white/5 hover:border-blue-500 h-3.5 font-bold uppercase" onclick="event.stopPropagation(); ${item.isStreaming ? 'stopCamera()' : 'startCamera()'}">
+                            <button class="text-[7px] bg-black px-1.5 rounded-none border-2 border-neutral-600 hover:border-white h-4 font-black uppercase text-neutral-300" onclick="event.stopPropagation(); ${item.isStreaming ? 'stopCamera()' : 'startCamera()'}">
                                 ${item.isStreaming ? 'STOP' : 'START'}
                             </button>
                         </div>
@@ -2614,7 +2721,7 @@
                 }
                 div.innerHTML = `
                     <div class="flex items-center gap-2 w-full overflow-hidden">
-                        <div class="text-slate-800 cursor-grab active:cursor-grabbing hover:text-slate-500 flex-shrink-0">
+                        <div class="text-neutral-600 cursor-grab active:cursor-grabbing hover:text-white flex-shrink-0">
                              <svg xmlns="http://www.w3.org/2000/svg" width="10" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="5" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="9" cy="19" r="1"/><circle cx="15" cy="5" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="19" r="1"/></svg>
                         </div>
                         ${thumbHtml}
@@ -2648,12 +2755,12 @@
             } else if (item.type === 'video') {
                 state.sourceType = 'video'; video.src = item.url; video.play();
                 statusEl.textContent = "MP4 FEED";
-                statusEl.className = "px-2 py-0.5 rounded bg-blue-900/40 text-[10px] font-bold uppercase tracking-widest text-blue-400 border border-blue-500/50";
+                statusEl.className = "px-2 py-0.5 rounded-none bg-black text-[10px] font-black uppercase tracking-widest text-sky-400 border-2 border-sky-600";
             } else if (item.type === 'gif') {
                 state.sourceType = 'gif';
                 state.currentGif = { frames: [], frameIndex: 0, nextFrameTime: 0, gif: item.gifData };
                 statusEl.textContent = "GIF FEED";
-                statusEl.className = "px-2 py-0.5 rounded bg-purple-900/40 text-[10px] font-bold uppercase tracking-widest text-purple-400 border border-purple-500/50";
+                statusEl.className = "px-2 py-0.5 rounded-none bg-black text-[10px] font-black uppercase tracking-widest text-violet-400 border-2 border-violet-600";
             }
             renderPlaylist();
             persistPlaylistMeta();
@@ -3004,20 +3111,43 @@
             }
         }
 
-        function updateD3ToggleBtn(el, on) {
+        function updateOnOffToggleBtn(el, on) {
+            if (!el) return;
             el.textContent = on ? 'ON' : 'OFF';
-            el.classList.toggle('border-cyan-500', on);
-            el.classList.toggle('text-cyan-300', on);
-            el.classList.toggle('bg-cyan-950/30', on);
-            el.classList.toggle('text-slate-500', !on);
+            el.classList.toggle('on', on);
+        }
+
+        function updateBrutalLatchedBtn(el, latched) {
+            if (!el) return;
+            el.classList.toggle('is-latched', latched);
+        }
+
+        function updateBrutalLfoInlineBtn(el, on) {
+            if (!el) return;
+            el.classList.toggle('on', on);
+        }
+
+        function syncCollapsiblePanels() {
+            const d3b = document.getElementById('d3-section-body');
+            if (d3b) d3b.classList.toggle('hidden', !state.d3.enabled);
+            const gb = document.getElementById('glitch-section-body');
+            if (gb) gb.classList.toggle('hidden', !state.glitch.active);
+            const ab = document.getElementById('audio-section-body');
+            if (ab) ab.classList.toggle('hidden', !state.audio.active);
+            const db = document.getElementById('density-lfo-body');
+            if (db) db.classList.toggle('hidden', !state.lfo.res.active);
+            const cb = document.getElementById('contrast-lfo-body');
+            if (cb) cb.classList.toggle('hidden', !state.lfo.contrast.active);
+            const chb = document.getElementById('charset-lfo-body');
+            if (chb) chb.classList.toggle('hidden', !state.lfo.charset.active);
+        }
+
+        function updateD3ToggleBtn(el, on) {
+            updateOnOffToggleBtn(el, on);
         }
 
         function updateGlitchToggleBtn(el, on) {
-            el.textContent = on ? 'ON' : 'OFF';
-            el.classList.toggle('border-cyan-500', on);
-            el.classList.toggle('text-cyan-300', on);
-            el.classList.toggle('bg-cyan-950/30', on);
-            el.classList.toggle('text-slate-500', !on);
+            updateOnOffToggleBtn(el, on);
         }
 
         function glitchHash01(k1, k2, t) {
