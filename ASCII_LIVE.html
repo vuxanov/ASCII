@@ -30,13 +30,66 @@
             backdrop-filter: none;
             border: 2px solid #404040;
         }
-        header.glass { border-width: 0 0 2px 0; border-color: #fafafa; }
         aside.glass { border-color: #525252; }
+        /* Side panels: inner vertical edge vs canvas only — no outer edge to viewport */
+        aside.glass.border-r-2,
+        aside.glass.border-l-2 {
+            border-top: none;
+            border-bottom: none;
+        }
+        aside.glass.border-r-2 {
+            border-left: none;
+        }
+        aside.glass.border-l-2 {
+            border-right: none;
+        }
         .knob-label { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.14em; color: #a3a3a3; font-weight: 900; }
+        /* Full-bleed horizontal rules inside padded sidebars */
+        .sidebar-bleed-x {
+            margin-left: -1rem;
+            margin-right: -1rem;
+            padding-left: 1rem;
+            padding-right: 1rem;
+        }
+        .sidebar-sticky-head {
+            position: sticky;
+            top: 0;
+            z-index: 20;
+            background: var(--panel-bg);
+        }
+        #controls-panel {
+            overflow-x: hidden;
+        }
         #controls-panel .control-group {
             border-bottom: 2px solid #262626;
+            padding-top: 0.75rem;
             padding-bottom: 1rem;
             margin-bottom: 0;
+            margin-left: -1rem;
+            margin-right: -1rem;
+            padding-left: 1rem;
+            padding-right: 1rem;
+            width: calc(100% + 2rem);
+            max-width: none;
+            box-sizing: border-box;
+            flex-shrink: 0;
+            align-self: stretch;
+        }
+        /* Right-align label + tools; keeps OFF/ON on one vertical line */
+        .control-row-head {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto;
+            align-items: center;
+            gap: 0.5rem;
+            min-height: 1.75rem;
+            width: 100%;
+        }
+        .control-row-tools {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 0.5rem;
+            min-width: 0;
         }
         /* Focused / keyboard-active form controls — high contrast */
         #controls-panel input[type="text"]:focus-visible {
@@ -73,6 +126,11 @@
             border: 2px solid #525252; background: #000; color: #737373;
             border-radius: 0; text-transform: uppercase; letter-spacing: 0.05em;
             transition: color 0.1s, border-color 0.1s, background 0.1s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 2.75rem;
+            box-sizing: border-box;
         }
         .btn-onoff.on { border-color: #fafafa; color: #fafafa; background: #171717; }
         .btn-brutal-latched {
@@ -86,6 +144,16 @@
             text-transform: uppercase;
             letter-spacing: 0.06em;
             transition: border-color 0.1s, color 0.1s, background 0.1s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 2.75rem;
+            box-sizing: border-box;
+        }
+        /* Compact ON/OFF in dense 3D camera rows — does not use main column width */
+        .btn-onoff.btn-onoff-compact {
+            min-width: 0;
+            padding: 0.125rem 0.35rem;
         }
         .btn-brutal-latched:hover { color: #e5e5e5; border-color: #a3a3a3; }
         .btn-brutal-latched.is-latched {
@@ -157,13 +225,77 @@
             pointer-events: auto;
         }
         .playlist-item:hover .item-delete-btn { display: flex; }
-        .preset-grid { @apply grid grid-cols-2 gap-1.5; }
-        .preset-grid-wide { @apply grid grid-cols-3 gap-1.5 max-h-44 overflow-y-auto pr-0.5; }
-        .preset-btn {
-            @apply text-[9px] font-black bg-black p-2 rounded-none border-2 border-neutral-700 text-neutral-300 hover:border-white hover:text-white transition-all uppercase tracking-tighter;
+        /* Left sidebar presets: plain CSS — Tailwind CDN often skips @apply text-[Npx] on custom classes */
+        aside.glass.border-r-2 {
+            height: 100%;
+            min-height: 0;
+            align-self: stretch;
         }
-        .preset-active {
-            @apply border-white bg-neutral-900 text-white shadow-none;
+        #sidebar-left-body {
+            flex: 1 1 0%;
+            min-height: 0;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        #sidebar-queue-section {
+            flex: 1 1 0%;
+            min-height: 0;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        #playlist-container {
+            flex: 1 1 auto;
+            min-height: 0;
+            overflow-y: auto;
+        }
+        /* Tag strip: wrap, no max-height — never scroll inside presets */
+        :where(aside.glass.border-r-2 .preset-tags) {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px 8px;
+            align-items: center;
+            align-content: flex-start;
+            overflow: visible;
+            /* Shrinks chip labels below typical browser min-font; does not affect section header */
+            zoom: 0.65;
+        }
+        /* :where() keeps specificity 0 so Tailwind border-* / text-* on each button still apply */
+        :where(aside.glass.border-r-2 .preset-btn) {
+            font-size: 4px;
+            line-height: 1;
+            font-weight: 900;
+            background: #000;
+            padding: 0 2px;
+            border-radius: 0;
+            /* 2px so borders stay visible after .preset-tags zoom */
+            border-width: 2px;
+            border-style: solid;
+            border-color: #525252;
+            text-transform: uppercase;
+            letter-spacing: 0.02em;
+            width: auto;
+            flex: 0 0 auto;
+            max-width: 100%;
+            min-width: 0;
+            box-sizing: border-box;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            white-space: nowrap;
+            transition: color 0.1s, border-color 0.1s, background 0.1s, filter 0.1s;
+        }
+        :where(aside.glass.border-r-2 .preset-btn:hover) {
+            filter: brightness(1.12);
+        }
+        aside.glass.border-r-2 .preset-btn.preset-active {
+            border-color: #fafafa !important;
+            background: #0a0a0a !important;
+            color: #fafafa !important;
+            box-shadow: none;
+            --tw-ring-width: 0;
         }
         .density-dual-range { position: relative; height: 28px; width: 100%; min-width: 128px; }
         .density-dual-range .density-range-track-bg {
@@ -235,28 +367,17 @@
         }
     </style>
 </head>
-<body class="flex flex-col">
-    <header class="h-12 glass flex items-center justify-between px-6 shrink-0 z-50 bg-black">
-        <div class="flex items-center gap-4">
-            <h1 class="font-black text-white tracking-tighter text-xl italic">ASCII_LIVE.v9.6</h1>
-            <div id="fps-counter" class="fira text-[10px] text-neutral-400 bg-black px-2 py-0.5 rounded-none border-2 border-neutral-600 tabular-nums">60 FPS</div>
-        </div>
-        <div class="flex items-center gap-3">
-            <div id="dim-info" class="text-[10px] fira text-slate-400 mr-4">0 x 0</div>
-            <span id="source-status" class="px-2 py-0.5 rounded-none bg-black border-2 border-neutral-600 text-[10px] font-black uppercase tracking-widest text-neutral-400">Standby</span>
-            <button id="fullscreen-btn" type="button" class="hover:text-white text-neutral-400 transition-colors p-1 rounded-none" title="Fullscreen canvas area">
-                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M21 8V5a2 2 0 0 0-2-2h-3"/><path d="M3 16v3a2 2 0 0 0 2 2h3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/></svg>
-            </button>
-            <button id="projector-btn" type="button" class="hover:text-white text-neutral-400 transition-colors p-1 rounded-none" title="Open projector window (no UI)">
-                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 3h6l2 4h14v10a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V3z"/><path d="M8 21h8"/></svg>
-            </button>
-        </div>
-    </header>
-
-    <main class="flex flex-1 overflow-hidden">
-        <aside class="w-72 glass border-r-2 flex flex-col p-4 gap-4 shrink-0 overflow-y-auto">
-            <section>
-                <h2 class="knob-label mb-2">Import Content</h2>
+<body class="flex flex-col h-screen overflow-hidden">
+    <main class="flex flex-1 min-h-0 overflow-hidden">
+        <aside class="w-72 glass border-r-2 flex flex-col shrink-0 min-h-0 overflow-hidden">
+            <div class="sidebar-sticky-head shrink-0 border-b-2 border-neutral-800 sidebar-bleed-x">
+                <div class="flex justify-between items-center gap-2 min-w-0 py-3 px-4">
+                    <span class="font-black text-white tracking-tighter text-base italic leading-tight truncate">ASCII_LIVE.v9.6</span>
+                    <div id="fps-counter" class="fira text-[10px] text-neutral-300 bg-black px-2 py-0.5 rounded-none border-2 border-neutral-600 tabular-nums shrink-0">60 FPS</div>
+                </div>
+            </div>
+            <div id="sidebar-left-body" class="flex-1 flex flex-col min-h-0 overflow-hidden px-4 pt-3 pb-4">
+            <section class="sidebar-bleed-x border-b border-neutral-800 pb-3 shrink-0">
                 <label class="w-full py-2 bg-black hover:bg-neutral-900 border-2 border-neutral-600 rounded-none text-xs font-black uppercase tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer">
                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
                     ADD MP4/GIF
@@ -264,77 +385,78 @@
                 </label>
             </section>
 
-            <section class="flex flex-col gap-2 border-t border-slate-800 pt-3">
-                <h2 class="knob-label mb-1 text-slate-400">Performance Automation</h2>
-                <div class="flex flex-col gap-1.5 mt-2">
-                    <div class="flex justify-between items-center">
-                        <label class="text-[9px] font-extrabold text-slate-500 uppercase tracking-tighter">Source Switch</label>
-                        <div class="flex items-center gap-1.5">
-                            <button id="btn-switch-jitter" type="button" class="text-[8px] font-black px-1.5 py-0.5 rounded-none border-2 border-neutral-600 bg-black text-neutral-500 hover:border-white hover:text-white transition-colors" title="Random dwell each cycle (2–60s); disables interval slider">RND</button>
-                            <button id="btn-auto-switch" type="button" class="btn-brutal-latched">ENABLE</button>
+            <section class="sidebar-bleed-x border-t border-neutral-800 flex flex-col gap-2 pt-3 pb-3 shrink-0">
+                <div class="flex flex-col gap-1.5">
+                    <div class="flex justify-between items-center gap-2 min-h-[1.75rem]">
+                        <label class="knob-label shrink-0 min-w-0">Source Switch</label>
+                        <div class="flex items-center gap-1.5 shrink-0">
+                            <button id="btn-switch-jitter" type="button" class="text-[8px] font-black px-1.5 py-0.5 rounded-none border-2 border-neutral-600 bg-black text-neutral-500 hover:border-white hover:text-white transition-colors hidden" title="Random dwell each cycle (2–60s); disables interval slider">RND</button>
+                            <button id="btn-auto-switch" type="button" class="btn-brutal-latched">OFF</button>
                         </div>
                     </div>
-                    <div class="flex items-center gap-2">
-                        <input type="range" id="param-interval" min="2" max="60" value="10" class="flex-1 h-1 bg-transparent rounded-none appearance-none cursor-pointer">
-                        <span id="val-interval" class="fira text-[9px] min-w-[2rem] text-right text-slate-400">10s</span>
+                    <div id="source-switch-body" class="hidden flex flex-col gap-1.5">
+                        <div class="flex items-center gap-2">
+                            <input type="range" id="param-interval" min="2" max="60" value="10" class="flex-1 h-1 bg-transparent rounded-none appearance-none cursor-pointer min-w-0">
+                            <span id="val-interval" class="fira text-[9px] min-w-[2rem] text-right text-neutral-400 shrink-0">10s</span>
+                        </div>
                     </div>
                 </div>
-                <div class="flex flex-col gap-1.5 mt-2 border-t border-slate-800/50 pt-2">
-                    <div class="flex justify-between items-center">
-                        <label class="text-[9px] font-extrabold text-slate-500 uppercase tracking-tighter">Preset Cycle <span id="lfo-preset-led" class="lfo-indicator bg-slate-700"></span></label>
-                        <div class="flex items-center gap-1.5">
-                            <button id="btn-preset-jitter" type="button" class="text-[8px] font-black px-1.5 py-0.5 rounded-none border-2 border-neutral-600 bg-black text-neutral-500 hover:border-white hover:text-white transition-colors" title="Random dwell each cycle (1–30s); disables interval slider">RND</button>
-                            <button id="btn-auto-preset" type="button" class="btn-brutal-latched">ENABLE</button>
+                <div class="-mx-4 px-4 flex flex-col gap-1.5 mt-2 border-t border-neutral-800 pt-3">
+                    <div class="flex justify-between items-center gap-2 min-h-[1.75rem]">
+                        <label class="knob-label shrink-0 min-w-0">Preset Cycle <span id="lfo-preset-led" class="lfo-indicator bg-neutral-600"></span></label>
+                        <div class="flex items-center gap-1.5 shrink-0">
+                            <button id="btn-preset-jitter" type="button" class="text-[8px] font-black px-1.5 py-0.5 rounded-none border-2 border-neutral-600 bg-black text-neutral-500 hover:border-white hover:text-white transition-colors hidden" title="Random dwell each cycle (1–30s); disables interval slider">RND</button>
+                            <button id="btn-auto-preset" type="button" class="btn-brutal-latched">OFF</button>
                         </div>
                     </div>
-                    <div class="flex items-center gap-2">
-                        <input type="range" id="param-preset-interval" min="1" max="30" value="5" class="flex-1 h-1 bg-transparent rounded-none appearance-none cursor-pointer">
-                        <span id="val-preset-interval" class="fira text-[9px] min-w-[2rem] text-right text-slate-400">5s</span>
+                    <div id="preset-cycle-body" class="hidden flex flex-col gap-1.5">
+                        <div class="flex items-center gap-2">
+                            <input type="range" id="param-preset-interval" min="1" max="30" value="5" class="flex-1 h-1 bg-transparent rounded-none appearance-none cursor-pointer min-w-0">
+                            <span id="val-preset-interval" class="fira text-[9px] min-w-[2rem] text-right text-neutral-400 shrink-0">5s</span>
+                        </div>
                     </div>
                 </div>
             </section>
 
-            <section class="flex-1 flex flex-col overflow-hidden border-t border-slate-800 pt-3">
-                <div class="flex justify-between items-center mb-2">
+            <section id="sidebar-queue-section" class="sidebar-bleed-x border-t border-neutral-800 flex flex-col flex-1 min-h-0 pt-3 pb-0 mt-0">
+                <div class="sidebar-sticky-head flex justify-between items-center gap-2 -mx-4 px-4 py-2 mb-2 border-b border-neutral-800 min-h-[2rem]">
                     <h2 class="knob-label">Source Queue</h2>
-                    <button id="btn-delete-all" type="button" class="text-[8px] font-black px-1.5 py-0.5 rounded-none border-2 border-neutral-600 bg-black text-neutral-500 hover:border-red-500 hover:text-red-300 transition-colors" title="Delete all uploaded items">DELETE ALL</button>
+                    <button id="btn-delete-all" type="button" class="text-[8px] font-black px-1.5 py-0.5 rounded-none border-2 border-neutral-600 bg-black text-neutral-500 hover:border-red-500 hover:text-red-300 transition-colors shrink-0" title="Delete all uploaded items">DELETE ALL</button>
                 </div>
-                <div id="playlist-container" class="flex-1 overflow-y-auto space-y-2 pr-1"></div>
+                <div id="playlist-container" class="flex-1 overflow-y-auto min-h-0 space-y-2 pr-1"></div>
             </section>
 
-            <section class="border-t border-slate-800 pt-3">
-                <div class="flex justify-between items-center mb-2">
+            <section class="sidebar-bleed-x border-t border-neutral-800 pt-3 pb-3 mt-0 shrink-0">
+                <div class="sidebar-sticky-head flex justify-between items-center gap-2 -mx-4 px-4 py-2.5 mb-2 border-b border-neutral-800 min-h-[2.25rem]">
                     <h2 class="knob-label text-white">Style Presets</h2>
-                    <button type="button" onclick="resetPresets()" class="text-[8px] px-1.5 py-0.5 rounded-none border-2 border-neutral-600 bg-black hover:bg-neutral-950 hover:text-red-400 hover:border-red-500 transition-all font-black uppercase">RESET ALL</button>
+                    <button type="button" onclick="resetPresets()" class="text-[8px] font-black px-1.5 py-0.5 rounded-none border-2 border-neutral-600 bg-black hover:bg-neutral-950 hover:text-red-400 hover:border-red-500 transition-all font-black uppercase shrink-0">RESET ALL</button>
                 </div>
-                <div class="preset-grid">
-                    <button type="button" onclick="applyPreset('matrix')" class="preset-btn" id="btn-pre-matrix">MATRIX</button>
-                    <button type="button" onclick="applyPreset('cyber')" class="preset-btn text-cyan-400" id="btn-pre-cyber">CYBER</button>
-                    <button type="button" onclick="applyPreset('vaporwave')" class="preset-btn text-pink-400" id="btn-pre-vaporwave">VAPOR</button>
-                    <button type="button" onclick="applyPreset('inferno')" class="preset-btn text-orange-500" id="btn-pre-inferno">INFERNO</button>
-                    <button type="button" onclick="applyPreset('rgb')" class="preset-btn text-white bg-gradient-to-r from-red-500 via-green-500 to-blue-500" id="btn-pre-rgb">RGB</button>
-                    <button type="button" onclick="applyPreset('toxic')" class="preset-btn text-lime-400" id="btn-pre-toxic">TOXIC</button>
-                    <button type="button" onclick="applyPreset('classic')" class="preset-btn" id="btn-pre-classic">B&W</button>
-                    <button type="button" onclick="applyPreset('dots')" class="preset-btn text-purple-400" id="btn-pre-dots">GLOW</button>
-                </div>
-                <p class="text-[8px] text-slate-600 font-bold uppercase tracking-wider mt-2 mb-1">More</p>
-                <div class="preset-grid-wide">
-                    <button type="button" onclick="applyPreset('emoji')" class="preset-btn" id="btn-pre-emoji">😀 MOOD</button>
-                    <button type="button" onclick="applyPreset('pixel')" class="preset-btn" id="btn-pre-pixel">▂ PIXEL</button>
-                    <button type="button" onclick="applyPreset('braille')" class="preset-btn" id="btn-pre-braille">⠿ BRAILLE</button>
-                    <button type="button" onclick="applyPreset('hearts')" class="preset-btn text-rose-400" id="btn-pre-hearts">♥ LOVE</button>
-                    <button type="button" onclick="applyPreset('arrows')" class="preset-btn text-amber-400" id="btn-pre-arrows">➤ ARROWS</button>
-                    <button type="button" onclick="applyPreset('ocean')" class="preset-btn text-sky-400" id="btn-pre-ocean">🌊 OCEAN</button>
-                    <button type="button" onclick="applyPreset('circuit')" class="preset-btn text-emerald-400" id="btn-pre-circuit">⌘ WIRE</button>
-                    <button type="button" onclick="applyPreset('runes')" class="preset-btn text-stone-400" id="btn-pre-runes">ᚱ RUNES</button>
-                    <button type="button" onclick="applyPreset('math')" class="preset-btn text-indigo-400" id="btn-pre-math">∑ MATH</button>
-                    <button type="button" onclick="applyPreset('cyrillic')" class="preset-btn text-sky-300" id="btn-pre-cyrillic">К CYR</button>
-                    <button type="button" onclick="applyPreset('crosses')" class="preset-btn text-stone-300" id="btn-pre-crosses">✝ CROSS</button>
-                    <button type="button" onclick="applyPreset('gothic')" class="preset-btn text-violet-300" id="btn-pre-gothic">𝔊 GOTH</button>
-                    <button type="button" onclick="applyPreset('dingbats')" class="preset-btn text-pink-300" id="btn-pre-dingbats">✿ DING</button>
-                    <button type="button" onclick="applyPreset('relics')" class="preset-btn text-teal-300" id="btn-pre-relics">⛧ RELIC</button>
+                <div class="preset-tags">
+                    <button type="button" onclick="applyPreset('matrix')" class="preset-btn border-2 text-neutral-300 border-neutral-600" id="btn-pre-matrix">MATRIX</button>
+                    <button type="button" onclick="applyPreset('cyber')" class="preset-btn border-2 text-cyan-400 border-cyan-800" id="btn-pre-cyber">CYBER</button>
+                    <button type="button" onclick="applyPreset('vaporwave')" class="preset-btn border-2 text-pink-400 border-pink-900" id="btn-pre-vaporwave">VAPOR</button>
+                    <button type="button" onclick="applyPreset('inferno')" class="preset-btn border-2 text-orange-500 border-orange-900" id="btn-pre-inferno">INFERNO</button>
+                    <button type="button" onclick="applyPreset('rgb')" class="preset-btn border-2 text-white border-neutral-500 bg-gradient-to-r from-red-600 via-green-600 to-blue-600" id="btn-pre-rgb">RGB</button>
+                    <button type="button" onclick="applyPreset('toxic')" class="preset-btn border-2 text-lime-400 border-lime-900" id="btn-pre-toxic">TOXIC</button>
+                    <button type="button" onclick="applyPreset('classic')" class="preset-btn border-2 text-neutral-300 border-neutral-600" id="btn-pre-classic">B&W</button>
+                    <button type="button" onclick="applyPreset('dots')" class="preset-btn border-2 text-purple-400 border-purple-900" id="btn-pre-dots">GLOW</button>
+                    <button type="button" onclick="applyPreset('emoji')" class="preset-btn border-2 text-neutral-300 border-neutral-600" id="btn-pre-emoji">😀 MOOD</button>
+                    <button type="button" onclick="applyPreset('pixel')" class="preset-btn border-2 text-neutral-300 border-neutral-600" id="btn-pre-pixel">▂ PIXEL</button>
+                    <button type="button" onclick="applyPreset('braille')" class="preset-btn border-2 text-neutral-300 border-neutral-600" id="btn-pre-braille">⠿ BRAILLE</button>
+                    <button type="button" onclick="applyPreset('hearts')" class="preset-btn border-2 text-rose-400 border-rose-900" id="btn-pre-hearts">♥ LOVE</button>
+                    <button type="button" onclick="applyPreset('arrows')" class="preset-btn border-2 text-amber-400 border-amber-900" id="btn-pre-arrows">➤ ARROWS</button>
+                    <button type="button" onclick="applyPreset('ocean')" class="preset-btn border-2 text-sky-400 border-sky-900" id="btn-pre-ocean">🌊 OCEAN</button>
+                    <button type="button" onclick="applyPreset('circuit')" class="preset-btn border-2 text-emerald-400 border-emerald-900" id="btn-pre-circuit">⌘ WIRE</button>
+                    <button type="button" onclick="applyPreset('runes')" class="preset-btn border-2 text-stone-400 border-stone-700" id="btn-pre-runes">ᚱ RUNES</button>
+                    <button type="button" onclick="applyPreset('math')" class="preset-btn border-2 text-indigo-400 border-indigo-900" id="btn-pre-math">∑ MATH</button>
+                    <button type="button" onclick="applyPreset('cyrillic')" class="preset-btn border-2 text-sky-300 border-sky-900" id="btn-pre-cyrillic">К CYR</button>
+                    <button type="button" onclick="applyPreset('crosses')" class="preset-btn border-2 text-stone-300 border-stone-700" id="btn-pre-crosses">✝ CROSS</button>
+                    <button type="button" onclick="applyPreset('gothic')" class="preset-btn border-2 text-violet-300 border-violet-900" id="btn-pre-gothic">𝔊 GOTH</button>
+                    <button type="button" onclick="applyPreset('dingbats')" class="preset-btn border-2 text-pink-300 border-pink-900" id="btn-pre-dingbats">✿ DING</button>
+                    <button type="button" onclick="applyPreset('relics')" class="preset-btn border-2 text-teal-300 border-teal-900" id="btn-pre-relics">⛧ RELIC</button>
                 </div>
             </section>
+            </div>
         </aside>
 
         <div class="flex-1 flex flex-col relative bg-black items-center justify-center overflow-hidden min-w-0">
@@ -345,14 +467,27 @@
             </div>
         </div>
 
-        <aside class="w-72 glass border-l-2 flex flex-col shrink-0 overflow-hidden">
-            <div id="controls-panel" class="flex-1 overflow-y-auto p-4 flex flex-col gap-0">
-                <h2 class="knob-label shrink-0 pb-3 border-b-2 border-neutral-700 text-neutral-400">Output &amp; effects</h2>
+        <aside class="w-72 glass border-l-2 flex flex-col shrink-0 min-h-0 overflow-hidden">
+            <div class="sidebar-sticky-head shrink-0 border-b-2 border-neutral-700 z-30">
+                <div class="flex justify-between items-center gap-2 min-w-0 px-4 py-3">
+                    <span id="dim-info" class="fira text-[9px] text-neutral-300 tabular-nums whitespace-nowrap shrink-0" title="Output resolution">0 × 0</span>
+                    <span id="source-status" class="inline-block w-fit max-w-[min(100%,11rem)] truncate px-1.5 py-0.5 rounded-none bg-black border-2 border-neutral-600 text-[9px] font-black uppercase tracking-wider text-neutral-300 shrink-0" title="Active source">Standby</span>
+                    <div class="flex items-center gap-0.5 shrink-0">
+                        <button id="fullscreen-btn" type="button" class="hover:text-white text-neutral-400 transition-colors p-1 rounded-none border-2 border-neutral-700 bg-black hover:border-white" title="Fullscreen canvas area">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M21 8V5a2 2 0 0 0-2-2h-3"/><path d="M3 16v3a2 2 0 0 0 2 2h3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/></svg>
+                        </button>
+                        <button id="projector-btn" type="button" class="hover:text-white text-neutral-400 transition-colors p-1 rounded-none border-2 border-neutral-700 bg-black hover:border-white" title="Open projector window (no UI)">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 3h6l2 4h14v10a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V3z"/><path d="M8 21h8"/></svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div id="controls-panel" class="flex-1 overflow-y-auto min-h-0 px-4 pt-3 pb-4 flex flex-col gap-0">
                 <div class="control-group w-full">
-                    <div class="flex justify-between items-center gap-2">
-                        <label class="knob-label">Density <span id="lfo-res-led" class="lfo-indicator bg-slate-700"></span></label>
-                        <div class="flex items-center gap-2 shrink-0">
-                            <span class="fira text-[9px] text-neutral-500 tabular-nums"><span id="val-res-min">80</span>–<span id="val-res-max">80</span> <span class="text-neutral-600">|</span> <span id="val-res" class="text-neutral-300">80</span></span>
+                    <div class="control-row-head">
+                        <label class="knob-label min-w-0 truncate">Density <span id="lfo-res-led" class="lfo-indicator bg-neutral-600"></span></label>
+                        <div class="control-row-tools">
+                            <span class="fira text-[9px] text-neutral-500 tabular-nums whitespace-nowrap"><span id="val-res-min">80</span>–<span id="val-res-max">80</span> <span class="text-neutral-600">|</span> <span id="val-res" class="text-neutral-300">80</span></span>
                             <button type="button" id="lfo-res-btn" class="btn-onoff" title="Density LFO">OFF</button>
                         </div>
                     </div>
@@ -381,78 +516,99 @@
                             <span id="val-lfo-res-wave-cycle" class="fira text-[7px] text-neutral-500 w-6">3s</span>
                         </div>
                     </div>
+                    <div class="control-row-head mt-3">
+                        <span class="knob-label min-w-0 truncate">Density schedule</span>
+                        <div class="control-row-tools gap-1.5">
+                            <button type="button" id="btn-res-gate-jitter" class="text-[8px] font-black px-1.5 py-0.5 rounded-none border-2 border-neutral-600 bg-black text-neutral-500 hover:border-white hover:text-white transition-colors" title="Random cycle &amp; active duration from slider ranges">RND</button>
+                            <button type="button" id="btn-res-gate-enable" class="btn-brutal-latched">OFF</button>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2 mt-2">
+                        <span class="fira text-[7px] text-neutral-600 w-14 shrink-0" title="Full loop length (s)">Cycle</span>
+                        <input type="range" id="param-res-gate-cycle" min="3" max="120" step="1" value="20" class="flex-1 min-w-0 h-1 bg-transparent rounded-none appearance-none">
+                        <span id="val-res-gate-cycle" class="fira text-[7px] text-neutral-500 w-10 shrink-0 tabular-nums">20s</span>
+                    </div>
+                    <div class="flex items-center gap-2 mt-1">
+                        <span class="fira text-[7px] text-neutral-600 w-14 shrink-0" title="Sliders + LFO apply for this long at cycle start">Active</span>
+                        <input type="range" id="param-res-gate-active" min="0.2" max="60" step="0.2" value="2" class="flex-1 min-w-0 h-1 bg-transparent rounded-none appearance-none">
+                        <span id="val-res-gate-active" class="fira text-[7px] text-neutral-500 w-10 shrink-0 tabular-nums">2s</span>
+                    </div>
                 </div>
-                <div class="control-group w-full border-t-2 border-neutral-800 pt-4">
-                    <div class="flex justify-between items-center gap-2">
-                        <label class="knob-label">ASCII 3D</label>
-                        <button type="button" id="btn-d3-toggle" class="btn-onoff">OFF</button>
+                <div class="control-group w-full">
+                    <div class="control-row-head">
+                        <label class="knob-label min-w-0 truncate">ASCII 3D</label>
+                        <div class="control-row-tools">
+                            <button type="button" id="btn-d3-toggle" class="btn-onoff">OFF</button>
+                        </div>
                     </div>
                     <div id="d3-section-body" class="hidden">
-                    <label class="text-[8px] text-neutral-500 font-black uppercase tracking-tighter block mb-1 mt-2">Camera</label>
+                    <label class="knob-label block mb-1 mt-2">Camera</label>
                     <div class="border-2 border-neutral-800 rounded-none px-1 py-1 mt-1 space-y-0.5">
                         <div class="flex flex-wrap items-center gap-0.5">
-                            <span class="fira text-[7px] text-slate-500 font-bold w-9 shrink-0" title="Yaw">Orb H</span>
-                            <button type="button" id="btn-d3-orbit-h" class="btn-onoff text-[7px] py-0.5 px-1">ON</button>
+                            <span class="fira text-[7px] text-neutral-500 font-bold w-9 shrink-0" title="Yaw">Orb H</span>
+                            <button type="button" id="btn-d3-orbit-h" class="btn-onoff btn-onoff-compact text-[7px]">ON</button>
                             <button type="button" id="lfo-d3-orbit-h-btn" class="brutal-lfo-inline text-[7px] bg-black px-1 py-0.5 rounded-none border-2 border-neutral-600">LFO</button>
                             <select id="lfo-d3-orbit-h-shape" class="text-[7px] bg-black border-2 border-neutral-600 rounded-none px-0.5 py-0.5 text-neutral-300 outline-none focus:border-white max-w-[3.25rem]">
                                 <option value="sine">Sin</option><option value="triangle">Tri</option><option value="saw">Saw</option><option value="square">Sqr</option><option value="pulse">Pls</option><option value="noise">Nse</option>
                             </select>
-                            <span class="fira text-[7px] text-slate-600 w-3 shrink-0" id="lfo-d3-orbit-h-rate-label">∿</span>
+                            <span class="fira text-[7px] text-neutral-600 w-3 shrink-0" id="lfo-d3-orbit-h-rate-label">∿</span>
                             <input type="range" id="lfo-d3-orbit-h-rate" min="0.05" max="5" step="0.05" value="0.35" class="w-11 h-1 bg-transparent rounded-none appearance-none flex-1 min-w-0" title="LFO off: spin speed · LFO on: wave speed / noise">
                         </div>
                         <div class="flex flex-wrap items-center gap-0.5 pl-9">
                             <button type="button" id="btn-lfo-d3-orbit-h-auto-wave" class="text-[6px] font-black px-1 py-0.5 rounded-none border-2 border-neutral-600 bg-black text-neutral-500">AUTO</button>
                             <input type="range" id="lfo-d3-orbit-h-wave-cycle" min="1" max="12" value="3" class="w-10 h-1 bg-transparent rounded-none appearance-none">
-                            <span id="val-lfo-d3-orbit-h-wave-cycle" class="fira text-[6px] text-slate-500 w-5">3s</span>
+                            <span id="val-lfo-d3-orbit-h-wave-cycle" class="fira text-[6px] text-neutral-500 w-5">3s</span>
                         </div>
                     </div>
                     <div class="border-2 border-neutral-800 rounded-none px-1 py-1 mt-1 space-y-0.5">
                         <div class="flex flex-wrap items-center gap-0.5">
-                            <span class="fira text-[7px] text-slate-500 font-bold w-9 shrink-0" title="Pitch">Orb V</span>
-                            <button type="button" id="btn-d3-orbit-v" class="btn-onoff text-[7px] py-0.5 px-1">ON</button>
+                            <span class="fira text-[7px] text-neutral-500 font-bold w-9 shrink-0" title="Pitch">Orb V</span>
+                            <button type="button" id="btn-d3-orbit-v" class="btn-onoff btn-onoff-compact text-[7px]">ON</button>
                             <button type="button" id="lfo-d3-orbit-v-btn" class="brutal-lfo-inline text-[7px] bg-black px-1 py-0.5 rounded-none border-2 border-neutral-600">LFO</button>
                             <select id="lfo-d3-orbit-v-shape" class="text-[7px] bg-black border-2 border-neutral-600 rounded-none px-0.5 py-0.5 text-neutral-300 outline-none focus:border-white max-w-[3.25rem]">
                                 <option value="sine">Sin</option><option value="triangle">Tri</option><option value="saw">Saw</option><option value="square">Sqr</option><option value="pulse">Pls</option><option value="noise">Nse</option>
                             </select>
-                            <span class="fira text-[7px] text-slate-600 w-3 shrink-0" id="lfo-d3-orbit-v-rate-label">∿</span>
+                            <span class="fira text-[7px] text-neutral-600 w-3 shrink-0" id="lfo-d3-orbit-v-rate-label">∿</span>
                             <input type="range" id="lfo-d3-orbit-v-rate" min="0.05" max="5" step="0.05" value="0.35" class="w-11 h-1 bg-transparent rounded-none appearance-none flex-1 min-w-0">
                         </div>
                         <div class="flex flex-wrap items-center gap-0.5 pl-9">
                             <button type="button" id="btn-lfo-d3-orbit-v-auto-wave" class="text-[6px] font-black px-1 py-0.5 rounded-none border-2 border-neutral-600 bg-black text-neutral-500">AUTO</button>
                             <input type="range" id="lfo-d3-orbit-v-wave-cycle" min="1" max="12" value="3" class="w-10 h-1 bg-transparent rounded-none appearance-none">
-                            <span id="val-lfo-d3-orbit-v-wave-cycle" class="fira text-[6px] text-slate-500 w-5">3s</span>
+                            <span id="val-lfo-d3-orbit-v-wave-cycle" class="fira text-[6px] text-neutral-500 w-5">3s</span>
                         </div>
                     </div>
                     <div class="border-2 border-neutral-800 rounded-none px-1 py-1 mt-1 space-y-0.5">
                         <div class="flex flex-wrap items-center gap-0.5">
-                            <span class="fira text-[7px] text-slate-500 font-bold w-9 shrink-0" title="Distance">Dolly</span>
-                            <button type="button" id="btn-d3-dolly" class="btn-onoff text-[7px] py-0.5 px-1">OFF</button>
+                            <span class="fira text-[7px] text-neutral-500 font-bold w-9 shrink-0" title="Distance">Dolly</span>
+                            <button type="button" id="btn-d3-dolly" class="btn-onoff btn-onoff-compact text-[7px]">OFF</button>
                             <button type="button" id="lfo-d3-dolly-btn" class="brutal-lfo-inline text-[7px] bg-black px-1 py-0.5 rounded-none border-2 border-neutral-600">LFO</button>
                             <select id="lfo-d3-dolly-shape" class="text-[7px] bg-black border-2 border-neutral-600 rounded-none px-0.5 py-0.5 text-neutral-300 outline-none focus:border-white max-w-[3.25rem]">
                                 <option value="sine">Sin</option><option value="triangle">Tri</option><option value="saw">Saw</option><option value="square">Sqr</option><option value="pulse">Pls</option><option value="noise">Nse</option>
                             </select>
-                            <span class="fira text-[7px] text-slate-600 w-3 shrink-0" id="lfo-d3-dolly-rate-label">∿</span>
+                            <span class="fira text-[7px] text-neutral-600 w-3 shrink-0" id="lfo-d3-dolly-rate-label">∿</span>
                             <input type="range" id="lfo-d3-dolly-rate" min="0.05" max="5" step="0.05" value="0.35" class="w-11 h-1 bg-transparent rounded-none appearance-none flex-1 min-w-0">
                         </div>
                         <div class="flex flex-wrap items-center gap-0.5 pl-9">
                             <button type="button" id="btn-lfo-d3-dolly-auto-wave" class="text-[6px] font-black px-1 py-0.5 rounded-none border-2 border-neutral-600 bg-black text-neutral-500">AUTO</button>
                             <input type="range" id="lfo-d3-dolly-wave-cycle" min="1" max="12" value="3" class="w-10 h-1 bg-transparent rounded-none appearance-none">
-                            <span id="val-lfo-d3-dolly-wave-cycle" class="fira text-[6px] text-slate-500 w-5">3s</span>
+                            <span id="val-lfo-d3-dolly-wave-cycle" class="fira text-[6px] text-neutral-500 w-5">3s</span>
                         </div>
                     </div>
                     <div class="flex items-center gap-2 mt-2">
-                        <span class="fira text-[7px] text-slate-600 w-14 shrink-0" title="Closer / farther">Zoom</span>
+                        <span class="fira text-[7px] text-neutral-600 w-14 shrink-0" title="Closer / farther">Zoom</span>
                         <input type="range" id="param-d3-zoom" min="0.72" max="4.2" step="0.05" value="1" class="flex-1 min-w-0 h-1 bg-transparent rounded-none appearance-none" title="Higher = closer. Min = less zoom-out; max = more zoom-in.">
-                        <span id="val-d3-zoom" class="fira text-[7px] text-slate-500 w-9 shrink-0 tabular-nums">1.0</span>
+                        <span id="val-d3-zoom" class="fira text-[7px] text-neutral-500 w-9 shrink-0 tabular-nums">1.0</span>
                     </div>
                     <div class="flex items-center gap-2 mt-1">
-                        <span class="fira text-[7px] text-slate-600 w-14 shrink-0" title="Yaw offset">Rotate</span>
+                        <span class="fira text-[7px] text-neutral-600 w-14 shrink-0" title="Yaw offset">Rotate</span>
                         <input type="range" id="param-d3-rotate" min="-180" max="180" step="1" value="0" class="flex-1 min-w-0 h-1 bg-transparent rounded-none appearance-none">
-                        <span id="val-d3-rotate" class="fira text-[7px] text-slate-500 w-9 shrink-0 tabular-nums">0°</span>
+                        <span id="val-d3-rotate" class="fira text-[7px] text-neutral-500 w-9 shrink-0 tabular-nums">0°</span>
                     </div>
-                    <div class="flex justify-between items-center gap-2 mt-3">
-                        <label class="knob-label text-[9px]">3D amount <span id="lfo-d3-led" class="lfo-indicator bg-slate-700"></span></label>
-                        <span id="val-d3-mix" class="fira text-[8px] text-slate-400 tabular-nums" title="LFO off = full 3D">1.00</span>
+                    <div class="control-row-head mt-3">
+                        <label class="knob-label min-w-0 truncate">3D amount <span id="lfo-d3-led" class="lfo-indicator bg-neutral-600"></span></label>
+                        <div class="control-row-tools">
+                            <span id="val-d3-mix" class="fira text-[9px] text-neutral-400 tabular-nums" title="LFO off = full 3D">1.00</span>
+                        </div>
                     </div>
                     <div class="flex flex-wrap gap-1.5 items-center">
                         <button type="button" id="lfo-d3-btn" class="brutal-lfo-inline text-[8px] bg-black px-2 py-0.5 border-2 border-neutral-600 hover:border-neutral-400 rounded-none">LFO</button>
@@ -464,97 +620,99 @@
                             <option value="pulse">Pulse</option>
                             <option value="noise">Noise</option>
                         </select>
-                        <span class="fira text-[7px] text-slate-600 w-4 shrink-0" id="lfo-d3-rate-label" title="Periodic: speed · Noise: responsiveness">∿</span>
+                        <span class="fira text-[7px] text-neutral-600 w-4 shrink-0" id="lfo-d3-rate-label" title="Periodic: speed · Noise: responsiveness">∿</span>
                         <input type="range" id="lfo-d3-rate" min="0.1" max="5" step="0.1" value="1" class="w-14 h-1 bg-transparent rounded-none appearance-none" title="Wave speed / noise smoothing">
                     </div>
                     <div class="flex flex-wrap items-center gap-1.5 mt-1">
                         <button type="button" id="btn-lfo-d3-auto-wave" class="text-[7px] font-black px-1.5 py-0.5 rounded-none border-2 border-neutral-600 bg-black text-neutral-500 hover:border-white hover:text-neutral-100 transition-colors" title="Cycle wave shape automatically">WAVE AUTO</button>
                         <input type="range" id="lfo-d3-wave-cycle" min="1" max="12" value="3" class="w-12 h-1 bg-transparent rounded-none appearance-none" title="Seconds per wave shape">
-                        <span id="val-lfo-d3-wave-cycle" class="fira text-[7px] text-slate-500 w-6">3s</span>
+                        <span id="val-lfo-d3-wave-cycle" class="fira text-[7px] text-neutral-500 w-6">3s</span>
                     </div>
                     <div class="flex items-center gap-2 mt-2">
-                        <span class="fira text-[7px] text-slate-600 w-14 shrink-0">Depth</span>
+                        <span class="fira text-[7px] text-neutral-600 w-14 shrink-0">Depth</span>
                         <input type="range" id="param-d3-depth" min="0.2" max="2.5" step="0.05" value="1" class="flex-1 min-w-0 h-1 bg-transparent rounded-none appearance-none">
                     </div>
                     <div class="flex items-center gap-2 mt-1">
-                        <span class="fira text-[7px] text-slate-600 w-14 shrink-0">Noise</span>
+                        <span class="fira text-[7px] text-neutral-600 w-14 shrink-0">Noise</span>
                         <input type="range" id="param-d3-noise" min="0" max="0.55" step="0.01" value="0.12" class="flex-1 min-w-0 h-1 bg-transparent rounded-none appearance-none">
                     </div>
                     <div class="flex items-center gap-2 mt-1">
-                        <span class="fira text-[7px] text-slate-600 w-14 shrink-0" title="Blend: source brightness vs glyph color">Color</span>
+                        <span class="fira text-[7px] text-neutral-600 w-14 shrink-0" title="Blend: source brightness vs glyph color">Color</span>
                         <input type="range" id="param-d3-color-mix" min="0" max="1" step="0.05" value="0.65" class="flex-1 min-w-0 h-1 bg-transparent rounded-none appearance-none">
                     </div>
-                    <label class="text-[8px] text-neutral-500 font-black uppercase tracking-tighter block mt-3 mb-1">3D schedule</label>
-                    <div class="flex justify-between items-center gap-2">
-                        <label class="text-[9px] font-extrabold text-slate-500 uppercase tracking-tighter">Schedule</label>
-                        <div class="flex items-center gap-1.5">
+                    <div class="control-row-head mt-3">
+                        <span class="knob-label min-w-0 truncate">3D schedule</span>
+                        <div class="control-row-tools gap-1.5">
                             <button type="button" id="btn-d3-gate-jitter" class="text-[8px] font-black px-1.5 py-0.5 rounded-none border-2 border-neutral-600 bg-black text-neutral-500 hover:border-white hover:text-white transition-colors" title="Random cycle &amp; active duration from slider ranges">RND</button>
-                            <button type="button" id="btn-d3-gate-enable" class="btn-brutal-latched">ENABLE</button>
+                            <button type="button" id="btn-d3-gate-enable" class="btn-brutal-latched">OFF</button>
                         </div>
                     </div>
                     <div class="flex items-center gap-2 mt-2">
-                        <span class="fira text-[7px] text-slate-600 w-14 shrink-0" title="Full loop length (s)">Cycle</span>
+                        <span class="fira text-[7px] text-neutral-600 w-14 shrink-0" title="Full loop length (s)">Cycle</span>
                         <input type="range" id="param-d3-gate-cycle" min="3" max="120" step="1" value="20" class="flex-1 min-w-0 h-1 bg-transparent rounded-none appearance-none">
-                        <span id="val-d3-gate-cycle" class="fira text-[7px] text-slate-500 w-10 shrink-0 tabular-nums">20s</span>
+                        <span id="val-d3-gate-cycle" class="fira text-[7px] text-neutral-500 w-10 shrink-0 tabular-nums">20s</span>
                     </div>
                     <div class="flex items-center gap-2 mt-1">
-                        <span class="fira text-[7px] text-slate-600 w-14 shrink-0" title="3D on at start of each cycle">Active</span>
+                        <span class="fira text-[7px] text-neutral-600 w-14 shrink-0" title="3D on at start of each cycle">Active</span>
                         <input type="range" id="param-d3-gate-active" min="0.2" max="60" step="0.2" value="2" class="flex-1 min-w-0 h-1 bg-transparent rounded-none appearance-none">
-                        <span id="val-d3-gate-active" class="fira text-[7px] text-slate-500 w-10 shrink-0 tabular-nums">2s</span>
+                        <span id="val-d3-gate-active" class="fira text-[7px] text-neutral-500 w-10 shrink-0 tabular-nums">2s</span>
                     </div>
                     </div>
                 </div>
                 <div class="control-group">
-                    <div class="flex justify-between items-center gap-2">
-                        <label class="knob-label">Glitch</label>
-                        <button type="button" id="btn-glitch-toggle" class="btn-onoff">OFF</button>
+                    <div class="control-row-head">
+                        <label class="knob-label min-w-0 truncate">Glitch</label>
+                        <div class="control-row-tools">
+                            <button type="button" id="btn-glitch-toggle" class="btn-onoff">OFF</button>
+                        </div>
                     </div>
                     <div id="glitch-section-body" class="hidden">
                     <div class="flex items-center gap-2 mt-1">
-                        <span class="fira text-[7px] text-slate-600 w-14 shrink-0">Amount</span>
+                        <span class="fira text-[7px] text-neutral-600 w-14 shrink-0">Amount</span>
                         <input type="range" id="param-glitch-intensity" min="0" max="1" step="0.02" value="0.5" class="flex-1 min-w-0 h-1 bg-transparent rounded-none appearance-none">
                     </div>
                     <div class="flex items-center gap-2 mt-1">
-                        <span class="fira text-[7px] text-slate-600 w-14 shrink-0">Speed</span>
+                        <span class="fira text-[7px] text-neutral-600 w-14 shrink-0">Speed</span>
                         <input type="range" id="param-glitch-rate" min="0.15" max="5" step="0.05" value="1" class="flex-1 min-w-0 h-1 bg-transparent rounded-none appearance-none" title="How fast the damage pattern changes">
                     </div>
                     <div class="flex items-center gap-2 mt-1">
-                        <span class="fira text-[7px] text-slate-600 w-14 shrink-0" title="Horizontal slice shift + band height">H size</span>
+                        <span class="fira text-[7px] text-neutral-600 w-14 shrink-0" title="Horizontal slice shift + band height">H size</span>
                         <input type="range" id="param-glitch-h-size" min="0" max="1" step="0.02" value="0.65" class="flex-1 min-w-0 h-1 bg-transparent rounded-none appearance-none">
                     </div>
                     <div class="flex items-center gap-2 mt-1">
-                        <span class="fira text-[7px] text-slate-600 w-14 shrink-0" title="Chroma channel offset">RGB</span>
+                        <span class="fira text-[7px] text-neutral-600 w-14 shrink-0" title="Chroma channel offset">RGB</span>
                         <input type="range" id="param-glitch-rgb" min="0" max="1" step="0.02" value="0.75" class="flex-1 min-w-0 h-1 bg-transparent rounded-none appearance-none">
                     </div>
                     <div class="flex items-center gap-2 mt-1">
-                        <span class="fira text-[7px] text-slate-600 w-14 shrink-0" title="0 = off · Inverts colors on the beat">Strobe</span>
+                        <span class="fira text-[7px] text-neutral-600 w-14 shrink-0" title="0 = off · Inverts colors on the beat">Strobe</span>
                         <input type="range" id="param-glitch-strobe" min="0" max="16" step="0.25" value="0" class="flex-1 min-w-0 h-1 bg-transparent rounded-none appearance-none">
-                        <span id="val-glitch-strobe" class="fira text-[7px] text-slate-500 w-10 shrink-0 tabular-nums">off</span>
+                        <span id="val-glitch-strobe" class="fira text-[7px] text-neutral-500 w-10 shrink-0 tabular-nums">off</span>
                     </div>
-                    <label class="text-[8px] text-neutral-500 font-black uppercase tracking-tighter block mt-2 mb-1">Glitch schedule</label>
-                    <div class="flex justify-between items-center gap-2">
-                        <label class="text-[9px] font-extrabold text-slate-500 uppercase tracking-tighter">Schedule</label>
-                        <div class="flex items-center gap-1.5">
+                    <div class="control-row-head mt-2">
+                        <span class="knob-label min-w-0 truncate">Glitch schedule</span>
+                        <div class="control-row-tools gap-1.5">
                             <button type="button" id="btn-glitch-gate-jitter" class="text-[8px] font-black px-1.5 py-0.5 rounded-none border-2 border-neutral-600 bg-black text-neutral-500 hover:border-white hover:text-white transition-colors" title="Random cycle &amp; active from slider ranges">RND</button>
-                            <button type="button" id="btn-glitch-gate-enable" class="btn-brutal-latched">ENABLE</button>
+                            <button type="button" id="btn-glitch-gate-enable" class="btn-brutal-latched">OFF</button>
                         </div>
                     </div>
                     <div class="flex items-center gap-2 mt-2">
-                        <span class="fira text-[7px] text-slate-600 w-14 shrink-0">Cycle</span>
+                        <span class="fira text-[7px] text-neutral-600 w-14 shrink-0">Cycle</span>
                         <input type="range" id="param-glitch-gate-cycle" min="2" max="120" step="1" value="15" class="flex-1 min-w-0 h-1 bg-transparent rounded-none appearance-none">
-                        <span id="val-glitch-gate-cycle" class="fira text-[7px] text-slate-500 w-10 shrink-0 tabular-nums">15s</span>
+                        <span id="val-glitch-gate-cycle" class="fira text-[7px] text-neutral-500 w-10 shrink-0 tabular-nums">15s</span>
                     </div>
                     <div class="flex items-center gap-2 mt-1">
-                        <span class="fira text-[7px] text-slate-600 w-14 shrink-0">Active</span>
+                        <span class="fira text-[7px] text-neutral-600 w-14 shrink-0">Active</span>
                         <input type="range" id="param-glitch-gate-active" min="0.2" max="60" step="0.2" value="4" class="flex-1 min-w-0 h-1 bg-transparent rounded-none appearance-none">
-                        <span id="val-glitch-gate-active" class="fira text-[7px] text-slate-500 w-10 shrink-0 tabular-nums">4s</span>
+                        <span id="val-glitch-gate-active" class="fira text-[7px] text-neutral-500 w-10 shrink-0 tabular-nums">4s</span>
                     </div>
                     </div>
                 </div>
                 <div class="control-group">
-                    <div class="flex justify-between items-center gap-2">
-                        <label class="knob-label">Audio Reactive</label>
-                        <button type="button" id="btn-audio-react" class="btn-onoff" title="Microphone input">OFF</button>
+                    <div class="control-row-head">
+                        <label class="knob-label min-w-0 truncate">Audio Reactive</label>
+                        <div class="control-row-tools">
+                            <button type="button" id="btn-audio-react" class="btn-onoff" title="Microphone input">OFF</button>
+                        </div>
                     </div>
                     <div id="audio-section-body" class="hidden">
                     <div class="flex flex-wrap gap-2 items-center mt-1">
@@ -576,29 +734,29 @@
                         </select>
                     </div>
                     <div class="flex flex-wrap items-center gap-2 mt-1">
-                        <span class="fira text-[7px] text-slate-600 w-16">Strength</span>
+                        <span class="fira text-[7px] text-neutral-600 w-16">Strength</span>
                         <input type="range" id="audio-strength" min="0" max="2" step="0.01" value="1" class="w-24 h-1 bg-transparent rounded-none appearance-none">
-                        <span id="val-audio-strength" class="fira text-[7px] text-slate-500 tabular-nums w-6">1.00</span>
+                        <span id="val-audio-strength" class="fira text-[7px] text-neutral-500 tabular-nums w-6">1.00</span>
                     </div>
                     <div class="flex flex-wrap items-center gap-2 mt-1">
-                        <span class="fira text-[7px] text-slate-600 w-16">Color Cycle</span>
+                        <span class="fira text-[7px] text-neutral-600 w-16">Color Cycle</span>
                         <input type="range" id="audio-color-cycle" min="1" max="20" step="0.1" value="5" class="w-24 h-1 bg-transparent rounded-none appearance-none" title="Seconds per full color cycle">
-                        <span id="val-audio-color-cycle" class="fira text-[7px] text-slate-500 tabular-nums w-6">5s</span>
+                        <span id="val-audio-color-cycle" class="fira text-[7px] text-neutral-500 tabular-nums w-6">5s</span>
                     </div>
                     <div class="flex flex-wrap items-center gap-2 mt-1">
-                        <span class="fira text-[7px] text-slate-600 w-16">Kick Hz</span>
+                        <span class="fira text-[7px] text-neutral-600 w-16">Kick Hz</span>
                         <input type="range" id="audio-kick-low" min="20" max="250" step="1" value="60" class="w-24 h-1 bg-transparent rounded-none appearance-none" title="Kick band low cutoff (Hz)">
-                        <span id="val-audio-kick-low" class="fira text-[7px] text-slate-500 tabular-nums w-8">60</span>
+                        <span id="val-audio-kick-low" class="fira text-[7px] text-neutral-500 tabular-nums w-8">60</span>
                         <input type="range" id="audio-kick-high" min="80" max="400" step="1" value="200" class="w-24 h-1 bg-transparent rounded-none appearance-none" title="Kick band high cutoff (Hz)">
-                        <span id="val-audio-kick-high" class="fira text-[7px] text-slate-500 tabular-nums w-8">200</span>
+                        <span id="val-audio-kick-high" class="fira text-[7px] text-neutral-500 tabular-nums w-8">200</span>
                     </div>
                     </div>
                 </div>
                 <div class="control-group">
-                    <div class="flex justify-between items-center gap-2">
-                        <label class="knob-label">Contrast <span id="lfo-contrast-led" class="lfo-indicator bg-slate-700"></span></label>
-                        <div class="flex items-center gap-2 shrink-0">
-                            <span id="val-contrast" class="fira text-[10px] text-neutral-400">1.2</span>
+                    <div class="control-row-head">
+                        <label class="knob-label min-w-0 truncate">Contrast <span id="lfo-contrast-led" class="lfo-indicator bg-neutral-600"></span></label>
+                        <div class="control-row-tools">
+                            <span id="val-contrast" class="fira text-[9px] text-neutral-400 tabular-nums whitespace-nowrap">1.2</span>
                             <button type="button" id="lfo-contrast-btn" class="btn-onoff" title="Contrast LFO">OFF</button>
                         </div>
                     </div>
@@ -623,9 +781,11 @@
                     </div>
                 </div>
                 <div class="control-group w-full">
-                    <div class="flex justify-between items-center gap-2">
-                        <label class="knob-label">Characters <span id="lfo-charset-led" class="lfo-indicator bg-slate-700"></span></label>
-                        <button type="button" id="lfo-charset-btn" class="btn-onoff shrink-0" title="Charset cycle LFO">OFF</button>
+                    <div class="control-row-head">
+                        <label class="knob-label min-w-0 truncate">Characters <span id="lfo-charset-led" class="lfo-indicator bg-neutral-600"></span></label>
+                        <div class="control-row-tools">
+                            <button type="button" id="lfo-charset-btn" class="btn-onoff" title="Charset cycle LFO">OFF</button>
+                        </div>
                     </div>
                     <input type="text" id="param-charset" value="@%#*+=-:. " class="w-full bg-black border-2 border-neutral-700 rounded-none px-2 py-1 text-[10px] fira focus:border-white outline-none text-neutral-200 mt-1">
                     <div id="charset-lfo-body" class="hidden">
@@ -786,6 +946,16 @@
                 },
                 gateOpen: true
             },
+            resGate: {
+                enabled: false,
+                jitter: false,
+                cycleSec: 20,
+                activeSec: 2,
+                timer: 0,
+                effectiveCycle: 20,
+                effectiveActive: 2
+            },
+            resGateOpen: true,
             colorMode: 'solid',
             charset: charSets.standard,
             activePresetName: 'classic',
@@ -890,6 +1060,7 @@
         const fpsEl = document.getElementById('fps-counter');
         const dimInfo = document.getElementById('dim-info');
         const statusEl = document.getElementById('source-status');
+        const SOURCE_STATUS_CLASS = 'inline-block w-fit max-w-[min(100%,11rem)] truncate px-1.5 py-0.5 rounded-none bg-black border-2 border-neutral-600 text-[9px] font-black uppercase tracking-wider text-neutral-300 shrink-0';
 
         function adjustHue(hex, degrees) {
             let r = parseInt(hex.slice(1, 3), 16) / 255;
@@ -1231,6 +1402,47 @@
             state.glitch.gate.effectiveActive = Math.min(Number(state.glitch.gate.effectiveActive) || 4, maxA);
             const vAct = document.getElementById('val-glitch-gate-active');
             if (vAct && !state.glitch.gate.jitter) vAct.textContent = formatGateSec(state.glitch.gate.activeSec);
+        }
+
+        function pickRandomResGateDurations() {
+            const cEl = document.getElementById('param-res-gate-cycle');
+            const aEl = document.getElementById('param-res-gate-active');
+            state.resGate.effectiveCycle = randomDwellFromInput(cEl, { lo: 3, hi: 120 });
+            let na = randomDwellFromInput(aEl, { lo: 0.2, hi: 60 });
+            state.resGate.effectiveActive = Math.min(na, state.resGate.effectiveCycle * 0.95);
+        }
+
+        function clampResGateActiveToCycle() {
+            const c = Math.max(0.5, Number(state.resGate.effectiveCycle) || 20);
+            const maxA = c * 0.99;
+            if (state.resGate.activeSec > maxA) {
+                state.resGate.activeSec = Math.floor(maxA * 10) / 10;
+                const aEl = document.getElementById('param-res-gate-active');
+                if (aEl) aEl.value = String(state.resGate.activeSec);
+            }
+            state.resGate.effectiveActive = Math.min(Number(state.resGate.effectiveActive) || 2, maxA);
+            const vAct = document.getElementById('val-res-gate-active');
+            if (vAct && !state.resGate.jitter) vAct.textContent = formatGateSec(state.resGate.activeSec);
+        }
+
+        function syncResGateIntervalSliderUI() {
+            const on = state.resGate.jitter;
+            const cEl = document.getElementById('param-res-gate-cycle');
+            const aEl = document.getElementById('param-res-gate-active');
+            if (cEl) {
+                cEl.disabled = on;
+                cEl.classList.toggle('opacity-40', on);
+                cEl.classList.toggle('cursor-not-allowed', on);
+            }
+            if (aEl) {
+                aEl.disabled = on;
+                aEl.classList.toggle('opacity-40', on);
+                aEl.classList.toggle('cursor-not-allowed', on);
+            }
+            const vc = document.getElementById('val-res-gate-cycle');
+            const va = document.getElementById('val-res-gate-active');
+            if (vc) vc.textContent = on ? 'RND' : formatGateSec(state.resGate.cycleSec);
+            if (va) va.textContent = on ? 'RND' : formatGateSec(state.resGate.activeSec);
         }
 
         function syncGlitchGateIntervalSliderUI() {
@@ -1853,6 +2065,16 @@
                 if (typeof s.contrast === 'number') { state.contrast = s.contrast; state.lfo.contrast.base = s.contrast; }
                 if (typeof s.resMin === 'number') state.resMin = s.resMin;
                 if (typeof s.resMax === 'number') state.resMax = s.resMax;
+                if (s.resGate && typeof s.resGate === 'object') {
+                    const rg = s.resGate;
+                    if (typeof rg.enabled === 'boolean') state.resGate.enabled = rg.enabled;
+                    if (typeof rg.jitter === 'boolean') state.resGate.jitter = rg.jitter;
+                    if (typeof rg.cycleSec === 'number') state.resGate.cycleSec = rg.cycleSec;
+                    if (typeof rg.activeSec === 'number') state.resGate.activeSec = rg.activeSec;
+                    if (typeof rg.effectiveCycle === 'number') state.resGate.effectiveCycle = rg.effectiveCycle;
+                    if (typeof rg.effectiveActive === 'number') state.resGate.effectiveActive = rg.effectiveActive;
+                    state.resGate.timer = 0;
+                }
                 if (!state.lfo.res.active) state.res = staticDensityRes();
                 if (s.glitch && typeof s.glitch === 'object') {
                     const g = s.glitch;
@@ -2027,6 +2249,14 @@
                     contrast: state.contrast,
                     resMin: state.resMin,
                     resMax: state.resMax,
+                    resGate: {
+                        enabled: state.resGate.enabled,
+                        jitter: state.resGate.jitter,
+                        cycleSec: state.resGate.cycleSec,
+                        activeSec: state.resGate.activeSec,
+                        effectiveCycle: state.resGate.effectiveCycle,
+                        effectiveActive: state.resGate.effectiveActive
+                    },
                     activeSourceId,
                     playlist: sendPlaylist ? playlistMeta : undefined,
                     glitch: {
@@ -2236,8 +2466,9 @@
                 state.playlistSettings.effectiveInterval = state.playlistSettings.jitter
                     ? randomDwellFromInput(rangeEl, { lo: 2, hi: 60 })
                     : state.playlistSettings.interval;
-                e.target.textContent = state.playlistSettings.autoSwitch ? 'DISABLE' : 'ENABLE';
+                e.target.textContent = state.playlistSettings.autoSwitch ? 'ON' : 'OFF';
                 updateBrutalLatchedBtn(e.target, state.playlistSettings.autoSwitch);
+                syncAutomationPanels();
             };
             document.getElementById('param-interval').oninput = (e) => {
                 if (state.playlistSettings.jitter) return;
@@ -2264,9 +2495,10 @@
                 state.lfo.presets.effectiveInterval = state.lfo.presets.jitter
                     ? randomDwellFromInput(rangeEl, { lo: 1, hi: 30 })
                     : state.lfo.presets.interval;
-                e.target.textContent = state.lfo.presets.active ? 'DISABLE' : 'ENABLE';
+                e.target.textContent = state.lfo.presets.active ? 'ON' : 'OFF';
                 updateBrutalLatchedBtn(e.target, state.lfo.presets.active);
                 document.getElementById('lfo-preset-led').classList.toggle('lfo-active', state.lfo.presets.active);
+                syncAutomationPanels();
             };
             document.getElementById('param-preset-interval').oninput = (e) => {
                 if (state.lfo.presets.jitter) return;
@@ -2283,7 +2515,7 @@
             {
                 const el = document.getElementById('btn-auto-switch');
                 if (el) {
-                    el.textContent = state.playlistSettings.autoSwitch ? 'DISABLE' : 'ENABLE';
+                    el.textContent = state.playlistSettings.autoSwitch ? 'ON' : 'OFF';
                     updateBrutalLatchedBtn(el, state.playlistSettings.autoSwitch);
                 }
             }
@@ -2291,10 +2523,11 @@
             {
                 const el = document.getElementById('btn-auto-preset');
                 if (el) {
-                    el.textContent = state.lfo.presets.active ? 'DISABLE' : 'ENABLE';
+                    el.textContent = state.lfo.presets.active ? 'ON' : 'OFF';
                     updateBrutalLatchedBtn(el, state.lfo.presets.active);
                 }
             }
+            syncAutomationPanels();
             syncDensityLfoRateLabel();
             updateAutoWaveBtn(document.getElementById('btn-lfo-res-auto-wave'), state.lfo.res.autoWave);
             updateAutoWaveBtn(document.getElementById('btn-lfo-contrast-auto-wave'), state.lfo.contrast.autoWave);
@@ -2323,7 +2556,7 @@
             document.getElementById('btn-glitch-gate-enable').onclick = (e) => {
                 state.glitch.gate.enabled = !state.glitch.gate.enabled;
                 state.glitch.gate.timer = 0;
-                e.currentTarget.textContent = state.glitch.gate.enabled ? 'DISABLE' : 'ENABLE';
+                e.currentTarget.textContent = state.glitch.gate.enabled ? 'ON' : 'OFF';
                 updateBrutalLatchedBtn(e.currentTarget, state.glitch.gate.enabled);
             };
             document.getElementById('btn-glitch-gate-jitter').onclick = (e) => {
@@ -2362,7 +2595,7 @@
             document.getElementById('param-glitch-gate-active').value = String(state.glitch.gate.activeSec);
             document.getElementById('val-glitch-gate-cycle').textContent = formatGateSec(state.glitch.gate.cycleSec);
             document.getElementById('val-glitch-gate-active').textContent = formatGateSec(state.glitch.gate.activeSec);
-            document.getElementById('btn-glitch-gate-enable').textContent = state.glitch.gate.enabled ? 'DISABLE' : 'ENABLE';
+            document.getElementById('btn-glitch-gate-enable').textContent = state.glitch.gate.enabled ? 'ON' : 'OFF';
             updateBrutalLatchedBtn(document.getElementById('btn-glitch-gate-enable'), state.glitch.gate.enabled);
             updateJitterButton(document.getElementById('btn-glitch-gate-jitter'), state.glitch.gate.jitter);
             syncGlitchGateIntervalSliderUI();
@@ -2524,7 +2757,7 @@
             document.getElementById('btn-d3-gate-enable').onclick = (e) => {
                 state.d3.gate.enabled = !state.d3.gate.enabled;
                 state.d3.gate.timer = 0;
-                e.currentTarget.textContent = state.d3.gate.enabled ? 'DISABLE' : 'ENABLE';
+                e.currentTarget.textContent = state.d3.gate.enabled ? 'ON' : 'OFF';
                 updateBrutalLatchedBtn(e.currentTarget, state.d3.gate.enabled);
             };
             document.getElementById('btn-d3-gate-jitter').onclick = (e) => {
@@ -2555,10 +2788,49 @@
             };
             document.getElementById('param-d3-gate-cycle').value = String(state.d3.gate.cycleSec);
             document.getElementById('param-d3-gate-active').value = String(state.d3.gate.activeSec);
-            document.getElementById('btn-d3-gate-enable').textContent = state.d3.gate.enabled ? 'DISABLE' : 'ENABLE';
+            document.getElementById('btn-d3-gate-enable').textContent = state.d3.gate.enabled ? 'ON' : 'OFF';
             updateBrutalLatchedBtn(document.getElementById('btn-d3-gate-enable'), state.d3.gate.enabled);
             updateJitterButton(document.getElementById('btn-d3-gate-jitter'), state.d3.gate.jitter);
             syncD3GateIntervalSliderUI();
+
+            document.getElementById('btn-res-gate-enable').onclick = (e) => {
+                state.resGate.enabled = !state.resGate.enabled;
+                state.resGate.timer = 0;
+                e.currentTarget.textContent = state.resGate.enabled ? 'ON' : 'OFF';
+                updateBrutalLatchedBtn(e.currentTarget, state.resGate.enabled);
+            };
+            document.getElementById('btn-res-gate-jitter').onclick = (e) => {
+                state.resGate.jitter = !state.resGate.jitter;
+                state.resGate.timer = 0;
+                updateJitterButton(e.currentTarget, state.resGate.jitter);
+                if (state.resGate.jitter) {
+                    pickRandomResGateDurations();
+                } else {
+                    state.resGate.effectiveCycle = state.resGate.cycleSec;
+                    state.resGate.effectiveActive = state.resGate.activeSec;
+                    clampResGateActiveToCycle();
+                }
+                syncResGateIntervalSliderUI();
+            };
+            document.getElementById('param-res-gate-cycle').oninput = (ev) => {
+                if (state.resGate.jitter) return;
+                state.resGate.cycleSec = parseInt(ev.target.value, 10);
+                state.resGate.effectiveCycle = state.resGate.cycleSec;
+                clampResGateActiveToCycle();
+                document.getElementById('val-res-gate-cycle').textContent = formatGateSec(state.resGate.cycleSec);
+            };
+            document.getElementById('param-res-gate-active').oninput = (ev) => {
+                if (state.resGate.jitter) return;
+                state.resGate.activeSec = parseFloat(ev.target.value);
+                state.resGate.effectiveActive = Math.min(state.resGate.activeSec, state.resGate.effectiveCycle * 0.99);
+                document.getElementById('val-res-gate-active').textContent = formatGateSec(state.resGate.activeSec);
+            };
+            document.getElementById('param-res-gate-cycle').value = String(state.resGate.cycleSec);
+            document.getElementById('param-res-gate-active').value = String(state.resGate.activeSec);
+            document.getElementById('btn-res-gate-enable').textContent = state.resGate.enabled ? 'ON' : 'OFF';
+            updateBrutalLatchedBtn(document.getElementById('btn-res-gate-enable'), state.resGate.enabled);
+            updateJitterButton(document.getElementById('btn-res-gate-jitter'), state.resGate.jitter);
+            syncResGateIntervalSliderUI();
 
             // Playlist management
             const delAllBtn = document.getElementById('btn-delete-all');
@@ -2586,7 +2858,7 @@
                 state.playlist.find(p => p.id === 'cam').isStreaming = true;
                 state.playlist.find(p => p.id === 'cam').deviceId = deviceId;
                 statusEl.textContent = "LIVE CAM";
-                statusEl.className = "px-2 py-0.5 rounded-none bg-black text-[10px] font-black uppercase tracking-widest text-green-400 border-2 border-green-600";
+                statusEl.className = SOURCE_STATUS_CLASS;
                 renderPlaylist();
             } catch (err) { console.error("Camera denied", err); }
         }
@@ -2601,7 +2873,7 @@
             if (state.activeIndex === state.playlist.findIndex(p => p.id === 'cam')) {
                 state.sourceType = 'none';
                 statusEl.textContent = "IDLE";
-                statusEl.className = "px-2 py-0.5 rounded-none bg-black border-2 border-neutral-600 text-[10px] font-black uppercase tracking-widest text-neutral-400";
+                statusEl.className = SOURCE_STATUS_CLASS;
             }
             renderPlaylist();
         }
@@ -2755,12 +3027,12 @@
             } else if (item.type === 'video') {
                 state.sourceType = 'video'; video.src = item.url; video.play();
                 statusEl.textContent = "MP4 FEED";
-                statusEl.className = "px-2 py-0.5 rounded-none bg-black text-[10px] font-black uppercase tracking-widest text-sky-400 border-2 border-sky-600";
+                statusEl.className = SOURCE_STATUS_CLASS;
             } else if (item.type === 'gif') {
                 state.sourceType = 'gif';
                 state.currentGif = { frames: [], frameIndex: 0, nextFrameTime: 0, gif: item.gifData };
                 statusEl.textContent = "GIF FEED";
-                statusEl.className = "px-2 py-0.5 rounded-none bg-black text-[10px] font-black uppercase tracking-widest text-violet-400 border-2 border-violet-600";
+                statusEl.className = SOURCE_STATUS_CLASS;
             }
             renderPlaylist();
             persistPlaylistMeta();
@@ -2825,6 +3097,24 @@
                 }
             }
 
+            if (state.resGate.enabled) {
+                let c = Math.max(0.5, Number(state.resGate.effectiveCycle) || 20);
+                let a = Math.min(Math.max(0.05, Number(state.resGate.effectiveActive) || 2), c * 0.99);
+                state.resGate.timer += deltaSecs;
+                while (state.resGate.timer >= c) {
+                    state.resGate.timer -= c;
+                    if (state.resGate.jitter) {
+                        pickRandomResGateDurations();
+                        c = Math.max(0.5, Number(state.resGate.effectiveCycle) || 20);
+                    }
+                }
+                c = Math.max(0.5, Number(state.resGate.effectiveCycle) || 20);
+                a = Math.min(Math.max(0.05, Number(state.resGate.effectiveActive) || 2), c * 0.99);
+                state.resGateOpen = state.resGate.timer < a;
+            } else {
+                state.resGateOpen = true;
+            }
+
             const resSpan = state.resMax - state.resMin;
             if (state.lfo.res.active) {
                 if (state.lfo.res.autoWave) {
@@ -2873,6 +3163,11 @@
                 document.getElementById('lfo-res-led').style.backgroundColor = `rgba(59, 130, 246, ${0.2 + t01 * 0.8})`;
             } else {
                 state.res = staticDensityRes();
+                document.getElementById('val-res').textContent = state.res;
+            }
+
+            if (state.resGate.enabled && !state.resGateOpen) {
+                state.res = clampResInt(state.resMin);
                 document.getElementById('val-res').textContent = state.res;
             }
 
@@ -3127,6 +3422,17 @@
             el.classList.toggle('on', on);
         }
 
+        function syncAutomationPanels() {
+            const ss = document.getElementById('source-switch-body');
+            if (ss) ss.classList.toggle('hidden', !state.playlistSettings.autoSwitch);
+            const pc = document.getElementById('preset-cycle-body');
+            if (pc) pc.classList.toggle('hidden', !state.lfo.presets.active);
+            const sj = document.getElementById('btn-switch-jitter');
+            if (sj) sj.classList.toggle('hidden', !state.playlistSettings.autoSwitch);
+            const pj = document.getElementById('btn-preset-jitter');
+            if (pj) pj.classList.toggle('hidden', !state.lfo.presets.active);
+        }
+
         function syncCollapsiblePanels() {
             const d3b = document.getElementById('d3-section-body');
             if (d3b) d3b.classList.toggle('hidden', !state.d3.enabled);
@@ -3307,7 +3613,7 @@
             if (!activeSourceElement) return;
 
             const aspect = sw / sh;
-            dimInfo.textContent = `${sw} x ${sh}`;
+            dimInfo.textContent = `${sw} × ${sh}`;
             const w = Math.floor(state.res);
             const h = Math.max(1, Math.floor(w / aspect));
 
