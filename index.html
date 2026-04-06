@@ -126,6 +126,7 @@
             }
         }
         @media (min-width: 1024px) {
+            /* Do not set width here — #sidebar-* beats .lg:w-72 and width:auto made sidebars fill the row */
             #sidebar-left,
             #sidebar-right {
                 position: relative;
@@ -134,8 +135,6 @@
                 left: auto;
                 right: auto;
                 transform: none !important;
-                width: auto;
-                max-width: none;
                 z-index: auto;
             }
         }
@@ -483,8 +482,13 @@
             <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></svg>
         </button>
         <span class="flex-1 min-w-0 text-center font-black text-xs italic tracking-tighter text-white truncate px-1">ASCII_LIVE</span>
-        <button type="button" id="btn-mobile-menu-right" class="flex items-center justify-center w-11 h-11 shrink-0 rounded-none border-2 border-neutral-600 bg-black text-neutral-200 hover:border-white hover:text-white transition-colors" aria-label="Open controls" aria-expanded="false" aria-controls="sidebar-right" title="Controls">
-            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></svg>
+        <button type="button" id="btn-mobile-menu-right" class="flex items-center justify-center w-11 h-11 shrink-0 rounded-none border-2 border-neutral-600 bg-black text-neutral-200 hover:border-white hover:text-white transition-colors" aria-label="Open controls" aria-expanded="false" aria-controls="sidebar-right" title="Controls &amp; sliders">
+            <!-- Sliders horizontal (adjustments) — three tracks with vertical thumbs -->
+            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <line x1="3" y1="6" x2="21" y2="6"/><line x1="16" y1="4" x2="16" y2="8"/>
+                <line x1="3" y1="12" x2="21" y2="12"/><line x1="8" y1="10" x2="8" y2="14"/>
+                <line x1="3" y1="18" x2="21" y2="18"/><line x1="17" y1="16" x2="17" y2="20"/>
+            </svg>
         </button>
     </header>
     <div id="mobile-sidebar-backdrop" class="lg:hidden" aria-hidden="true" role="presentation"></div>
