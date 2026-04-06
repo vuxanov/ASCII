@@ -369,12 +369,49 @@
         :where(aside.glass.border-r-2 .preset-btn:hover) {
             filter: brightness(1.12);
         }
-        aside.glass.border-r-2 .preset-btn.preset-active {
+        aside.glass.border-r-2 .preset-btn.preset-active,
+        #controls-panel .preset-btn.preset-active {
             border-color: #fafafa !important;
             background: #0a0a0a !important;
             color: #fafafa !important;
             box-shadow: none;
             --tw-ring-width: 0;
+        }
+        :where(#controls-panel .preset-tags) {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px 8px;
+            align-items: center;
+            align-content: flex-start;
+            overflow: visible;
+            zoom: 0.65;
+        }
+        :where(#controls-panel .preset-btn) {
+            font-size: 4px;
+            line-height: 1;
+            font-weight: 900;
+            background: #000;
+            padding: 0 2px;
+            border-radius: 0;
+            border-width: 2px;
+            border-style: solid;
+            border-color: #525252;
+            text-transform: uppercase;
+            letter-spacing: 0.02em;
+            width: auto;
+            flex: 0 0 auto;
+            max-width: 100%;
+            min-width: 0;
+            box-sizing: border-box;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            white-space: nowrap;
+            transition: color 0.1s, border-color 0.1s, background 0.1s, filter 0.1s;
+        }
+        :where(#controls-panel .preset-btn:hover) {
+            filter: brightness(1.12);
         }
         .density-dual-range { position: relative; height: 28px; width: 100%; min-width: 128px; }
         .density-dual-range .density-range-track-bg {
@@ -478,7 +515,7 @@
 </head>
 <body class="flex flex-col h-screen min-h-0 overflow-hidden">
     <header id="mobile-app-bar" class="lg:hidden shrink-0 z-50 flex items-center justify-between gap-2 min-h-12 px-2 border-b-2 border-neutral-800 bg-[#0a0a0a]">
-        <button type="button" id="btn-mobile-menu-left" class="flex items-center justify-center w-11 h-11 shrink-0 rounded-none border-2 border-neutral-600 bg-black text-neutral-200 hover:border-white hover:text-white transition-colors" aria-label="Open queue and presets" aria-expanded="false" aria-controls="sidebar-left" title="Queue &amp; presets">
+        <button type="button" id="btn-mobile-menu-left" class="flex items-center justify-center w-11 h-11 shrink-0 rounded-none border-2 border-neutral-600 bg-black text-neutral-200 hover:border-white hover:text-white transition-colors" aria-label="Open source queue" aria-expanded="false" aria-controls="sidebar-left" title="Source queue">
             <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></svg>
         </button>
         <span class="flex-1 min-w-0 text-center font-black text-xs italic tracking-tighter text-white truncate px-1">ASCII_LIVE</span>
@@ -525,21 +562,6 @@
                         </div>
                     </div>
                 </div>
-                <div class="-mx-4 px-4 flex flex-col gap-1.5 mt-2 border-t border-neutral-800 pt-3">
-                    <div class="flex justify-between items-center gap-2 min-h-[1.75rem]">
-                        <label class="knob-label shrink-0 min-w-0">Preset Cycle</label>
-                        <div class="flex items-center gap-1.5 shrink-0">
-                            <button id="btn-preset-jitter" type="button" class="text-[8px] font-black px-1.5 py-0.5 rounded-none border-2 border-neutral-600 bg-black text-neutral-500 hover:border-white hover:text-white transition-colors hidden" title="Random dwell each cycle (1–30s); disables interval slider">RND</button>
-                            <button id="btn-auto-preset" type="button" class="btn-brutal-latched">OFF</button>
-                        </div>
-                    </div>
-                    <div id="preset-cycle-body" class="hidden flex flex-col gap-1.5">
-                        <div class="flex items-center gap-2">
-                            <input type="range" id="param-preset-interval" min="1" max="30" value="5" class="flex-1 h-1 bg-transparent rounded-none appearance-none cursor-pointer min-w-0">
-                            <span id="val-preset-interval" class="fira text-[9px] min-w-[2rem] text-right text-neutral-400 shrink-0">5s</span>
-                        </div>
-                    </div>
-                </div>
             </section>
 
             <section id="sidebar-queue-section" class="sidebar-bleed-x border-t border-neutral-800 flex flex-col flex-1 min-h-0 pt-3 pb-0 mt-0">
@@ -548,36 +570,6 @@
                     <button id="btn-delete-all" type="button" class="text-[8px] font-black px-1.5 py-0.5 rounded-none border-2 border-neutral-600 bg-black text-neutral-500 hover:border-red-500 hover:text-red-300 transition-colors shrink-0" title="Delete all uploaded items">DELETE ALL</button>
                 </div>
                 <div id="playlist-container" class="flex-1 overflow-y-auto min-h-0 space-y-2 pr-1"></div>
-            </section>
-
-            <section class="sidebar-bleed-x border-t border-neutral-800 pt-3 pb-3 mt-0 shrink-0">
-                <div class="sidebar-sticky-head flex justify-between items-center gap-2 -mx-4 px-4 py-2.5 mb-2 border-b border-neutral-800 min-h-[2.25rem]">
-                    <h2 class="knob-label text-white">Style Presets</h2>
-                </div>
-                <div class="preset-tags">
-                    <button type="button" onclick="applyPreset('matrix')" class="preset-btn border-2 text-neutral-300 border-neutral-600" id="btn-pre-matrix">MATRIX</button>
-                    <button type="button" onclick="applyPreset('cyber')" class="preset-btn border-2 text-cyan-400 border-cyan-800" id="btn-pre-cyber">CYBER</button>
-                    <button type="button" onclick="applyPreset('vaporwave')" class="preset-btn border-2 text-pink-400 border-pink-900" id="btn-pre-vaporwave">VAPOR</button>
-                    <button type="button" onclick="applyPreset('inferno')" class="preset-btn border-2 text-orange-500 border-orange-900" id="btn-pre-inferno">INFERNO</button>
-                    <button type="button" onclick="applyPreset('rgb')" class="preset-btn border-2 text-white border-neutral-500 bg-gradient-to-r from-red-600 via-green-600 to-blue-600" id="btn-pre-rgb">RGB</button>
-                    <button type="button" onclick="applyPreset('toxic')" class="preset-btn border-2 text-lime-400 border-lime-900" id="btn-pre-toxic">TOXIC</button>
-                    <button type="button" onclick="applyPreset('classic')" class="preset-btn border-2 text-neutral-300 border-neutral-600" id="btn-pre-classic">B&W</button>
-                    <button type="button" onclick="applyPreset('dots')" class="preset-btn border-2 text-purple-400 border-purple-900" id="btn-pre-dots">GLOW</button>
-                    <button type="button" onclick="applyPreset('emoji')" class="preset-btn border-2 text-neutral-300 border-neutral-600" id="btn-pre-emoji">😀 MOOD</button>
-                    <button type="button" onclick="applyPreset('pixel')" class="preset-btn border-2 text-neutral-300 border-neutral-600" id="btn-pre-pixel">▂ PIXEL</button>
-                    <button type="button" onclick="applyPreset('braille')" class="preset-btn border-2 text-neutral-300 border-neutral-600" id="btn-pre-braille">⠿ BRAILLE</button>
-                    <button type="button" onclick="applyPreset('hearts')" class="preset-btn border-2 text-rose-400 border-rose-900" id="btn-pre-hearts">♥ LOVE</button>
-                    <button type="button" onclick="applyPreset('arrows')" class="preset-btn border-2 text-amber-400 border-amber-900" id="btn-pre-arrows">➤ ARROWS</button>
-                    <button type="button" onclick="applyPreset('ocean')" class="preset-btn border-2 text-sky-400 border-sky-900" id="btn-pre-ocean">🌊 OCEAN</button>
-                    <button type="button" onclick="applyPreset('circuit')" class="preset-btn border-2 text-emerald-400 border-emerald-900" id="btn-pre-circuit">⌘ WIRE</button>
-                    <button type="button" onclick="applyPreset('runes')" class="preset-btn border-2 text-stone-400 border-stone-700" id="btn-pre-runes">ᚱ RUNES</button>
-                    <button type="button" onclick="applyPreset('math')" class="preset-btn border-2 text-indigo-400 border-indigo-900" id="btn-pre-math">∑ MATH</button>
-                    <button type="button" onclick="applyPreset('cyrillic')" class="preset-btn border-2 text-sky-300 border-sky-900" id="btn-pre-cyrillic">К CYR</button>
-                    <button type="button" onclick="applyPreset('crosses')" class="preset-btn border-2 text-stone-300 border-stone-700" id="btn-pre-crosses">✝ CROSS</button>
-                    <button type="button" onclick="applyPreset('gothic')" class="preset-btn border-2 text-violet-300 border-violet-900" id="btn-pre-gothic">𝔊 GOTH</button>
-                    <button type="button" onclick="applyPreset('dingbats')" class="preset-btn border-2 text-pink-300 border-pink-900" id="btn-pre-dingbats">✿ DING</button>
-                    <button type="button" onclick="applyPreset('relics')" class="preset-btn border-2 text-teal-300 border-teal-900" id="btn-pre-relics">⛧ RELIC</button>
-                </div>
             </section>
             </div>
         </aside>
@@ -592,12 +584,12 @@
 
         <aside id="sidebar-right" class="w-full max-w-full lg:w-72 glass border-l-2 flex flex-col shrink-0 min-h-0 overflow-hidden min-w-0 lg:relative max-lg:shadow-2xl">
             <div class="sidebar-sticky-head shrink-0 border-b-2 border-neutral-700 z-30">
-                <div class="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between min-w-0 px-3 sm:px-4 py-2.5 sm:py-3">
-                    <div class="flex flex-wrap items-center gap-x-2 gap-y-1 min-w-0 flex-1">
+                <div class="flex flex-row flex-wrap items-center justify-between gap-x-2 gap-y-2 min-w-0 px-3 sm:px-4 py-2.5 sm:py-3">
+                    <div class="flex min-w-0 flex-1 flex-wrap items-center gap-x-2 gap-y-1">
                         <span id="dim-info" class="fira text-[9px] text-neutral-300 tabular-nums whitespace-nowrap shrink-0" title="Output resolution">0 × 0</span>
-                        <span id="source-status" class="inline-block min-w-0 flex-1 sm:flex-initial sm:max-w-[11rem] basis-0 sm:basis-auto truncate px-1.5 py-0.5 rounded-none bg-black border-2 border-neutral-600 text-[9px] font-black uppercase tracking-wider text-neutral-300" title="Active source">Standby</span>
+                        <span id="source-status" class="inline-block max-w-[min(100%,11rem)] min-w-0 shrink truncate px-1.5 py-0.5 rounded-none bg-black border-2 border-neutral-600 text-[9px] font-black uppercase tracking-wider text-neutral-300" title="Active source">Standby</span>
                     </div>
-                    <div class="flex items-center gap-0.5 shrink-0 self-end sm:self-auto">
+                    <div class="flex shrink-0 items-center gap-0.5">
                         <button id="fullscreen-btn" type="button" class="hover:text-white text-neutral-400 transition-colors p-1 rounded-none border-2 border-neutral-700 bg-black hover:border-white" title="Fullscreen canvas area">
                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M21 8V5a2 2 0 0 0-2-2h-3"/><path d="M3 16v3a2 2 0 0 0 2 2h3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/></svg>
                         </button>
@@ -608,6 +600,70 @@
                 </div>
             </div>
             <div id="controls-panel" class="flex-1 overflow-y-auto min-h-0 min-w-0 px-3 sm:px-4 pt-3 pb-4 flex flex-col gap-0">
+                <div class="control-group w-full">
+                    <div class="control-row-head">
+                        <label class="knob-label min-w-0 truncate">ASCII style</label>
+                        <div class="control-row-tools">
+                            <button type="button" id="btn-ascii-master" class="btn-onoff on" title="OFF: raw video/GIF — tracking, audio, glitch still apply">ON</button>
+                        </div>
+                    </div>
+                    <div id="ascii-style-body" class="hidden flex flex-col gap-1.5 mt-1">
+                        <div class="preset-tags">
+                            <button type="button" onclick="applyPreset('matrix')" class="preset-btn border-2 text-neutral-300 border-neutral-600" id="btn-pre-matrix">MATRIX</button>
+                            <button type="button" onclick="applyPreset('cyber')" class="preset-btn border-2 text-cyan-400 border-cyan-800" id="btn-pre-cyber">CYBER</button>
+                            <button type="button" onclick="applyPreset('vaporwave')" class="preset-btn border-2 text-pink-400 border-pink-900" id="btn-pre-vaporwave">VAPOR</button>
+                            <button type="button" onclick="applyPreset('inferno')" class="preset-btn border-2 text-orange-500 border-orange-900" id="btn-pre-inferno">INFERNO</button>
+                            <button type="button" onclick="applyPreset('rgb')" class="preset-btn border-2 text-white border-neutral-500 bg-gradient-to-r from-red-600 via-green-600 to-blue-600" id="btn-pre-rgb">RGB</button>
+                            <button type="button" onclick="applyPreset('toxic')" class="preset-btn border-2 text-lime-400 border-lime-900" id="btn-pre-toxic">TOXIC</button>
+                            <button type="button" onclick="applyPreset('classic')" class="preset-btn border-2 text-neutral-300 border-neutral-600" id="btn-pre-classic">B&W</button>
+                            <button type="button" onclick="applyPreset('dots')" class="preset-btn border-2 text-purple-400 border-purple-900" id="btn-pre-dots">GLOW</button>
+                            <button type="button" onclick="applyPreset('emoji')" class="preset-btn border-2 text-neutral-300 border-neutral-600" id="btn-pre-emoji">😀 MOOD</button>
+                            <button type="button" onclick="applyPreset('pixel')" class="preset-btn border-2 text-neutral-300 border-neutral-600" id="btn-pre-pixel">▂ PIXEL</button>
+                            <button type="button" onclick="applyPreset('braille')" class="preset-btn border-2 text-neutral-300 border-neutral-600" id="btn-pre-braille">⠿ BRAILLE</button>
+                            <button type="button" onclick="applyPreset('hearts')" class="preset-btn border-2 text-rose-400 border-rose-900" id="btn-pre-hearts">♥ LOVE</button>
+                            <button type="button" onclick="applyPreset('arrows')" class="preset-btn border-2 text-amber-400 border-amber-900" id="btn-pre-arrows">➤ ARROWS</button>
+                            <button type="button" onclick="applyPreset('ocean')" class="preset-btn border-2 text-sky-400 border-sky-900" id="btn-pre-ocean">🌊 OCEAN</button>
+                            <button type="button" onclick="applyPreset('circuit')" class="preset-btn border-2 text-emerald-400 border-emerald-900" id="btn-pre-circuit">⌘ WIRE</button>
+                            <button type="button" onclick="applyPreset('runes')" class="preset-btn border-2 text-stone-400 border-stone-700" id="btn-pre-runes">ᚱ RUNES</button>
+                            <button type="button" onclick="applyPreset('math')" class="preset-btn border-2 text-indigo-400 border-indigo-900" id="btn-pre-math">∑ MATH</button>
+                            <button type="button" onclick="applyPreset('cyrillic')" class="preset-btn border-2 text-sky-300 border-sky-900" id="btn-pre-cyrillic">К CYR</button>
+                            <button type="button" onclick="applyPreset('crosses')" class="preset-btn border-2 text-stone-300 border-stone-700" id="btn-pre-crosses">✝ CROSS</button>
+                            <button type="button" onclick="applyPreset('gothic')" class="preset-btn border-2 text-violet-300 border-violet-900" id="btn-pre-gothic">𝔊 GOTH</button>
+                            <button type="button" onclick="applyPreset('dingbats')" class="preset-btn border-2 text-pink-300 border-pink-900" id="btn-pre-dingbats">✿ DING</button>
+                            <button type="button" onclick="applyPreset('relics')" class="preset-btn border-2 text-teal-300 border-teal-900" id="btn-pre-relics">⛧ RELIC</button>
+                        </div>
+                        <div class="flex justify-between items-center gap-2 min-h-[1.75rem] pt-1 border-t border-neutral-800">
+                            <span class="fira text-[7px] text-neutral-600 shrink-0">Preset cycle</span>
+                            <div class="flex items-center gap-1.5 shrink-0">
+                                <button id="btn-preset-jitter" type="button" class="text-[8px] font-black px-1.5 py-0.5 rounded-none border-2 border-neutral-600 bg-black text-neutral-500 hover:border-white hover:text-white transition-colors hidden" title="Random dwell each cycle (1–30s); disables interval slider">RND</button>
+                                <button id="btn-auto-preset" type="button" class="btn-brutal-latched">OFF</button>
+                            </div>
+                        </div>
+                        <div id="preset-cycle-body" class="hidden flex flex-col gap-1.5">
+                            <div class="flex items-center gap-2">
+                                <input type="range" id="param-preset-interval" min="1" max="30" value="5" class="flex-1 h-1 bg-transparent rounded-none appearance-none cursor-pointer min-w-0">
+                                <span id="val-preset-interval" class="fira text-[9px] min-w-[2rem] text-right text-neutral-400 shrink-0">5s</span>
+                            </div>
+                        </div>
+                        <div class="control-row-head mt-1 pt-1 border-t border-neutral-800">
+                            <span class="knob-label min-w-0 truncate">ASCII schedule</span>
+                            <div class="control-row-tools gap-1.5">
+                                <button type="button" id="btn-ascii-gate-jitter" class="text-[8px] font-black px-1.5 py-0.5 rounded-none border-2 border-neutral-600 bg-black text-neutral-500 hover:border-white hover:text-white transition-colors" title="Random cycle &amp; active from slider ranges">RND</button>
+                                <button type="button" id="btn-ascii-gate-enable" class="btn-brutal-latched">OFF</button>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2 mt-1">
+                            <span class="fira text-[7px] text-neutral-600 w-14 shrink-0">Cycle</span>
+                            <input type="range" id="param-ascii-gate-cycle" min="2" max="120" step="1" value="20" class="flex-1 min-w-0 h-1 bg-transparent rounded-none appearance-none">
+                            <span id="val-ascii-gate-cycle" class="fira text-[7px] text-neutral-500 w-10 shrink-0 tabular-nums">20s</span>
+                        </div>
+                        <div class="flex items-center gap-2 mt-1">
+                            <span class="fira text-[7px] text-neutral-600 w-14 shrink-0">Active</span>
+                            <input type="range" id="param-ascii-gate-active" min="0.2" max="60" step="0.2" value="5" class="flex-1 min-w-0 h-1 bg-transparent rounded-none appearance-none" title="ASCII on for this long each cycle">
+                            <span id="val-ascii-gate-active" class="fira text-[7px] text-neutral-500 w-10 shrink-0 tabular-nums">5s</span>
+                        </div>
+                    </div>
+                </div>
                 <div class="control-group w-full">
                     <div class="control-row-head">
                         <label class="knob-label min-w-0 truncate">Density</label>
@@ -1282,6 +1338,18 @@
                 effectiveActive: 2
             },
             resGateOpen: true,
+            /** Master: when false, draw scaled source only (no ASCII/3D); tracking/audio/glitch still apply. */
+            asciiEnabled: true,
+            asciiGate: {
+                enabled: false,
+                jitter: false,
+                cycleSec: 20,
+                activeSec: 5,
+                timer: 0,
+                effectiveCycle: 20,
+                effectiveActive: 5
+            },
+            asciiGateOpen: true,
             colorMode: 'solid',
             charset: charSets.standard,
             activePresetName: 'classic',
@@ -1844,6 +1912,48 @@
             state.tracking.gate.effectiveCycle = randomDwellFromInput(cEl, { lo: 2, hi: 120 });
             let na = randomDwellFromInput(aEl, { lo: 0.2, hi: 60 });
             state.tracking.gate.effectiveActive = Math.min(na, state.tracking.gate.effectiveCycle * 0.95);
+        }
+
+        function pickRandomAsciiGateDurations() {
+            const cEl = document.getElementById('param-ascii-gate-cycle');
+            const aEl = document.getElementById('param-ascii-gate-active');
+            if (!cEl || !aEl) return;
+            state.asciiGate.effectiveCycle = randomDwellFromInput(cEl, { lo: 2, hi: 120 });
+            let na = randomDwellFromInput(aEl, { lo: 0.2, hi: 60 });
+            state.asciiGate.effectiveActive = Math.min(na, state.asciiGate.effectiveCycle * 0.95);
+        }
+
+        function clampAsciiGateActiveToCycle() {
+            const c = Math.max(0.5, Number(state.asciiGate.effectiveCycle) || 20);
+            const maxA = c * 0.99;
+            if (state.asciiGate.activeSec > maxA) {
+                state.asciiGate.activeSec = Math.floor(maxA * 10) / 10;
+                const aEl = document.getElementById('param-ascii-gate-active');
+                if (aEl) aEl.value = String(state.asciiGate.activeSec);
+            }
+            state.asciiGate.effectiveActive = Math.min(Number(state.asciiGate.effectiveActive) || 5, maxA);
+            const vAct = document.getElementById('val-ascii-gate-active');
+            if (vAct && !state.asciiGate.jitter) vAct.textContent = formatGateSec(state.asciiGate.activeSec);
+        }
+
+        function syncAsciiGateIntervalSliderUI() {
+            const on = state.asciiGate.jitter;
+            const cEl = document.getElementById('param-ascii-gate-cycle');
+            const aEl = document.getElementById('param-ascii-gate-active');
+            if (cEl) {
+                cEl.disabled = on;
+                cEl.classList.toggle('opacity-40', on);
+                cEl.classList.toggle('cursor-not-allowed', on);
+            }
+            if (aEl) {
+                aEl.disabled = on;
+                aEl.classList.toggle('opacity-40', on);
+                aEl.classList.toggle('cursor-not-allowed', on);
+            }
+            const vc = document.getElementById('val-ascii-gate-cycle');
+            const va = document.getElementById('val-ascii-gate-active');
+            if (vc) vc.textContent = on ? 'RND' : formatGateSec(state.asciiGate.cycleSec);
+            if (va) va.textContent = on ? 'RND' : formatGateSec(state.asciiGate.activeSec);
         }
 
         function clampGlitchGateActiveToCycle() {
@@ -2613,6 +2723,17 @@
                     if (typeof rg.effectiveActive === 'number') state.resGate.effectiveActive = rg.effectiveActive;
                     state.resGate.timer = 0;
                 }
+                if (typeof s.asciiEnabled === 'boolean') state.asciiEnabled = s.asciiEnabled;
+                if (s.asciiGate && typeof s.asciiGate === 'object') {
+                    const ag = s.asciiGate;
+                    if (typeof ag.enabled === 'boolean') state.asciiGate.enabled = ag.enabled;
+                    if (typeof ag.jitter === 'boolean') state.asciiGate.jitter = ag.jitter;
+                    if (typeof ag.cycleSec === 'number') state.asciiGate.cycleSec = ag.cycleSec;
+                    if (typeof ag.activeSec === 'number') state.asciiGate.activeSec = ag.activeSec;
+                    if (typeof ag.effectiveCycle === 'number') state.asciiGate.effectiveCycle = ag.effectiveCycle;
+                    if (typeof ag.effectiveActive === 'number') state.asciiGate.effectiveActive = ag.effectiveActive;
+                    state.asciiGate.timer = 0;
+                }
                 if (!state.lfo.res.active) state.res = staticDensityRes();
                 if (s.glitch && typeof s.glitch === 'object') {
                     const g = s.glitch;
@@ -2796,6 +2917,15 @@
                         activeSec: state.resGate.activeSec,
                         effectiveCycle: state.resGate.effectiveCycle,
                         effectiveActive: state.resGate.effectiveActive
+                    },
+                    asciiEnabled: state.asciiEnabled,
+                    asciiGate: {
+                        enabled: state.asciiGate.enabled,
+                        jitter: state.asciiGate.jitter,
+                        cycleSec: state.asciiGate.cycleSec,
+                        activeSec: state.asciiGate.activeSec,
+                        effectiveCycle: state.asciiGate.effectiveCycle,
+                        effectiveActive: state.asciiGate.effectiveActive
                     },
                     activeSourceId,
                     playlist: sendPlaylist ? playlistMeta : undefined,
@@ -3141,6 +3271,53 @@
                 }
             }
             syncAutomationPanels();
+            document.getElementById('btn-ascii-master').onclick = (e) => {
+                state.asciiEnabled = !state.asciiEnabled;
+                updateOnOffToggleBtn(e.currentTarget, state.asciiEnabled);
+                syncAsciiStylePanel();
+            };
+            document.getElementById('btn-ascii-gate-enable').onclick = (e) => {
+                state.asciiGate.enabled = !state.asciiGate.enabled;
+                state.asciiGate.timer = 0;
+                e.currentTarget.textContent = state.asciiGate.enabled ? 'ON' : 'OFF';
+                updateBrutalLatchedBtn(e.currentTarget, state.asciiGate.enabled);
+            };
+            document.getElementById('btn-ascii-gate-jitter').onclick = (e) => {
+                state.asciiGate.jitter = !state.asciiGate.jitter;
+                state.asciiGate.timer = 0;
+                updateJitterButton(e.currentTarget, state.asciiGate.jitter);
+                if (state.asciiGate.jitter) {
+                    pickRandomAsciiGateDurations();
+                } else {
+                    state.asciiGate.effectiveCycle = state.asciiGate.cycleSec;
+                    state.asciiGate.effectiveActive = state.asciiGate.activeSec;
+                    clampAsciiGateActiveToCycle();
+                }
+                syncAsciiGateIntervalSliderUI();
+            };
+            document.getElementById('param-ascii-gate-cycle').oninput = (ev) => {
+                if (state.asciiGate.jitter) return;
+                state.asciiGate.cycleSec = parseInt(ev.target.value, 10);
+                state.asciiGate.effectiveCycle = state.asciiGate.cycleSec;
+                clampAsciiGateActiveToCycle();
+                document.getElementById('val-ascii-gate-cycle').textContent = formatGateSec(state.asciiGate.cycleSec);
+            };
+            document.getElementById('param-ascii-gate-active').oninput = (ev) => {
+                if (state.asciiGate.jitter) return;
+                state.asciiGate.activeSec = parseFloat(ev.target.value);
+                state.asciiGate.effectiveActive = Math.min(state.asciiGate.activeSec, state.asciiGate.effectiveCycle * 0.99);
+                document.getElementById('val-ascii-gate-active').textContent = formatGateSec(state.asciiGate.activeSec);
+            };
+            document.getElementById('param-ascii-gate-cycle').value = String(state.asciiGate.cycleSec);
+            document.getElementById('param-ascii-gate-active').value = String(state.asciiGate.activeSec);
+            document.getElementById('val-ascii-gate-cycle').textContent = formatGateSec(state.asciiGate.cycleSec);
+            document.getElementById('val-ascii-gate-active').textContent = formatGateSec(state.asciiGate.activeSec);
+            document.getElementById('btn-ascii-gate-enable').textContent = state.asciiGate.enabled ? 'ON' : 'OFF';
+            updateBrutalLatchedBtn(document.getElementById('btn-ascii-gate-enable'), state.asciiGate.enabled);
+            updateJitterButton(document.getElementById('btn-ascii-gate-jitter'), state.asciiGate.jitter);
+            syncAsciiGateIntervalSliderUI();
+            updateOnOffToggleBtn(document.getElementById('btn-ascii-master'), state.asciiEnabled);
+            syncAsciiStylePanel();
             syncDensityLfoRateLabel();
             updateAutoWaveBtn(document.getElementById('btn-lfo-res-auto-wave'), state.lfo.res.autoWave);
             updateAutoWaveBtn(document.getElementById('btn-lfo-contrast-auto-wave'), state.lfo.contrast.autoWave);
@@ -4101,6 +4278,24 @@
                 state.glitch.gateOpen = true;
             }
 
+            if (state.asciiGate.enabled) {
+                let c = Math.max(0.5, Number(state.asciiGate.effectiveCycle) || 20);
+                let a = Math.min(Math.max(0.05, Number(state.asciiGate.effectiveActive) || 5), c * 0.99);
+                state.asciiGate.timer += deltaSecs;
+                while (state.asciiGate.timer >= c) {
+                    state.asciiGate.timer -= c;
+                    if (state.asciiGate.jitter) {
+                        pickRandomAsciiGateDurations();
+                        c = Math.max(0.5, Number(state.asciiGate.effectiveCycle) || 20);
+                    }
+                }
+                c = Math.max(0.5, Number(state.asciiGate.effectiveCycle) || 20);
+                a = Math.min(Math.max(0.05, Number(state.asciiGate.effectiveActive) || 5), c * 0.99);
+                state.asciiGateOpen = state.asciiGate.timer < a;
+            } else {
+                state.asciiGateOpen = true;
+            }
+
             if (state.tracking.enabled && state.tracking.gate.enabled) {
                 let c = Math.max(0.5, Number(state.tracking.gate.effectiveCycle) || 15);
                 let a = Math.min(Math.max(0.05, Number(state.tracking.gate.effectiveActive) || 4), c * 0.99);
@@ -4343,6 +4538,11 @@
             if (sj) sj.classList.toggle('hidden', !state.playlistSettings.autoSwitch);
             const pj = document.getElementById('btn-preset-jitter');
             if (pj) pj.classList.toggle('hidden', !state.lfo.presets.active);
+        }
+
+        function syncAsciiStylePanel() {
+            const body = document.getElementById('ascii-style-body');
+            if (body) body.classList.toggle('hidden', !state.asciiEnabled);
         }
 
         function syncCollapsiblePanels() {
@@ -4862,8 +5062,21 @@
             }
             if (!activeSourceElement) return;
 
-            const aspect = sw / sh;
             dimInfo.textContent = `${sw} × ${sh}`;
+            const renderAscii = state.asciiEnabled && (!state.asciiGate.enabled || state.asciiGateOpen);
+
+            if (!renderAscii) {
+                const targetW = viewportContainer.clientWidth;
+                const targetH = viewportContainer.clientHeight;
+                const scalePt = Math.min(targetW / sw, targetH / sh);
+                outputCanvas.width = Math.max(1, Math.floor(sw * scalePt));
+                outputCanvas.height = Math.max(1, Math.floor(sh * scalePt));
+                outputCtx.fillStyle = state.bg;
+                outputCtx.fillRect(0, 0, outputCanvas.width, outputCanvas.height);
+                outputCtx.drawImage(activeSourceElement, 0, 0, sw, sh, 0, 0, outputCanvas.width, outputCanvas.height);
+                outputCanvas.style.imageRendering = 'auto';
+            } else {
+            const aspect = sw / sh;
             const w = Math.floor(state.res);
             const h = Math.max(1, Math.floor(w / aspect));
 
@@ -5006,6 +5219,7 @@
                 }
                 outputCtx.textAlign = 'left';
                 outputCtx.textBaseline = 'top';
+            }
             }
 
             const glitchInSchedule = !state.glitch.gate.enabled || state.glitch.gateOpen;
