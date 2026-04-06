@@ -59,6 +59,85 @@
         }
         #controls-panel {
             overflow-x: hidden;
+            -webkit-overflow-scrolling: touch;
+        }
+        @media (max-width: 1023px) {
+            #controls-panel .control-row-tools {
+                flex-wrap: wrap;
+                justify-content: flex-end;
+                gap: 0.35rem;
+                max-width: 100%;
+            }
+            #controls-panel .density-dual-range {
+                min-width: 0;
+            }
+            .density-dual-range input[type=range] {
+                min-width: 0 !important;
+            }
+        }
+        /* Mobile: slide-over panels from hamburger buttons (see setupMobileSidebarMenus) */
+        #mobile-app-bar {
+            flex-shrink: 0;
+            background: var(--panel-bg);
+        }
+        #mobile-sidebar-backdrop {
+            position: fixed;
+            left: 0;
+            right: 0;
+            top: 3rem;
+            bottom: 0;
+            z-index: 40;
+            background: rgba(0, 0, 0, 0.65);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s ease-out;
+        }
+        #mobile-sidebar-backdrop.sidebar-mobile-backdrop-visible {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        @media (max-width: 1023px) {
+            #sidebar-left,
+            #sidebar-right {
+                position: fixed;
+                top: 3rem;
+                bottom: 0;
+                height: auto;
+                min-height: 0;
+                align-self: auto;
+                z-index: 45;
+                width: min(20rem, 85vw);
+                max-width: 85vw;
+                transition: transform 0.2s ease-out;
+            }
+            #sidebar-left {
+                left: 0;
+                transform: translateX(-100%);
+            }
+            #sidebar-left.sidebar-mobile-open {
+                transform: translateX(0);
+            }
+            #sidebar-right {
+                right: 0;
+                transform: translateX(100%);
+            }
+            #sidebar-right.sidebar-mobile-open {
+                transform: translateX(0);
+            }
+        }
+        @media (min-width: 1024px) {
+            #sidebar-left,
+            #sidebar-right {
+                position: relative;
+                top: auto;
+                bottom: auto;
+                left: auto;
+                right: auto;
+                transform: none !important;
+                width: auto;
+                max-width: none;
+                z-index: auto;
+            }
         }
         #controls-panel .control-group {
             border-bottom: 2px solid #262626;
@@ -83,6 +162,7 @@
             gap: 0.5rem;
             min-height: 1.75rem;
             width: 100%;
+            min-width: 0;
         }
         .control-row-tools {
             display: flex;
@@ -365,11 +445,51 @@
             border: 2px solid #000;
             cursor: pointer;
         }
+        /* Tracking overlay style / emoji chips (match left sidebar preset-btn look) */
+        #controls-panel .tracking-preset-chip {
+            font-size: 8px;
+            line-height: 1;
+            font-weight: 900;
+            background: #000;
+            padding: 4px 8px;
+            border-radius: 0;
+            border: 2px solid #525252;
+            color: #d4d4d4;
+            text-transform: uppercase;
+            letter-spacing: 0.02em;
+            transition: color 0.1s, border-color 0.1s, background 0.1s, filter 0.1s;
+        }
+        #controls-panel .tracking-preset-chip:hover {
+            filter: brightness(1.12);
+        }
+        #controls-panel .tracking-preset-chip.tracking-preset-active {
+            border-color: #fafafa !important;
+            background: #0a0a0a !important;
+            color: #fafafa !important;
+        }
+        #controls-panel .tracking-preset-chip.tracking-emoji-chip {
+            font-size: 15px;
+            line-height: 1;
+            padding: 2px 8px;
+            font-weight: 400;
+            text-transform: none;
+            letter-spacing: 0;
+        }
     </style>
 </head>
-<body class="flex flex-col h-screen overflow-hidden">
-    <main class="flex flex-1 min-h-0 overflow-hidden">
-        <aside class="w-72 glass border-r-2 flex flex-col shrink-0 min-h-0 overflow-hidden">
+<body class="flex flex-col h-screen min-h-0 overflow-hidden">
+    <header id="mobile-app-bar" class="lg:hidden shrink-0 z-50 flex items-center justify-between gap-2 min-h-12 px-2 border-b-2 border-neutral-800 bg-[#0a0a0a]">
+        <button type="button" id="btn-mobile-menu-left" class="flex items-center justify-center w-11 h-11 shrink-0 rounded-none border-2 border-neutral-600 bg-black text-neutral-200 hover:border-white hover:text-white transition-colors" aria-label="Open queue and presets" aria-expanded="false" aria-controls="sidebar-left" title="Queue &amp; presets">
+            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></svg>
+        </button>
+        <span class="flex-1 min-w-0 text-center font-black text-xs italic tracking-tighter text-white truncate px-1">ASCII_LIVE</span>
+        <button type="button" id="btn-mobile-menu-right" class="flex items-center justify-center w-11 h-11 shrink-0 rounded-none border-2 border-neutral-600 bg-black text-neutral-200 hover:border-white hover:text-white transition-colors" aria-label="Open controls" aria-expanded="false" aria-controls="sidebar-right" title="Controls">
+            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></svg>
+        </button>
+    </header>
+    <div id="mobile-sidebar-backdrop" class="lg:hidden" aria-hidden="true" role="presentation"></div>
+    <main class="flex flex-1 min-h-0 flex-row overflow-hidden">
+        <aside id="sidebar-left" class="w-full max-w-full lg:w-72 glass border-r-2 flex flex-col shrink-0 min-h-0 overflow-hidden min-w-0 lg:relative max-lg:shadow-2xl">
             <div class="sidebar-sticky-head shrink-0 border-b-2 border-neutral-800 sidebar-bleed-x">
                 <div class="flex justify-between items-center gap-2 min-w-0 py-3 px-4">
                     <span class="font-black text-white tracking-tighter text-base italic leading-tight truncate">ASCII_LIVE.v9.6</span>
@@ -458,20 +578,22 @@
             </div>
         </aside>
 
-        <div class="flex-1 flex flex-col relative bg-black items-center justify-center overflow-hidden min-w-0">
-            <div id="viewport-container" class="relative w-full h-full flex items-center justify-center p-4">
+        <div class="flex flex-1 flex-col relative bg-black items-center justify-center overflow-hidden min-w-0 min-h-0">
+            <div id="viewport-container" class="relative w-full h-full min-h-0 flex items-center justify-center p-2 sm:p-4">
                 <button id="projector-fullscreen-btn" type="button" class="hidden absolute top-3 right-3 z-50 text-[10px] font-black px-2 py-1 rounded-none border-2 border-white bg-black hover:bg-neutral-900 text-white transition-colors" title="Projector fullscreen">FULL</button>
                 <canvas id="output-canvas" class="shadow-2xl"></canvas>
                 <canvas id="projector-canvas" class="hidden absolute inset-0 w-full h-full" aria-label="Projector output"></canvas>
             </div>
         </div>
 
-        <aside class="w-72 glass border-l-2 flex flex-col shrink-0 min-h-0 overflow-hidden">
+        <aside id="sidebar-right" class="w-full max-w-full lg:w-72 glass border-l-2 flex flex-col shrink-0 min-h-0 overflow-hidden min-w-0 lg:relative max-lg:shadow-2xl">
             <div class="sidebar-sticky-head shrink-0 border-b-2 border-neutral-700 z-30">
-                <div class="flex justify-between items-center gap-2 min-w-0 px-4 py-3">
-                    <span id="dim-info" class="fira text-[9px] text-neutral-300 tabular-nums whitespace-nowrap shrink-0" title="Output resolution">0 × 0</span>
-                    <span id="source-status" class="inline-block w-fit max-w-[min(100%,11rem)] truncate px-1.5 py-0.5 rounded-none bg-black border-2 border-neutral-600 text-[9px] font-black uppercase tracking-wider text-neutral-300 shrink-0" title="Active source">Standby</span>
-                    <div class="flex items-center gap-0.5 shrink-0">
+                <div class="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between min-w-0 px-3 sm:px-4 py-2.5 sm:py-3">
+                    <div class="flex flex-wrap items-center gap-x-2 gap-y-1 min-w-0 flex-1">
+                        <span id="dim-info" class="fira text-[9px] text-neutral-300 tabular-nums whitespace-nowrap shrink-0" title="Output resolution">0 × 0</span>
+                        <span id="source-status" class="inline-block min-w-0 flex-1 sm:flex-initial sm:max-w-[11rem] basis-0 sm:basis-auto truncate px-1.5 py-0.5 rounded-none bg-black border-2 border-neutral-600 text-[9px] font-black uppercase tracking-wider text-neutral-300" title="Active source">Standby</span>
+                    </div>
+                    <div class="flex items-center gap-0.5 shrink-0 self-end sm:self-auto">
                         <button id="fullscreen-btn" type="button" class="hover:text-white text-neutral-400 transition-colors p-1 rounded-none border-2 border-neutral-700 bg-black hover:border-white" title="Fullscreen canvas area">
                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M21 8V5a2 2 0 0 0-2-2h-3"/><path d="M3 16v3a2 2 0 0 0 2 2h3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/></svg>
                         </button>
@@ -481,7 +603,7 @@
                     </div>
                 </div>
             </div>
-            <div id="controls-panel" class="flex-1 overflow-y-auto min-h-0 px-4 pt-3 pb-4 flex flex-col gap-0">
+            <div id="controls-panel" class="flex-1 overflow-y-auto min-h-0 min-w-0 px-3 sm:px-4 pt-3 pb-4 flex flex-col gap-0">
                 <div class="control-group w-full">
                     <div class="control-row-head">
                         <label class="knob-label min-w-0 truncate">Density</label>
@@ -507,7 +629,7 @@
                                 <option value="noise">Noise</option>
                             </select>
                             <span class="fira text-[7px] text-neutral-600 w-4 shrink-0" id="lfo-res-rate-label" title="Periodic: speed · Noise: amplitude">∿</span>
-                            <input type="range" id="lfo-res-rate" min="0.1" max="5" step="0.1" value="1" class="w-14 h-1 bg-neutral-900 rounded-none appearance-none" title="Periodic waves: frequency · Noise: jump spread">
+                            <input type="range" id="lfo-res-rate" min="0.1" max="5" step="0.1" value="1" class="flex-1 min-w-[3.5rem] max-w-full h-1 bg-neutral-900 rounded-none appearance-none" title="Periodic waves: frequency · Noise: jump spread">
                         </div>
                         <div class="flex flex-wrap items-center gap-1.5 mt-1">
                             <button type="button" id="btn-lfo-res-auto-wave" class="text-[7px] font-black px-1.5 py-0.5 border-2 border-neutral-700 bg-black text-neutral-500 hover:border-white hover:text-white rounded-none" title="Cycle wave shape automatically">AUTO</button>
@@ -620,7 +742,7 @@
                             <option value="noise">Noise</option>
                         </select>
                         <span class="fira text-[7px] text-neutral-600 w-4 shrink-0" id="lfo-d3-rate-label" title="Periodic: speed · Noise: responsiveness">∿</span>
-                        <input type="range" id="lfo-d3-rate" min="0.1" max="5" step="0.1" value="1" class="w-14 h-1 bg-transparent rounded-none appearance-none" title="Wave speed / noise smoothing">
+                        <input type="range" id="lfo-d3-rate" min="0.1" max="5" step="0.1" value="1" class="flex-1 min-w-[3.5rem] max-w-full h-1 bg-transparent rounded-none appearance-none" title="Wave speed / noise smoothing">
                     </div>
                     <div class="flex flex-wrap items-center gap-1.5 mt-1">
                         <button type="button" id="btn-lfo-d3-auto-wave" class="text-[7px] font-black px-1.5 py-0.5 rounded-none border-2 border-neutral-600 bg-black text-neutral-500 hover:border-white hover:text-neutral-100 transition-colors" title="Cycle wave shape automatically">AUTO</button>
@@ -706,6 +828,92 @@
                     </div>
                     </div>
                 </div>
+                <div class="control-group w-full">
+                    <div class="control-row-head">
+                        <label class="knob-label min-w-0 truncate">Object tracking</label>
+                        <div class="control-row-tools">
+                            <button type="button" id="btn-tracking-section" class="btn-onoff" title="MediaPipe overlays (objects, face, hands)">OFF</button>
+                        </div>
+                    </div>
+                    <div id="tracking-section-body" class="hidden">
+                        <div class="border-2 border-neutral-800 rounded-none px-1.5 py-1.5 mt-1 space-y-2">
+                            <div class="flex flex-col gap-1">
+                                <div class="flex items-center justify-between gap-2 min-w-0">
+                                    <span class="fira text-[7px] text-neutral-500 font-bold shrink-0" title="COCO-style boxes">Objects</span>
+                                    <button type="button" id="btn-tracking-objects" class="btn-onoff btn-onoff-compact text-[7px] shrink-0" title="Draw boxes from object detector">OFF</button>
+                                </div>
+                                <div class="flex items-center justify-between gap-2 min-w-0">
+                                    <span class="fira text-[7px] text-neutral-500 font-bold shrink-0">Face</span>
+                                    <button type="button" id="btn-tracking-face" class="btn-onoff btn-onoff-compact text-[7px] shrink-0" title="Face bounding boxes">OFF</button>
+                                </div>
+                                <div class="flex items-center justify-between gap-2 min-w-0">
+                                    <span class="fira text-[7px] text-neutral-500 font-bold shrink-0">Hands</span>
+                                    <button type="button" id="btn-tracking-hands" class="btn-onoff btn-onoff-compact text-[7px] shrink-0" title="Hand landmarks / boxes">OFF</button>
+                                </div>
+                            </div>
+                            <div class="pt-1 border-t border-neutral-800 flex flex-col gap-1">
+                                <span class="fira text-[7px] text-neutral-600">Presets</span>
+                                <div id="tracking-presets-container" class="flex flex-col gap-1">
+                                    <div class="flex flex-wrap gap-1">
+                                        <button type="button" class="tracking-preset-chip" data-tracking-chip="rect" id="btn-tracking-chip-rect" title="Rectangle">RECT</button>
+                                        <button type="button" class="tracking-preset-chip" data-tracking-chip="rect_x" id="btn-tracking-chip-rect-x" title="Rectangle + X">+X</button>
+                                        <button type="button" class="tracking-preset-chip" data-tracking-chip="circle" id="btn-tracking-chip-circle" title="Circle">○</button>
+                                        <button type="button" class="tracking-preset-chip tracking-emoji-chip" data-tracking-chip="emoji:🥀" id="btn-tracking-chip-e0" title="Wilted rose">🥀</button>
+                                        <button type="button" class="tracking-preset-chip tracking-emoji-chip" data-tracking-chip="emoji:👺" id="btn-tracking-chip-e1" title="Ogre">👺</button>
+                                        <button type="button" class="tracking-preset-chip tracking-emoji-chip" data-tracking-chip="emoji:🫠" id="btn-tracking-chip-e2" title="Melting face">🫠</button>
+                                    </div>
+                                    <div id="tracking-custom-marker-chips" class="flex flex-wrap gap-1 items-center" aria-live="polite"></div>
+                                    <div class="flex flex-wrap gap-1 items-center">
+                                        <input type="text" id="tracking-custom-marker-input" maxlength="16" placeholder="Custom text or emoji" autocomplete="off" spellcheck="false" class="flex-1 min-w-0 text-[9px] bg-black border-2 border-neutral-700 rounded-none px-1 py-0.5 text-neutral-200 font-mono outline-none focus:border-white placeholder:text-neutral-600" title="Add a marker; appears as a chip below">
+                                        <button type="button" id="btn-tracking-custom-marker-add" class="fira text-[7px] px-1 py-0.5 rounded-none border-2 border-neutral-600 bg-black text-neutral-300 hover:border-white shrink-0" title="Save as preset chip">Add</button>
+                                    </div>
+                                </div>
+                                <div id="tracking-marker-input-wrap" class="hidden flex flex-col gap-0.5 mt-0.5">
+                                    <label class="fira text-[7px] text-neutral-600 block" for="tracking-marker-text">Emoji</label>
+                                    <input type="text" id="tracking-marker-text" maxlength="16" value="🥀" autocomplete="off" spellcheck="false" class="w-full text-[9px] bg-black border-2 border-neutral-600 rounded-none px-1 py-0.5 text-neutral-200 font-mono outline-none focus:border-white" title="Edit the selected preset emoji">
+                                </div>
+                                <div class="pt-1 border-t border-neutral-800 flex flex-col gap-1">
+                                    <span class="fira text-[7px] text-neutral-600">Style + marker LFO</span>
+                                    <div class="flex flex-wrap items-center gap-0.5">
+                                        <button type="button" id="lfo-tracking-marker-btn" class="brutal-lfo-inline text-[7px] bg-black px-1 py-0.5 rounded-none border-2 border-neutral-600" title="ON: cycles Rectangle → Rect+X → Circle → Text with each Quick preset glyph (wave + rate)">LFO</button>
+                                        <select id="lfo-tracking-marker-shape" class="text-[7px] bg-black border-2 border-neutral-600 rounded-none px-0.5 py-0.5 text-neutral-300 outline-none focus:border-white max-w-[3.25rem]" title="Noise = random carousel; other = linear sweep. AUTO cycles Sin→Tri→…→Noise">
+                                            <option value="sine">Sin</option><option value="triangle">Tri</option><option value="saw">Saw</option><option value="square">Sqr</option><option value="pulse">Pls</option><option value="noise">Nse</option>
+                                        </select>
+                                        <span class="fira text-[7px] text-neutral-600 w-3 shrink-0" id="lfo-tracking-marker-rate-label">∿</span>
+                                        <input type="range" id="lfo-tracking-marker-rate" min="0.05" max="3" step="0.05" value="1.1" class="w-11 h-1 bg-transparent rounded-none appearance-none flex-1 min-w-0" title="Carousel speed: higher = faster sweep through styles + text presets (linear)">
+                                    </div>
+                                    <div class="flex flex-wrap items-center gap-0.5 pl-9">
+                                        <button type="button" id="btn-lfo-tracking-marker-auto" class="text-[6px] font-black px-1 py-0.5 rounded-none border-2 border-neutral-600 bg-black text-neutral-500" title="Cycle wave shape (Sin→Tri→…→Noise) every N seconds">AUTO</button>
+                                        <input type="range" id="lfo-tracking-marker-wave-cycle" min="1" max="12" step="1" value="3" class="w-10 h-1 bg-transparent rounded-none appearance-none" title="Seconds between wave-shape changes when AUTO is on">
+                                        <span id="val-lfo-tracking-marker-wave-cycle" class="fira text-[6px] text-neutral-500 w-5">3s</span>
+                                    </div>
+                                </div>
+                                <div class="flex items-center gap-2 flex-wrap">
+                                    <span class="fira text-[7px] text-neutral-600 shrink-0">Color</span>
+                                    <input type="color" id="tracking-color" value="#00ff88" class="w-8 h-8 rounded-none bg-black border-2 border-neutral-600 cursor-pointer shrink-0" title="Stroke / text color">
+                                </div>
+                                <div class="control-row-head mt-1 pt-1 border-t border-neutral-800">
+                                    <span class="knob-label min-w-0 truncate">Tracking schedule</span>
+                                    <div class="control-row-tools gap-1.5">
+                                        <button type="button" id="btn-tracking-gate-jitter" class="text-[8px] font-black px-1.5 py-0.5 rounded-none border-2 border-neutral-600 bg-black text-neutral-500 hover:border-white hover:text-white transition-colors" title="Random cycle &amp; active from slider ranges">RND</button>
+                                        <button type="button" id="btn-tracking-gate-enable" class="btn-brutal-latched">OFF</button>
+                                    </div>
+                                </div>
+                                <div class="flex items-center gap-2 mt-1">
+                                    <span class="fira text-[7px] text-neutral-600 w-14 shrink-0">Cycle</span>
+                                    <input type="range" id="param-tracking-gate-cycle" min="2" max="120" step="1" value="15" class="flex-1 min-w-0 h-1 bg-transparent rounded-none appearance-none">
+                                    <span id="val-tracking-gate-cycle" class="fira text-[7px] text-neutral-500 w-10 shrink-0 tabular-nums">15s</span>
+                                </div>
+                                <div class="flex items-center gap-2 mt-1">
+                                    <span class="fira text-[7px] text-neutral-600 w-14 shrink-0">Active</span>
+                                    <input type="range" id="param-tracking-gate-active" min="0.2" max="60" step="0.2" value="4" class="flex-1 min-w-0 h-1 bg-transparent rounded-none appearance-none">
+                                    <span id="val-tracking-gate-active" class="fira text-[7px] text-neutral-500 w-10 shrink-0 tabular-nums">4s</span>
+                                </div>
+                            </div>
+                            <p id="tracking-status" class="fira text-[6px] text-neutral-500 leading-tight hidden" title="Load / runtime status"></p>
+                        </div>
+                    </div>
+                </div>
                 <div class="control-group">
                     <div class="control-row-head">
                         <label class="knob-label min-w-0 truncate">Audio Reactive</label>
@@ -771,22 +979,24 @@
                             </div>
                         </div>
                     </div>
-                    <div class="flex flex-wrap items-center gap-2 mt-1">
-                        <span class="fira text-[7px] text-neutral-600 w-16">Strength</span>
-                        <input type="range" id="audio-strength" min="0" max="2" step="0.01" value="1" class="w-24 h-1 bg-transparent rounded-none appearance-none">
-                        <span id="val-audio-strength" class="fira text-[7px] text-neutral-500 tabular-nums w-6">1.00</span>
+                    <div class="flex flex-wrap items-center gap-x-2 gap-y-1 mt-1 min-w-0">
+                        <span class="fira text-[7px] text-neutral-600 w-16 shrink-0">Strength</span>
+                        <input type="range" id="audio-strength" min="0" max="2" step="0.01" value="1" class="flex-1 min-w-0 max-w-full h-1 bg-transparent rounded-none appearance-none">
+                        <span id="val-audio-strength" class="fira text-[7px] text-neutral-500 tabular-nums w-6 shrink-0">1.00</span>
                     </div>
-                    <div class="flex flex-wrap items-center gap-2 mt-1">
-                        <span class="fira text-[7px] text-neutral-600 w-16">Color Cycle</span>
-                        <input type="range" id="audio-color-cycle" min="1" max="20" step="0.1" value="5" class="w-24 h-1 bg-transparent rounded-none appearance-none" title="Seconds per full color cycle">
-                        <span id="val-audio-color-cycle" class="fira text-[7px] text-neutral-500 tabular-nums w-6">5s</span>
+                    <div class="flex flex-wrap items-center gap-x-2 gap-y-1 mt-1 min-w-0">
+                        <span class="fira text-[7px] text-neutral-600 w-16 shrink-0">Color Cycle</span>
+                        <input type="range" id="audio-color-cycle" min="1" max="20" step="0.1" value="5" class="flex-1 min-w-0 max-w-full h-1 bg-transparent rounded-none appearance-none" title="Seconds per full color cycle">
+                        <span id="val-audio-color-cycle" class="fira text-[7px] text-neutral-500 tabular-nums w-6 shrink-0">5s</span>
                     </div>
-                    <div class="flex flex-wrap items-center gap-2 mt-1">
-                        <span class="fira text-[7px] text-neutral-600 w-16">Kick Hz</span>
-                        <input type="range" id="audio-kick-low" min="20" max="250" step="1" value="60" class="w-24 h-1 bg-transparent rounded-none appearance-none" title="Kick band low cutoff (Hz)">
-                        <span id="val-audio-kick-low" class="fira text-[7px] text-neutral-500 tabular-nums w-8">60</span>
-                        <input type="range" id="audio-kick-high" min="80" max="400" step="1" value="200" class="w-24 h-1 bg-transparent rounded-none appearance-none" title="Kick band high cutoff (Hz)">
-                        <span id="val-audio-kick-high" class="fira text-[7px] text-neutral-500 tabular-nums w-8">200</span>
+                    <div class="flex flex-col gap-1.5 mt-1 min-w-0">
+                        <span class="fira text-[7px] text-neutral-600 w-16 shrink-0">Kick Hz</span>
+                        <div class="flex flex-wrap items-center gap-x-2 gap-y-1 min-w-0 w-full">
+                            <input type="range" id="audio-kick-low" min="20" max="250" step="1" value="60" class="flex-1 min-w-[4.5rem] max-w-full h-1 bg-transparent rounded-none appearance-none" title="Kick band low cutoff (Hz)">
+                            <span id="val-audio-kick-low" class="fira text-[7px] text-neutral-500 tabular-nums w-8 shrink-0">60</span>
+                            <input type="range" id="audio-kick-high" min="80" max="400" step="1" value="200" class="flex-1 min-w-[4.5rem] max-w-full h-1 bg-transparent rounded-none appearance-none" title="Kick band high cutoff (Hz)">
+                            <span id="val-audio-kick-high" class="fira text-[7px] text-neutral-500 tabular-nums w-8 shrink-0">200</span>
+                        </div>
                     </div>
                     </div>
                 </div>
@@ -809,7 +1019,7 @@
                                 <option value="pulse">Pulse</option>
                                 <option value="noise">Noise</option>
                             </select>
-                            <input type="range" id="lfo-contrast-rate" min="0.1" max="5" step="0.1" value="1" class="w-14 h-1 bg-neutral-900 rounded-none appearance-none">
+                            <input type="range" id="lfo-contrast-rate" min="0.1" max="5" step="0.1" value="1" class="flex-1 min-w-[3.5rem] max-w-full h-1 bg-neutral-900 rounded-none appearance-none">
                         </div>
                         <div class="flex flex-wrap items-center gap-1.5 mt-1">
                             <button type="button" id="btn-lfo-contrast-auto-wave" class="text-[7px] font-black px-1.5 py-0.5 border-2 border-neutral-700 bg-black text-neutral-500 hover:border-white hover:text-white rounded-none" title="Cycle contrast wave automatically">AUTO</button>
@@ -832,7 +1042,7 @@
                                 <option value="sine">Order</option>
                                 <option value="noise">Random</option>
                             </select>
-                            <input type="range" id="lfo-charset-rate" min="0.1" max="10" step="0.1" value="2" class="w-14 h-1 bg-neutral-900 rounded-none appearance-none">
+                            <input type="range" id="lfo-charset-rate" min="0.1" max="10" step="0.1" value="2" class="flex-1 min-w-[3.5rem] max-w-full h-1 bg-neutral-900 rounded-none appearance-none">
                         </div>
                     </div>
                 </div>
@@ -887,6 +1097,55 @@
         const LFO_WAVE_SHAPES = ['sine', 'triangle', 'saw', 'square', 'pulse', 'noise'];
         /** Canvas blend modes for audio overlay + blend LFO (order matches #audio-blend-mode options). */
         const AUDIO_BLEND_MODES = ['screen', 'multiply', 'difference', 'overlay', 'lighten', 'darken', 'soft-light', 'hard-light', 'exclusion', 'source-over'];
+        /** Built-in emoji/text presets (cannot be removed). */
+        const TRACKING_MARKER_BANK = ['🥀', '👺', '🫠'];
+        const TRACKING_MARKER_LFO_STORAGE_KEY = 'asciiLiveTrackingCustomMarkers';
+        const TRACKING_CUSTOM_MARKER_MAX = 32;
+        let trackingCustomMarkers = [];
+        function loadTrackingCustomMarkers() {
+            try {
+                const raw = localStorage.getItem(TRACKING_MARKER_LFO_STORAGE_KEY);
+                if (raw) {
+                    const arr = JSON.parse(raw);
+                    if (Array.isArray(arr)) {
+                        const seen = new Set();
+                        trackingCustomMarkers = [];
+                        for (const x of arr) {
+                            const t = String(x).trim().slice(0, 16);
+                            if (!t || seen.has(t)) continue;
+                            seen.add(t);
+                            trackingCustomMarkers.push(t);
+                        }
+                    }
+                }
+            } catch (_) {
+                trackingCustomMarkers = [];
+            }
+        }
+        function saveTrackingCustomMarkers() {
+            try {
+                localStorage.setItem(TRACKING_MARKER_LFO_STORAGE_KEY, JSON.stringify(trackingCustomMarkers));
+            } catch (_) {}
+        }
+        function getTrackingMarkerBankList() {
+            const seen = new Set(TRACKING_MARKER_BANK);
+            const out = [...TRACKING_MARKER_BANK];
+            for (const s of trackingCustomMarkers) {
+                const t = String(s).trim().slice(0, 16);
+                if (!t || seen.has(t)) continue;
+                seen.add(t);
+                out.push(t);
+            }
+            return out;
+        }
+        /** One LFO carousel: rectangle → rect+X → circle → text with each marker (built-in + custom). */
+        function getTrackingLfoSteps() {
+            const geo = ['rect', 'rect_x', 'circle'].map((preset) => ({ preset }));
+            const text = getTrackingMarkerBankList().map((markerText) => ({ preset: 'text', markerText }));
+            return geo.concat(text);
+        }
+        /** Scales #lfo-tracking-marker-rate so the slider clearly controls carousel loop time. */
+        const TRACKING_MARKER_LFO_PHASE_K = 0.2;
         const presetKeys = [
             'matrix', 'cyber', 'vaporwave', 'inferno', 'toxic', 'rgb', 'classic', 'dots',
             'emoji', 'pixel', 'braille', 'hearts', 'arrows', 'ocean', 'circuit', 'runes', 'math',
@@ -967,6 +1226,10 @@
                 // Adaptive baseline + smoothing for more stable triggers
                 kickSmoothed: 0,
                 kickFloor: 0,
+                /** 0..1 LF energy above adaptive floor (beat/strobe path). */
+                kickGate: 0,
+                /** 0..1 absolute LF band level (`kickSmoothed` shaped); density uses this, NOT `kickGate` (gate → 0 in steady loud audio). */
+                densityDrive01: 0,
                 // Base overlay color in HSL (used for animated hue rotation).
                 colorHueBase: 300,
                 colorSatBase: 1,
@@ -982,6 +1245,8 @@
                 fxDensityEaseSec: 0.35,
                 /** Smoothed 0..1 drive for audioreactive density (follows level after reverse). */
                 densityDriveSmoothed: 0,
+                /** Legacy field (always 0); REV uses inverted `densityDrive01` like forward. */
+                densityRevHold: 0,
                 /** LFO sweeps blend mode index; AUTO cycles wave shape every N s (same pattern as density LFO). */
                 blendLfo: { active: false, shape: 'sine', rate: 0.45, autoWave: false, waveTimer: 0, waveCycleSec: 3 }
             },
@@ -1085,6 +1350,27 @@
                     effectiveActive: 2
                 },
                 gateOpen: true
+            },
+            tracking: {
+                enabled: false,
+                objects: false,
+                face: false,
+                hands: false,
+                preset: 'rect',
+                markerText: '🥀',
+                markerLfo: { active: false, shape: 'sine', rate: 1.1, autoWave: false, waveTimer: 0, waveCycleSec: 3 },
+                _markerLfoStepIdx: -1,
+                color: '#00ff88',
+                gate: {
+                    enabled: false,
+                    jitter: false,
+                    cycleSec: 15,
+                    activeSec: 4,
+                    timer: 0,
+                    effectiveCycle: 15,
+                    effectiveActive: 4
+                },
+                gateOpen: true
             }
         };
 
@@ -1158,6 +1444,12 @@
         function staticDensityRes() { return Math.round((state.resMin + state.resMax) / 2); }
 
         function clamp01(v) { return Math.min(1, Math.max(0, v)); }
+
+        /** Kick → 0..1 density drive. REV is `1 − densityDrive01` (same signal as forward, inverted — no separate peak hold). */
+        function audioFxDensityTarget01() {
+            const d = clamp01(state.audio.densityDrive01);
+            return state.audio.fxDensityReversed ? 1 - d : d;
+        }
 
         function hexToRgb(hex) {
             // Accepts "#rrggbb"
@@ -1279,6 +1571,94 @@
             const sh = document.getElementById('lfo-audio-blend-shape');
             const lab = document.getElementById('lfo-audio-blend-rate-label');
             if (sh && lab) lab.textContent = sh.value === 'noise' ? 'A' : '∿';
+        }
+
+        function syncTrackingMarkerLfoRateLabel() {
+            const sh = document.getElementById('lfo-tracking-marker-shape');
+            const lab = document.getElementById('lfo-tracking-marker-rate-label');
+            if (sh && lab) lab.textContent = sh.value === 'noise' ? 'A' : '∿';
+        }
+
+        function syncTrackingPresetChips() {
+            const p = state.tracking.preset || 'rect';
+            const txt = state.tracking.markerText;
+            document.querySelectorAll('#controls-panel [data-tracking-chip]').forEach((btn) => {
+                const v = btn.getAttribute('data-tracking-chip');
+                let on = false;
+                if (v && v.startsWith('emoji:')) {
+                    const ch = v.slice(6);
+                    on = p === 'text' && txt === ch;
+                } else if (v) {
+                    on = p === v;
+                }
+                btn.classList.toggle('tracking-preset-active', on);
+            });
+            const wrap = document.getElementById('tracking-marker-input-wrap');
+            if (wrap) wrap.classList.toggle('hidden', p !== 'text');
+        }
+
+        const trackingBuiltinMarkerSet = new Set(TRACKING_MARKER_BANK);
+        function renderTrackingCustomMarkerChips() {
+            const host = document.getElementById('tracking-custom-marker-chips');
+            if (!host) return;
+            host.innerHTML = '';
+            const seen = new Set();
+            for (const s of trackingCustomMarkers) {
+                const t = String(s).trim().slice(0, 16);
+                if (!t || trackingBuiltinMarkerSet.has(t) || seen.has(t)) continue;
+                seen.add(t);
+                const row = document.createElement('span');
+                row.className = 'inline-flex items-center gap-0';
+                const chip = document.createElement('button');
+                chip.type = 'button';
+                chip.className = 'tracking-preset-chip tracking-emoji-chip';
+                chip.setAttribute('data-tracking-chip', 'emoji:' + t);
+                chip.title = t;
+                chip.textContent = t;
+                const del = document.createElement('button');
+                del.type = 'button';
+                del.className = 'fira leading-none text-[9px] w-4 h-4 shrink-0 flex items-center justify-center text-neutral-500 border border-neutral-700 bg-black hover:border-red-500 hover:text-red-400';
+                del.textContent = '×';
+                del.title = 'Remove custom preset';
+                del.setAttribute('data-tracking-delete-marker', encodeURIComponent(t));
+                del.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const m = decodeURIComponent(del.getAttribute('data-tracking-delete-marker') || '');
+                    removeTrackingCustomMarker(m);
+                });
+                row.appendChild(chip);
+                row.appendChild(del);
+                host.appendChild(row);
+            }
+        }
+        function removeTrackingCustomMarker(marker) {
+            const m = String(marker).trim().slice(0, 16);
+            if (!m) return;
+            trackingCustomMarkers = trackingCustomMarkers.filter((x) => String(x).trim().slice(0, 16) !== m);
+            saveTrackingCustomMarkers();
+            renderTrackingCustomMarkerChips();
+            if (state.tracking.markerText === m) {
+                state.tracking.preset = 'text';
+                state.tracking.markerText = TRACKING_MARKER_BANK[0];
+                const mt = document.getElementById('tracking-marker-text');
+                if (mt) mt.value = state.tracking.markerText;
+            }
+            syncTrackingPresetChips();
+        }
+        function addTrackingCustomMarker(raw) {
+            let t = String(raw || '').trim().slice(0, 16);
+            if (!t) return;
+            if (getTrackingMarkerBankList().includes(t)) return;
+            if (trackingCustomMarkers.length >= TRACKING_CUSTOM_MARKER_MAX) return;
+            trackingCustomMarkers.push(t);
+            saveTrackingCustomMarkers();
+            renderTrackingCustomMarkerChips();
+            state.tracking.preset = 'text';
+            state.tracking.markerText = t;
+            const mt = document.getElementById('tracking-marker-text');
+            if (mt) mt.value = t;
+            syncTrackingPresetChips();
         }
 
         function syncD3LfoRateLabel() {
@@ -1454,6 +1834,14 @@
             state.glitch.gate.effectiveActive = Math.min(na, state.glitch.gate.effectiveCycle * 0.95);
         }
 
+        function pickRandomTrackingGateDurations() {
+            const cEl = document.getElementById('param-tracking-gate-cycle');
+            const aEl = document.getElementById('param-tracking-gate-active');
+            state.tracking.gate.effectiveCycle = randomDwellFromInput(cEl, { lo: 2, hi: 120 });
+            let na = randomDwellFromInput(aEl, { lo: 0.2, hi: 60 });
+            state.tracking.gate.effectiveActive = Math.min(na, state.tracking.gate.effectiveCycle * 0.95);
+        }
+
         function clampGlitchGateActiveToCycle() {
             const c = Math.max(0.5, Number(state.glitch.gate.effectiveCycle) || 15);
             const maxA = c * 0.99;
@@ -1465,6 +1853,19 @@
             state.glitch.gate.effectiveActive = Math.min(Number(state.glitch.gate.effectiveActive) || 4, maxA);
             const vAct = document.getElementById('val-glitch-gate-active');
             if (vAct && !state.glitch.gate.jitter) vAct.textContent = formatGateSec(state.glitch.gate.activeSec);
+        }
+
+        function clampTrackingGateActiveToCycle() {
+            const c = Math.max(0.5, Number(state.tracking.gate.effectiveCycle) || 15);
+            const maxA = c * 0.99;
+            if (state.tracking.gate.activeSec > maxA) {
+                state.tracking.gate.activeSec = Math.floor(maxA * 10) / 10;
+                const aEl = document.getElementById('param-tracking-gate-active');
+                if (aEl) aEl.value = String(state.tracking.gate.activeSec);
+            }
+            state.tracking.gate.effectiveActive = Math.min(Number(state.tracking.gate.effectiveActive) || 4, maxA);
+            const vAct = document.getElementById('val-tracking-gate-active');
+            if (vAct && !state.tracking.gate.jitter) vAct.textContent = formatGateSec(state.tracking.gate.activeSec);
         }
 
         function pickRandomResGateDurations() {
@@ -1526,6 +1927,26 @@
             const va = document.getElementById('val-glitch-gate-active');
             if (vc) vc.textContent = on ? 'RND' : formatGateSec(state.glitch.gate.cycleSec);
             if (va) va.textContent = on ? 'RND' : formatGateSec(state.glitch.gate.activeSec);
+        }
+
+        function syncTrackingGateIntervalSliderUI() {
+            const on = state.tracking.gate.jitter;
+            const cEl = document.getElementById('param-tracking-gate-cycle');
+            const aEl = document.getElementById('param-tracking-gate-active');
+            if (cEl) {
+                cEl.disabled = on;
+                cEl.classList.toggle('opacity-40', on);
+                cEl.classList.toggle('cursor-not-allowed', on);
+            }
+            if (aEl) {
+                aEl.disabled = on;
+                aEl.classList.toggle('opacity-40', on);
+                aEl.classList.toggle('cursor-not-allowed', on);
+            }
+            const vc = document.getElementById('val-tracking-gate-cycle');
+            const va = document.getElementById('val-tracking-gate-active');
+            if (vc) vc.textContent = on ? 'RND' : formatGateSec(state.tracking.gate.cycleSec);
+            if (va) va.textContent = on ? 'RND' : formatGateSec(state.tracking.gate.activeSec);
         }
 
         function syncGlitchStrobeReadout() {
@@ -1615,6 +2036,8 @@
                 state.audio.rawLevel = 0;
                 state.audio.kickSmoothed = 0;
                 state.audio.kickFloor = 0;
+                state.audio.kickGate = 0;
+                state.audio.densityDrive01 = 0;
 
                 updateOnOffToggleBtn(btn, true);
                 syncCollapsiblePanels();
@@ -1638,7 +2061,10 @@
             state.audio.rawLevel = 0;
             state.audio.kickSmoothed = 0;
             state.audio.kickFloor = state.audio.kickFloor || 0;
+            state.audio.kickGate = 0;
+            state.audio.densityDrive01 = 0;
             state.audio.densityDriveSmoothed = 0;
+            state.audio.densityRevHold = 0;
 
             const btn = document.getElementById('btn-audio-react');
             updateOnOffToggleBtn(btn, false);
@@ -1693,6 +2119,12 @@
             const over = state.audio.kickSmoothed - state.audio.kickFloor;
             const denom = Math.max(1e-6, 1 - state.audio.kickFloor);
             const gate = clamp01(over / denom);
+            state.audio.kickGate = gate;
+            // Density must follow absolute band level. `kickGate` is (smoothed−floor)/(1−floor) → ~0 when the
+            // adaptive floor catches sustained audio, so the grid would never move. `kickSmoothed` stays high while loud.
+            const ks = clamp01(state.audio.kickSmoothed);
+            const densBoost = 0.55 + state.audio.strength * 0.35;
+            state.audio.densityDrive01 = clamp01(Math.pow(clamp01(ks * densBoost), 0.5));
             const strength = state.audio.strength; // 0..2 (higher = more sensitive)
 
             // Sensitivity threshold: higher strength => lower threshold
@@ -1710,6 +2142,8 @@
             );
 
             state.audio.level = state.audio.beat;
+
+            state.audio.densityRevHold = 0;
         }
 
         /** Random seconds in [min,max] from a range input's attributes (works when the input is disabled). */
@@ -2087,6 +2521,8 @@
             const header = document.querySelector('header');
             if (header) header.style.display = 'none';
             document.querySelectorAll('aside').forEach((el) => { el.style.display = 'none'; });
+            const mobBack = document.getElementById('mobile-sidebar-backdrop');
+            if (mobBack) mobBack.style.display = 'none';
 
             // Remove padding so the stream fills the entire viewport.
             if (viewportContainer) {
@@ -2132,6 +2568,36 @@
                 if (typeof s.audioFxDensityReversed === 'boolean') state.audio.fxDensityReversed = s.audioFxDensityReversed;
                 if (typeof s.audioFxDensityEaseSec === 'number' && Number.isFinite(s.audioFxDensityEaseSec)) {
                     state.audio.fxDensityEaseSec = Math.max(0, Math.min(2.5, s.audioFxDensityEaseSec));
+                }
+                if (s.tracking && typeof s.tracking === 'object') {
+                    const tr = s.tracking;
+                    if (typeof tr.enabled === 'boolean') state.tracking.enabled = tr.enabled;
+                    if (typeof tr.objects === 'boolean') state.tracking.objects = tr.objects;
+                    if (typeof tr.face === 'boolean') state.tracking.face = tr.face;
+                    if (typeof tr.hands === 'boolean') state.tracking.hands = tr.hands;
+                    if (typeof tr.preset === 'string') state.tracking.preset = tr.preset;
+                    if (typeof tr.markerText === 'string') state.tracking.markerText = tr.markerText;
+                    if (typeof tr.color === 'string') state.tracking.color = tr.color;
+                    if (tr.markerLfo && typeof tr.markerLfo === 'object') {
+                        const ml = tr.markerLfo;
+                        if (typeof ml.active === 'boolean') state.tracking.markerLfo.active = ml.active;
+                        if (typeof ml.shape === 'string') state.tracking.markerLfo.shape = ml.shape;
+                        if (typeof ml.rate === 'number') state.tracking.markerLfo.rate = ml.rate;
+                        if (typeof ml.autoWave === 'boolean') state.tracking.markerLfo.autoWave = ml.autoWave;
+                        if (typeof ml.waveCycleSec === 'number') state.tracking.markerLfo.waveCycleSec = ml.waveCycleSec;
+                    }
+                    if (tr.gate && typeof tr.gate === 'object') {
+                        const g = tr.gate;
+                        if (typeof g.enabled === 'boolean') state.tracking.gate.enabled = g.enabled;
+                        if (typeof g.jitter === 'boolean') state.tracking.gate.jitter = g.jitter;
+                        if (typeof g.cycleSec === 'number') state.tracking.gate.cycleSec = g.cycleSec;
+                        if (typeof g.activeSec === 'number') state.tracking.gate.activeSec = g.activeSec;
+                        if (typeof g.effectiveCycle === 'number') state.tracking.gate.effectiveCycle = g.effectiveCycle;
+                        if (typeof g.effectiveActive === 'number') state.tracking.gate.effectiveActive = g.effectiveActive;
+                        state.tracking.gate.timer = 0;
+                    }
+                    normalizeTrackingPreset();
+                    if (!trackingAnyEnabled()) resetTrackingPipeline();
                 }
                 if (s.resGate && typeof s.resGate === 'object') {
                     const rg = s.resGate;
@@ -2370,6 +2836,30 @@
                             effectiveCycle: state.d3.gate.effectiveCycle,
                             effectiveActive: state.d3.gate.effectiveActive
                         }
+                    },
+                    tracking: {
+                        enabled: state.tracking.enabled,
+                        objects: state.tracking.objects,
+                        face: state.tracking.face,
+                        hands: state.tracking.hands,
+                        preset: state.tracking.preset,
+                        markerText: state.tracking.markerText,
+                        color: state.tracking.color,
+                        markerLfo: {
+                            active: state.tracking.markerLfo.active,
+                            shape: state.tracking.markerLfo.shape,
+                            rate: state.tracking.markerLfo.rate,
+                            autoWave: state.tracking.markerLfo.autoWave,
+                            waveCycleSec: state.tracking.markerLfo.waveCycleSec
+                        },
+                        gate: {
+                            enabled: state.tracking.gate.enabled,
+                            jitter: state.tracking.gate.jitter,
+                            cycleSec: state.tracking.gate.cycleSec,
+                            activeSec: state.tracking.gate.activeSec,
+                            effectiveCycle: state.tracking.gate.effectiveCycle,
+                            effectiveActive: state.tracking.gate.effectiveActive
+                        }
                     }
                 }
             };
@@ -2425,6 +2915,57 @@
             c.bg = state.bg;
             c.charset = state.charset;
             c.mode = state.colorMode;
+        }
+
+        function setupMobileSidebarMenus() {
+            const left = document.getElementById('sidebar-left');
+            const right = document.getElementById('sidebar-right');
+            const backdrop = document.getElementById('mobile-sidebar-backdrop');
+            const btnL = document.getElementById('btn-mobile-menu-left');
+            const btnR = document.getElementById('btn-mobile-menu-right');
+            if (!left || !right || !backdrop || !btnL || !btnR) return;
+            const mq = window.matchMedia('(min-width: 1024px)');
+            function closeAll() {
+                left.classList.remove('sidebar-mobile-open');
+                right.classList.remove('sidebar-mobile-open');
+                backdrop.classList.remove('sidebar-mobile-backdrop-visible');
+                backdrop.setAttribute('aria-hidden', 'true');
+                btnL.setAttribute('aria-expanded', 'false');
+                btnR.setAttribute('aria-expanded', 'false');
+                document.body.classList.remove('mobile-drawer-open');
+            }
+            function syncFromMedia() {
+                if (mq.matches) closeAll();
+            }
+            mq.addEventListener('change', syncFromMedia);
+            btnL.addEventListener('click', () => {
+                if (mq.matches) return;
+                const wasOpen = left.classList.contains('sidebar-mobile-open');
+                closeAll();
+                if (!wasOpen) {
+                    left.classList.add('sidebar-mobile-open');
+                    backdrop.classList.add('sidebar-mobile-backdrop-visible');
+                    backdrop.setAttribute('aria-hidden', 'false');
+                    btnL.setAttribute('aria-expanded', 'true');
+                    document.body.classList.add('mobile-drawer-open');
+                }
+            });
+            btnR.addEventListener('click', () => {
+                if (mq.matches) return;
+                const wasOpen = right.classList.contains('sidebar-mobile-open');
+                closeAll();
+                if (!wasOpen) {
+                    right.classList.add('sidebar-mobile-open');
+                    backdrop.classList.add('sidebar-mobile-backdrop-visible');
+                    backdrop.setAttribute('aria-hidden', 'false');
+                    btnR.setAttribute('aria-expanded', 'true');
+                    document.body.classList.add('mobile-drawer-open');
+                }
+            });
+            backdrop.addEventListener('click', closeAll);
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') closeAll();
+            });
         }
 
         function setupListeners() {
@@ -2751,16 +3292,12 @@
             };
             document.getElementById('btn-audio-fx-density').onclick = (e) => {
                 state.audio.fxDensity = !state.audio.fxDensity;
-                if (state.audio.fxDensity) {
-                    let tgt = state.audio.level;
-                    if (state.audio.fxDensityReversed) tgt = 1 - tgt;
-                    state.audio.densityDriveSmoothed = tgt;
-                }
+                if (state.audio.fxDensity) state.audio.densityDriveSmoothed = audioFxDensityTarget01();
                 updateOnOffToggleBtn(e.currentTarget, state.audio.fxDensity);
             };
             document.getElementById('btn-audio-fx-density-reverse').onclick = (e) => {
                 state.audio.fxDensityReversed = !state.audio.fxDensityReversed;
-                state.audio.densityDriveSmoothed = 1 - state.audio.densityDriveSmoothed;
+                state.audio.densityDriveSmoothed = audioFxDensityTarget01();
                 updateBrutalLatchedBtn(e.currentTarget, state.audio.fxDensityReversed);
             };
             const syncAudioDensityEaseLabel = () => {
@@ -2802,6 +3339,152 @@
             syncAudioBlendLfoRateLabel();
             updateBrutalLfoInlineBtn(document.getElementById('lfo-audio-blend-btn'), state.audio.blendLfo.active);
             updateAutoWaveBtn(document.getElementById('btn-lfo-audio-blend-auto'), state.audio.blendLfo.autoWave);
+
+            const wireTrackingToggle = (id, key) => {
+                document.getElementById(id).onclick = (e) => {
+                    state.tracking[key] = !state.tracking[key];
+                    updateOnOffToggleBtn(e.currentTarget, state.tracking[key]);
+                    if (!trackingAnyEnabled()) resetTrackingPipeline();
+                    else ensureTrackingInitialized().catch(() => {});
+                };
+            };
+            normalizeTrackingPreset();
+            document.getElementById('btn-tracking-section').onclick = (e) => {
+                state.tracking.enabled = !state.tracking.enabled;
+                updateOnOffToggleBtn(e.currentTarget, state.tracking.enabled);
+                syncCollapsiblePanels();
+                if (!trackingAnyEnabled()) resetTrackingPipeline();
+                else ensureTrackingInitialized().catch(() => {});
+            };
+            updateOnOffToggleBtn(document.getElementById('btn-tracking-section'), state.tracking.enabled);
+            wireTrackingToggle('btn-tracking-objects', 'objects');
+            wireTrackingToggle('btn-tracking-face', 'face');
+            wireTrackingToggle('btn-tracking-hands', 'hands');
+            updateOnOffToggleBtn(document.getElementById('btn-tracking-objects'), state.tracking.objects);
+            updateOnOffToggleBtn(document.getElementById('btn-tracking-face'), state.tracking.face);
+            updateOnOffToggleBtn(document.getElementById('btn-tracking-hands'), state.tracking.hands);
+            loadTrackingCustomMarkers();
+            renderTrackingCustomMarkerChips();
+            const trackingPresetsContainer = document.getElementById('tracking-presets-container');
+            if (trackingPresetsContainer) {
+                trackingPresetsContainer.addEventListener('click', (e) => {
+                    if (e.target.closest('[data-tracking-delete-marker]')) return;
+                    const chip = e.target.closest('[data-tracking-chip]');
+                    if (!chip || !trackingPresetsContainer.contains(chip)) return;
+                    const v = chip.getAttribute('data-tracking-chip');
+                    if (!v) return;
+                    if (v.startsWith('emoji:')) {
+                        state.tracking.preset = 'text';
+                        state.tracking.markerText = v.slice(6);
+                    } else {
+                        state.tracking.preset = v;
+                    }
+                    const mt = document.getElementById('tracking-marker-text');
+                    if (mt) mt.value = state.tracking.markerText;
+                    syncTrackingPresetChips();
+                });
+            }
+            const addCustomMarker = () => {
+                const inp = document.getElementById('tracking-custom-marker-input');
+                if (!inp) return;
+                addTrackingCustomMarker(inp.value);
+                inp.value = '';
+            };
+            const btnAddCustom = document.getElementById('btn-tracking-custom-marker-add');
+            if (btnAddCustom) btnAddCustom.onclick = addCustomMarker;
+            const inpCustom = document.getElementById('tracking-custom-marker-input');
+            if (inpCustom) {
+                inpCustom.onkeydown = (e) => {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        addCustomMarker();
+                    }
+                };
+            }
+            document.getElementById('tracking-marker-text').oninput = (e) => {
+                state.tracking.markerText = e.target.value;
+                syncTrackingPresetChips();
+            };
+            document.getElementById('tracking-marker-text').value = state.tracking.markerText;
+            syncTrackingPresetChips();
+            document.getElementById('lfo-tracking-marker-btn').onclick = (e) => {
+                state.tracking.markerLfo.active = !state.tracking.markerLfo.active;
+                if (state.tracking.markerLfo.active) state.tracking._markerLfoStepIdx = -1;
+                updateBrutalLfoInlineBtn(e.currentTarget, state.tracking.markerLfo.active);
+            };
+            document.getElementById('lfo-tracking-marker-shape').onchange = (ev) => {
+                state.tracking.markerLfo.shape = ev.target.value;
+                syncTrackingMarkerLfoRateLabel();
+            };
+            document.getElementById('lfo-tracking-marker-rate').oninput = (ev) => {
+                const v = parseFloat(ev.target.value);
+                state.tracking.markerLfo.rate = Number.isFinite(v)
+                    ? Math.max(0.05, Math.min(3, v))
+                    : 1.1;
+            };
+            document.getElementById('btn-lfo-tracking-marker-auto').onclick = (e) => {
+                state.tracking.markerLfo.autoWave = !state.tracking.markerLfo.autoWave;
+                state.tracking.markerLfo.waveTimer = 0;
+                updateAutoWaveBtn(e.currentTarget, state.tracking.markerLfo.autoWave);
+            };
+            document.getElementById('lfo-tracking-marker-wave-cycle').oninput = (ev) => {
+                const v = parseInt(ev.target.value, 10);
+                const sec = Number.isFinite(v) ? Math.max(1, Math.min(12, v)) : 3;
+                state.tracking.markerLfo.waveCycleSec = sec;
+                state.tracking.markerLfo.waveTimer = 0;
+                document.getElementById('val-lfo-tracking-marker-wave-cycle').textContent = sec + 's';
+            };
+            document.getElementById('lfo-tracking-marker-shape').value = state.tracking.markerLfo.shape;
+            document.getElementById('lfo-tracking-marker-rate').value = String(state.tracking.markerLfo.rate);
+            document.getElementById('lfo-tracking-marker-wave-cycle').value = String(state.tracking.markerLfo.waveCycleSec);
+            document.getElementById('val-lfo-tracking-marker-wave-cycle').textContent = state.tracking.markerLfo.waveCycleSec + 's';
+            syncTrackingMarkerLfoRateLabel();
+            updateBrutalLfoInlineBtn(document.getElementById('lfo-tracking-marker-btn'), state.tracking.markerLfo.active);
+            updateAutoWaveBtn(document.getElementById('btn-lfo-tracking-marker-auto'), state.tracking.markerLfo.autoWave);
+            document.getElementById('btn-tracking-gate-enable').onclick = (e) => {
+                state.tracking.gate.enabled = !state.tracking.gate.enabled;
+                state.tracking.gate.timer = 0;
+                e.currentTarget.textContent = state.tracking.gate.enabled ? 'ON' : 'OFF';
+                updateBrutalLatchedBtn(e.currentTarget, state.tracking.gate.enabled);
+            };
+            document.getElementById('btn-tracking-gate-jitter').onclick = (e) => {
+                state.tracking.gate.jitter = !state.tracking.gate.jitter;
+                state.tracking.gate.timer = 0;
+                updateJitterButton(e.currentTarget, state.tracking.gate.jitter);
+                if (state.tracking.gate.jitter) {
+                    pickRandomTrackingGateDurations();
+                } else {
+                    state.tracking.gate.effectiveCycle = state.tracking.gate.cycleSec;
+                    state.tracking.gate.effectiveActive = state.tracking.gate.activeSec;
+                    clampTrackingGateActiveToCycle();
+                }
+                syncTrackingGateIntervalSliderUI();
+            };
+            document.getElementById('param-tracking-gate-cycle').oninput = (ev) => {
+                if (state.tracking.gate.jitter) return;
+                state.tracking.gate.cycleSec = parseInt(ev.target.value, 10);
+                state.tracking.gate.effectiveCycle = state.tracking.gate.cycleSec;
+                clampTrackingGateActiveToCycle();
+                document.getElementById('val-tracking-gate-cycle').textContent = formatGateSec(state.tracking.gate.cycleSec);
+            };
+            document.getElementById('param-tracking-gate-active').oninput = (ev) => {
+                if (state.tracking.gate.jitter) return;
+                state.tracking.gate.activeSec = parseFloat(ev.target.value);
+                state.tracking.gate.effectiveActive = Math.min(state.tracking.gate.activeSec, state.tracking.gate.effectiveCycle * 0.99);
+                document.getElementById('val-tracking-gate-active').textContent = formatGateSec(state.tracking.gate.activeSec);
+            };
+            document.getElementById('param-tracking-gate-cycle').value = String(state.tracking.gate.cycleSec);
+            document.getElementById('param-tracking-gate-active').value = String(state.tracking.gate.activeSec);
+            document.getElementById('val-tracking-gate-cycle').textContent = formatGateSec(state.tracking.gate.cycleSec);
+            document.getElementById('val-tracking-gate-active').textContent = formatGateSec(state.tracking.gate.activeSec);
+            document.getElementById('btn-tracking-gate-enable').textContent = state.tracking.gate.enabled ? 'ON' : 'OFF';
+            updateBrutalLatchedBtn(document.getElementById('btn-tracking-gate-enable'), state.tracking.gate.enabled);
+            updateJitterButton(document.getElementById('btn-tracking-gate-jitter'), state.tracking.gate.jitter);
+            syncTrackingGateIntervalSliderUI();
+            document.getElementById('tracking-color').oninput = (e) => {
+                state.tracking.color = e.target.value;
+            };
+            document.getElementById('tracking-color').value = state.tracking.color;
 
             document.getElementById('btn-d3-toggle').onclick = (e) => {
                 state.d3.enabled = !state.d3.enabled;
@@ -2969,6 +3652,7 @@
             if (delAllBtn) delAllBtn.onclick = () => deleteAllPlaylistItems();
 
             syncCollapsiblePanels();
+            setupMobileSidebarMenus();
         }
 
         async function startCamera(deviceId = null) {
@@ -3302,18 +3986,19 @@
 
             if (state.audio.active && state.audio.fxDensity) {
                 const span = Math.max(0, state.resMax - state.resMin);
-                let target = state.audio.level;
-                if (state.audio.fxDensityReversed) target = 1 - target;
-                const easeSec = Math.max(0, state.audio.fxDensityEaseSec);
-                if (easeSec <= 1e-6) {
-                    state.audio.densityDriveSmoothed = target;
+                const AUDIO_DENSITY_MAG = 1000;
+                const d = clamp01(state.audio.densityDrive01);
+                const dMap = state.audio.fxDensityReversed ? (1 - d) : d;
+                state.audio.densityDriveSmoothed = dMap;
+                let raw;
+                if (span <= 0) {
+                    const spreadF = 100;
+                    const rHiF = Math.min(250, state.resMin + spreadF);
+                    const maxF = rHiF - state.resMin;
+                    raw = state.resMin + Math.min(Math.round(dMap * maxF * AUDIO_DENSITY_MAG), maxF);
                 } else {
-                    const tau = Math.max(0.02, easeSec);
-                    const k = 1 - Math.exp(-deltaSecs / tau);
-                    state.audio.densityDriveSmoothed += (target - state.audio.densityDriveSmoothed) * k;
+                    raw = state.resMin + Math.min(Math.round(dMap * span * AUDIO_DENSITY_MAG), span);
                 }
-                const t = state.audio.densityDriveSmoothed;
-                const raw = span <= 0 ? state.resMin : state.resMin + Math.round(t * span);
                 state.res = clampResInt(raw);
                 document.getElementById('val-res').textContent = state.res;
             }
@@ -3410,6 +4095,60 @@
                 state.glitch.gateOpen = state.glitch.gate.timer < a;
             } else {
                 state.glitch.gateOpen = true;
+            }
+
+            if (state.tracking.enabled && state.tracking.gate.enabled) {
+                let c = Math.max(0.5, Number(state.tracking.gate.effectiveCycle) || 15);
+                let a = Math.min(Math.max(0.05, Number(state.tracking.gate.effectiveActive) || 4), c * 0.99);
+                state.tracking.gate.timer += deltaSecs;
+                while (state.tracking.gate.timer >= c) {
+                    state.tracking.gate.timer -= c;
+                    if (state.tracking.gate.jitter) {
+                        pickRandomTrackingGateDurations();
+                        c = Math.max(0.5, Number(state.tracking.gate.effectiveCycle) || 15);
+                    }
+                }
+                c = Math.max(0.5, Number(state.tracking.gate.effectiveCycle) || 15);
+                a = Math.min(Math.max(0.05, Number(state.tracking.gate.effectiveActive) || 4), c * 0.99);
+                state.tracking.gateOpen = state.tracking.gate.timer < a;
+            } else {
+                state.tracking.gateOpen = true;
+            }
+
+            const mlTr = state.tracking.markerLfo;
+            if (mlTr && mlTr.active) {
+                const wc = Math.max(0.5, Math.min(30, Number(mlTr.waveCycleSec) || 3));
+                if (mlTr.autoWave) {
+                    mlTr.waveTimer += deltaSecs;
+                    while (mlTr.waveTimer >= wc) {
+                        mlTr.waveTimer -= wc;
+                        const i = Math.max(0, LFO_WAVE_SHAPES.indexOf(mlTr.shape));
+                        mlTr.shape = LFO_WAVE_SHAPES[(i + 1) % LFO_WAVE_SHAPES.length];
+                        const sel = document.getElementById('lfo-tracking-marker-shape');
+                        if (sel) sel.value = mlTr.shape;
+                        syncTrackingMarkerLfoRateLabel();
+                    }
+                }
+                const lfoSteps = getTrackingLfoSteps();
+                const nSteps = lfoSteps.length;
+                const rate = Math.max(0.05, Math.min(6, Number(mlTr.rate) || 1));
+                let t01;
+                if (mlTr.shape === 'noise') {
+                    t01 = stepSmoothedNoise('trackingMarker', deltaSecs, 0.25 + rate * 0.35);
+                } else {
+                    t01 = (time * rate * TRACKING_MARKER_LFO_PHASE_K) % 1;
+                    if (t01 < 0) t01 += 1;
+                }
+                const idx = Math.min(nSteps - 1, Math.floor(t01 * nSteps));
+                const step = lfoSteps[idx];
+                state.tracking.preset = step.preset;
+                if (step.markerText != null) state.tracking.markerText = step.markerText;
+                if (idx !== state.tracking._markerLfoStepIdx) {
+                    state.tracking._markerLfoStepIdx = idx;
+                    const mt = document.getElementById('tracking-marker-text');
+                    if (mt) mt.value = state.tracking.markerText;
+                    syncTrackingPresetChips();
+                }
             }
 
             if (state.lfo.charset.active) {
@@ -3607,6 +4346,8 @@
             if (d3b) d3b.classList.toggle('hidden', !state.d3.enabled);
             const gb = document.getElementById('glitch-section-body');
             if (gb) gb.classList.toggle('hidden', !state.glitch.active);
+            const tb = document.getElementById('tracking-section-body');
+            if (tb) tb.classList.toggle('hidden', !state.tracking.enabled);
             const ab = document.getElementById('audio-section-body');
             if (ab) ab.classList.toggle('hidden', !state.audio.active);
             const db = document.getElementById('density-lfo-body');
@@ -3758,6 +4499,342 @@
                 }
             }
             ctx.putImageData(id, 0, 0);
+        }
+
+        const MEDIAPIPE_TASKS_VISION_VER = '0.10.14';
+        const MEDIAPIPE_WASM_URL = `https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@${MEDIAPIPE_TASKS_VISION_VER}/wasm`;
+        const MEDIAPIPE_ESM_URL = `https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@${MEDIAPIPE_TASKS_VISION_VER}/+esm`;
+        const TRACKING_MODEL_FACE = 'https://storage.googleapis.com/mediapipe-models/face_detector/blaze_face_short_range/float16/latest/blaze_face_short_range.tflite';
+        const TRACKING_MODEL_OBJECT = 'https://storage.googleapis.com/mediapipe-models/object_detector/efficientdet_lite0/float16/latest/efficientdet_lite0.tflite';
+        const TRACKING_MODEL_HAND = 'https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/latest/hand_landmarker.task';
+
+        let trackingVisionModule = null;
+        let trackingFilesetResolver = null;
+        let trackingFaceDetector = null;
+        let trackingObjectDetector = null;
+        let trackingHandLandmarker = null;
+        let trackingInitPromise = null;
+        let trackingDetectBusy = false;
+        let trackingFrameTick = 0;
+        let trackingLastVideoTime = -1;
+        const trackingOverlayCache = {
+            faces: [],
+            hands: [],
+            objects: [],
+            outW: 0,
+            outH: 0
+        };
+
+        function normalizeTrackingPreset() {
+            const t = state.tracking;
+            if (!t) return;
+            const p = t.preset || 'rect';
+            if (p.startsWith('text:')) {
+                t.markerText = p.slice(5) || t.markerText || '🥀';
+                t.preset = 'text';
+            }
+        }
+
+        function trackingAnyEnabled() {
+            const t = state.tracking;
+            return !!(t && t.enabled && (t.objects || t.face || t.hands));
+        }
+
+        function trackingOverlayInSchedule() {
+            const t = state.tracking;
+            if (!t || !t.gate || !t.gate.enabled) return true;
+            return !!t.gateOpen;
+        }
+
+        function setTrackingStatus(msg, isError) {
+            const el = document.getElementById('tracking-status');
+            if (!el) return;
+            if (!msg) {
+                el.classList.add('hidden');
+                el.textContent = '';
+                return;
+            }
+            el.classList.remove('hidden');
+            el.textContent = msg;
+            el.classList.toggle('text-red-400', !!isError);
+            el.classList.toggle('text-neutral-600', !isError);
+        }
+
+        function getTrackingSourceSize(el) {
+            if (!el) return { w: 1, h: 1 };
+            if (el instanceof HTMLVideoElement) {
+                const w = el.videoWidth || 1;
+                const h = el.videoHeight || 1;
+                return { w, h };
+            }
+            if (el instanceof HTMLCanvasElement) {
+                return { w: el.width || 1, h: el.height || 1 };
+            }
+            return { w: 1, h: 1 };
+        }
+
+        function mpBoxToCanvasRect(box, srcW, srcH, outW, outH) {
+            const ox = box.originX != null ? box.originX : (box.xMin != null ? box.xMin : 0);
+            const oy = box.originY != null ? box.originY : (box.yMin != null ? box.yMin : 0);
+            const bw = box.width != null ? box.width : (box.xMax != null && box.xMin != null ? box.xMax - box.xMin : 0);
+            const bh = box.height != null ? box.height : (box.yMax != null && box.yMin != null ? box.yMax - box.yMin : 0);
+            const sx = outW / Math.max(1, srcW);
+            const sy = outH / Math.max(1, srcH);
+            return { x: ox * sx, y: oy * sy, w: bw * sx, h: bh * sy };
+        }
+
+        function handLandmarksToCanvasRect(landmarks, outW, outH) {
+            let minX = 1;
+            let minY = 1;
+            let maxX = 0;
+            let maxY = 0;
+            for (let i = 0; i < landmarks.length; i++) {
+                const lm = landmarks[i];
+                const x = lm.x;
+                const y = lm.y;
+                minX = Math.min(minX, x);
+                minY = Math.min(minY, y);
+                maxX = Math.max(maxX, x);
+                maxY = Math.max(maxY, y);
+            }
+            const pad = 0.02;
+            minX = Math.max(0, minX - pad);
+            minY = Math.max(0, minY - pad);
+            maxX = Math.min(1, maxX + pad);
+            maxY = Math.min(1, maxY + pad);
+            return {
+                x: minX * outW,
+                y: minY * outH,
+                w: (maxX - minX) * outW,
+                h: (maxY - minY) * outH
+            };
+        }
+
+        function drawTrackingPreset(ctx, preset, x, y, w, h, color, label) {
+            const lw = Math.max(1, Math.min(w, h) * 0.025);
+            ctx.save();
+            ctx.strokeStyle = color;
+            ctx.fillStyle = color;
+            ctx.lineWidth = lw;
+            if (preset === 'text' || preset.startsWith('text:')) {
+                const ch =
+                    preset === 'text'
+                        ? (state.tracking.markerText || '◉').trim() || '◉'
+                        : preset.slice(5) || '◉';
+                const fs = Math.max(10, Math.min(w, h) * 0.42);
+                ctx.font = `bold ${fs}px 'Fira Code', ui-monospace, monospace, 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji'`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(ch, x + w / 2, y + h / 2);
+            } else if (preset === 'circle') {
+                const cx = x + w / 2;
+                const cy = y + h / 2;
+                const r = Math.min(w, h) / 2;
+                ctx.beginPath();
+                ctx.arc(cx, cy, r, 0, Math.PI * 2);
+                ctx.stroke();
+            } else if (preset === 'rect_x') {
+                ctx.strokeRect(x, y, w, h);
+                ctx.beginPath();
+                ctx.moveTo(x, y);
+                ctx.lineTo(x + w, y + h);
+                ctx.moveTo(x + w, y);
+                ctx.lineTo(x, y + h);
+                ctx.stroke();
+            } else {
+                ctx.strokeRect(x, y, w, h);
+            }
+            if (label) {
+                ctx.font = `bold ${Math.max(8, lw * 4)}px 'Fira Code', ui-monospace, monospace`;
+                ctx.textAlign = 'left';
+                ctx.textBaseline = 'bottom';
+                ctx.fillText(String(label), x + 2, y - 2);
+            }
+            ctx.restore();
+        }
+
+        function drawTrackingOverlays(ctx) {
+            if (!trackingAnyEnabled() || !trackingOverlayInSchedule()) return;
+            const { outW, outH, faces, hands, objects } = trackingOverlayCache;
+            if (!outW || !outH) return;
+            const preset = state.tracking.preset || 'rect';
+            const color = state.tracking.color || '#00ff88';
+            for (let i = 0; i < faces.length; i++) {
+                const r = faces[i];
+                drawTrackingPreset(ctx, preset, r.x, r.y, r.w, r.h, color, null);
+            }
+            for (let i = 0; i < hands.length; i++) {
+                const r = hands[i];
+                drawTrackingPreset(ctx, preset, r.x, r.y, r.w, r.h, color, null);
+            }
+            for (let i = 0; i < objects.length; i++) {
+                const o = objects[i];
+                drawTrackingPreset(ctx, preset, o.x, o.y, o.w, o.h, color, o.label || null);
+            }
+        }
+
+        async function ensureTrackingInitialized() {
+            if (trackingInitPromise) return trackingInitPromise;
+            if (!trackingAnyEnabled()) return;
+            setTrackingStatus('Loading MediaPipe…');
+            trackingInitPromise = (async () => {
+                const raw = await import(MEDIAPIPE_ESM_URL);
+                trackingVisionModule = raw.default ?? raw;
+                const { FilesetResolver } = trackingVisionModule;
+                trackingFilesetResolver = await FilesetResolver.forVisionTasks(MEDIAPIPE_WASM_URL);
+                setTrackingStatus('');
+            })().catch((err) => {
+                console.warn('MediaPipe vision load failed', err);
+                setTrackingStatus('Vision load failed (network?)', true);
+                trackingInitPromise = null;
+                throw err;
+            });
+            return trackingInitPromise;
+        }
+
+        function trackingRunningModeVideo() {
+            const m = trackingVisionModule;
+            const RM = m && m.RunningMode;
+            return RM && RM.VIDEO != null ? RM.VIDEO : 'VIDEO';
+        }
+
+        async function ensureFaceDetector() {
+            await ensureTrackingInitialized();
+            if (trackingFaceDetector) return;
+            const { FaceDetector } = trackingVisionModule;
+            trackingFaceDetector = await FaceDetector.createFromOptions(trackingFilesetResolver, {
+                baseOptions: { modelAssetPath: TRACKING_MODEL_FACE },
+                runningMode: trackingRunningModeVideo()
+            });
+        }
+
+        async function ensureObjectDetector() {
+            await ensureTrackingInitialized();
+            if (trackingObjectDetector) return;
+            const { ObjectDetector } = trackingVisionModule;
+            trackingObjectDetector = await ObjectDetector.createFromOptions(trackingFilesetResolver, {
+                baseOptions: { modelAssetPath: TRACKING_MODEL_OBJECT },
+                runningMode: trackingRunningModeVideo(),
+                scoreThreshold: 0.2,
+                maxResults: 8
+            });
+        }
+
+        async function ensureHandLandmarker() {
+            await ensureTrackingInitialized();
+            if (trackingHandLandmarker) return;
+            const { HandLandmarker } = trackingVisionModule;
+            trackingHandLandmarker = await HandLandmarker.createFromOptions(trackingFilesetResolver, {
+                baseOptions: { modelAssetPath: TRACKING_MODEL_HAND },
+                runningMode: trackingRunningModeVideo(),
+                numHands: 2
+            });
+        }
+
+        function disposeTrackingDetectors() {
+            try { trackingFaceDetector?.close(); } catch (e) { /* noop */ }
+            try { trackingObjectDetector?.close(); } catch (e) { /* noop */ }
+            try { trackingHandLandmarker?.close(); } catch (e) { /* noop */ }
+            trackingFaceDetector = null;
+            trackingObjectDetector = null;
+            trackingHandLandmarker = null;
+            trackingOverlayCache.faces = [];
+            trackingOverlayCache.hands = [];
+            trackingOverlayCache.objects = [];
+        }
+
+        function resetTrackingPipeline() {
+            disposeTrackingDetectors();
+            trackingInitPromise = null;
+            trackingVisionModule = null;
+            trackingFilesetResolver = null;
+            trackingLastVideoTime = -1;
+        }
+
+        async function runTrackingInference(activeSourceElement, nowMs) {
+            if (!trackingAnyEnabled() || !activeSourceElement) return;
+            const outW = outputCanvas.width;
+            const outH = outputCanvas.height;
+            const { w: srcW, h: srcH } = getTrackingSourceSize(activeSourceElement);
+            if (srcW < 2 || srcH < 2 || outW < 2 || outH < 2) return;
+
+            const ts = nowMs;
+            if (activeSourceElement instanceof HTMLVideoElement) {
+                if (activeSourceElement.currentTime === trackingLastVideoTime) return;
+                trackingLastVideoTime = activeSourceElement.currentTime;
+            }
+
+            try {
+                await ensureTrackingInitialized();
+                if (state.tracking.face) await ensureFaceDetector();
+                if (state.tracking.objects) await ensureObjectDetector();
+                if (state.tracking.hands) await ensureHandLandmarker();
+
+                const faces = [];
+                const hands = [];
+                const objects = [];
+
+                if (state.tracking.face && trackingFaceDetector) {
+                    const res = trackingFaceDetector.detectForVideo(activeSourceElement, ts);
+                    const dets = res.detections || res.faceDetections || [];
+                    for (let i = 0; i < dets.length; i++) {
+                        const det = dets[i];
+                        const bb = det.boundingBox;
+                        if (bb) faces.push(mpBoxToCanvasRect(bb, srcW, srcH, outW, outH));
+                    }
+                }
+                if (state.tracking.objects && trackingObjectDetector) {
+                    const res = trackingObjectDetector.detectForVideo(activeSourceElement, ts);
+                    const dets = res.detections || [];
+                    for (let i = 0; i < dets.length; i++) {
+                        const det = dets[i];
+                        const bb = det.boundingBox;
+                        if (!bb) continue;
+                        const r = mpBoxToCanvasRect(bb, srcW, srcH, outW, outH);
+                        let label = '';
+                        const cats = det.categories;
+                        if (cats && cats.length) {
+                            const c0 = cats[0];
+                            label = c0.categoryName || c0.displayName || c0.category || '';
+                        }
+                        objects.push({ x: r.x, y: r.y, w: r.w, h: r.h, label });
+                    }
+                }
+                if (state.tracking.hands && trackingHandLandmarker) {
+                    const res = trackingHandLandmarker.detectForVideo(activeSourceElement, ts);
+                    const lmList = res.landmarks || [];
+                    for (let h = 0; h < lmList.length; h++) {
+                        const lm = lmList[h];
+                        if (lm && lm.length) hands.push(handLandmarksToCanvasRect(lm, outW, outH));
+                    }
+                }
+
+                trackingOverlayCache.faces = faces;
+                trackingOverlayCache.hands = hands;
+                trackingOverlayCache.objects = objects;
+                trackingOverlayCache.outW = outW;
+                trackingOverlayCache.outH = outH;
+            } catch (e) {
+                console.warn('Tracking inference', e);
+                setTrackingStatus(String(e.message || e).slice(0, 80), true);
+            }
+        }
+
+        function queueTrackingInference(activeSourceElement, nowMs) {
+            if (!trackingAnyEnabled() || !trackingOverlayInSchedule() || !activeSourceElement) return;
+            if (trackingDetectBusy) return;
+            trackingFrameTick++;
+            if (trackingFrameTick % 2 !== 0) return;
+            trackingDetectBusy = true;
+            queueMicrotask(() => {
+                (async () => {
+                    try {
+                        await runTrackingInference(activeSourceElement, nowMs);
+                    } finally {
+                        trackingDetectBusy = false;
+                    }
+                })();
+            });
         }
 
         function processFrame(now, deltaMs) {
@@ -3978,6 +5055,9 @@
                     }
                 }
             }
+
+            drawTrackingOverlays(outputCtx);
+            queueTrackingInference(activeSourceElement, now);
         }
 
         function renderLoop(now) {
