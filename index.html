@@ -566,6 +566,37 @@
             text-transform: none;
             letter-spacing: 0;
         }
+        #controls-panel .tracking-preset-chip.tracking-marker-img-chip {
+            padding: 2px 6px;
+            min-width: 2rem;
+        }
+        #controls-panel .tracking-preset-chip.tracking-marker-img-chip img {
+            display: block;
+            max-height: 18px;
+            max-width: 32px;
+            object-fit: contain;
+        }
+        #tracking-marker-modal.tracking-marker-modal-open {
+            display: flex !important;
+        }
+        #controls-panel #btn-tracking-marker-add,
+        #controls-panel #btn-tracking-marker-edit {
+            font-size: 8px;
+            font-weight: 900;
+            padding: 5px 10px;
+            letter-spacing: 0.04em;
+            border-color: #a3a3a3;
+            color: #fafafa;
+        }
+        #controls-panel #btn-tracking-marker-add:hover,
+        #controls-panel #btn-tracking-marker-edit:hover:not(:disabled) {
+            border-color: #fafafa;
+        }
+        #controls-panel #btn-tracking-marker-edit:disabled {
+            opacity: 0.35;
+            border-color: #525252;
+            color: #737373;
+        }
     </style>
 </head>
 <body class="flex flex-col h-screen min-h-0 overflow-hidden">
@@ -1064,7 +1095,7 @@
                         </div>
                     </div>
                     <div id="tracking-section-body" class="hidden">
-                        <div class="border-2 border-neutral-800 rounded-none px-1.5 py-1.5 mt-1 space-y-2">
+                        <div class="border-2 border-neutral-800 rounded-none px-1.5 py-1.5 mt-1">
                             <div class="flex flex-col gap-1">
                                 <div class="flex items-center justify-between gap-2 min-w-0">
                                     <span class="fira text-[7px] text-neutral-500 font-bold shrink-0" title="COCO-style boxes">Objects</span>
@@ -1079,33 +1110,31 @@
                                     <button type="button" id="btn-tracking-hands" class="btn-onoff btn-onoff-compact text-[7px] shrink-0" title="Hand landmarks / boxes">OFF</button>
                                 </div>
                             </div>
-                            <div class="pt-1 border-t border-neutral-800 flex flex-col gap-1">
+                        </div>
+                        <div class="mt-2 space-y-2">
+                                <div class="pt-1 border-t border-neutral-800 flex flex-col gap-1">
                                 <span class="fira text-[7px] text-neutral-600">Presets</span>
                                 <div id="tracking-presets-container" class="flex flex-col gap-1">
-                                    <div class="flex flex-wrap gap-1">
-                                        <button type="button" class="tracking-preset-chip" data-tracking-chip="rect" id="btn-tracking-chip-rect" title="Rectangle">RECT</button>
-                                        <button type="button" class="tracking-preset-chip" data-tracking-chip="rect_x" id="btn-tracking-chip-rect-x" title="Rectangle + X">+X</button>
-                                        <button type="button" class="tracking-preset-chip" data-tracking-chip="circle" id="btn-tracking-chip-circle" title="Circle">○</button>
-                                        <button type="button" class="tracking-preset-chip tracking-emoji-chip" data-tracking-chip="emoji:🥀" id="btn-tracking-chip-e0" title="Wilted rose">🥀</button>
-                                        <button type="button" class="tracking-preset-chip tracking-emoji-chip" data-tracking-chip="emoji:👺" id="btn-tracking-chip-e1" title="Ogre">👺</button>
-                                        <button type="button" class="tracking-preset-chip tracking-emoji-chip" data-tracking-chip="emoji:🫠" id="btn-tracking-chip-e2" title="Melting face">🫠</button>
+                                    <div class="flex flex-wrap items-center gap-1 w-full min-w-0">
+                                        <div class="flex flex-wrap gap-1 items-center flex-1 min-w-0">
+                                            <button type="button" class="tracking-preset-chip" data-tracking-chip="rect" id="btn-tracking-chip-rect" title="Rectangle">RECT</button>
+                                            <button type="button" class="tracking-preset-chip" data-tracking-chip="rect_x" id="btn-tracking-chip-rect-x" title="Rectangle + X">+X</button>
+                                            <button type="button" class="tracking-preset-chip" data-tracking-chip="circle" id="btn-tracking-chip-circle" title="Circle">○</button>
+                                        </div>
+                                        <div class="flex gap-1 items-center shrink-0 ml-auto">
+                                            <button type="button" class="tracking-preset-chip" id="btn-tracking-marker-edit" title="Edit selected marker" disabled>EDIT</button>
+                                            <button type="button" class="tracking-preset-chip" id="btn-tracking-marker-add" title="Add text or image marker">ADD</button>
+                                        </div>
                                     </div>
                                     <div id="tracking-custom-marker-chips" class="flex flex-wrap gap-1 items-center" aria-live="polite"></div>
-                                    <div class="flex flex-wrap gap-1 items-center">
-                                        <input type="text" id="tracking-custom-marker-input" maxlength="16" placeholder="Custom text or emoji" autocomplete="off" spellcheck="false" class="flex-1 min-w-0 text-[9px] bg-black border-2 border-neutral-700 rounded-none px-1 py-0.5 text-neutral-200 font-mono outline-none focus:border-white placeholder:text-neutral-600" title="Add a marker; appears as a chip below">
-                                        <button type="button" id="btn-tracking-custom-marker-add" class="fira text-[7px] px-1 py-0.5 rounded-none border-2 border-neutral-600 bg-black text-neutral-300 hover:border-white shrink-0" title="Save as preset chip">Add</button>
+                                </div>
+                                <div class="control-row-head mt-2">
+                                    <span class="knob-label min-w-0 truncate">Switch markers</span>
+                                    <div class="control-row-tools">
+                                        <button type="button" id="lfo-tracking-marker-btn" class="btn-onoff" title="ON: cycles Rectangle → Rect+X → Circle → Text with each Quick preset glyph (wave + rate)">OFF</button>
                                     </div>
                                 </div>
-                                <div id="tracking-marker-input-wrap" class="hidden flex flex-col gap-0.5 mt-0.5">
-                                    <label class="fira text-[7px] text-neutral-600 block" for="tracking-marker-text">Emoji</label>
-                                    <input type="text" id="tracking-marker-text" maxlength="16" value="🥀" autocomplete="off" spellcheck="false" class="w-full text-[9px] bg-black border-2 border-neutral-600 rounded-none px-1 py-0.5 text-neutral-200 font-mono outline-none focus:border-white" title="Edit the selected preset emoji">
-                                </div>
-                                <div class="pt-1 border-t border-neutral-800 flex flex-col gap-1">
-                                    <div class="flex flex-wrap items-center gap-1">
-                                        <span class="fira text-[7px] text-neutral-600">Style + marker LFO</span>
-                                        <button type="button" id="lfo-tracking-marker-btn" class="brutal-lfo-inline text-[7px] bg-black px-1 py-0.5 rounded-none border-2 border-neutral-600" title="ON: cycles Rectangle → Rect+X → Circle → Text with each Quick preset glyph (wave + rate)">LFO</button>
-                                    </div>
-                                    <div id="tracking-marker-lfo-body" class="hidden flex flex-col gap-1">
+                                <div id="tracking-marker-lfo-body" class="hidden flex flex-col gap-1 mt-1">
                                     <div class="flex flex-wrap items-center gap-0.5">
                                         <select id="lfo-tracking-marker-shape" class="text-[7px] bg-black border-2 border-neutral-600 rounded-none px-0.5 py-0.5 text-neutral-300 outline-none focus:border-white max-w-[3.25rem]" title="Noise = random carousel; other = linear sweep. AUTO cycles Sin→Tri→…→Noise">
                                             <option value="sine">Sin</option><option value="triangle">Tri</option><option value="saw">Saw</option><option value="square">Sqr</option><option value="pulse">Pls</option><option value="noise">Nse</option>
@@ -1117,7 +1146,6 @@
                                         <button type="button" id="btn-lfo-tracking-marker-auto" class="text-[6px] font-black px-1 py-0.5 rounded-none border-2 border-neutral-600 bg-black text-neutral-500" title="Cycle wave shape (Sin→Tri→…→Noise) every N seconds">AUTO</button>
                                         <input type="range" id="lfo-tracking-marker-wave-cycle" min="1" max="12" step="1" value="3" class="w-10 h-1 bg-transparent rounded-none appearance-none" title="Seconds between wave-shape changes when AUTO is on">
                                         <span id="val-lfo-tracking-marker-wave-cycle" class="fira text-[6px] text-neutral-500 w-5">3s</span>
-                                    </div>
                                     </div>
                                 </div>
                                 <div class="flex items-center gap-2 flex-wrap">
@@ -1242,6 +1270,69 @@
         </aside>
     </main>
 
+    <div id="tracking-marker-modal" class="fixed inset-0 z-[200] hidden items-center justify-center p-3" aria-hidden="true">
+        <div class="absolute inset-0 bg-black/75 z-0" id="tracking-marker-modal-backdrop" aria-hidden="true"></div>
+        <div class="relative z-10 border-2 border-neutral-600 bg-[#0a0a0a] max-w-[min(100%,22rem)] w-full p-3 flex flex-col gap-2 shadow-[4px_4px_0_#000]" role="dialog" aria-modal="true" aria-labelledby="tracking-marker-modal-title">
+            <div class="flex items-start justify-between gap-2">
+                <h2 id="tracking-marker-modal-title" class="knob-label text-[10px]">Marker</h2>
+                <button type="button" id="btn-tracking-marker-modal-close" class="fira text-[10px] px-1.5 py-0.5 border-2 border-neutral-600 bg-black text-neutral-400 hover:border-white hover:text-white shrink-0" title="Close">×</button>
+            </div>
+            <div class="flex gap-1" role="group" aria-label="Marker type">
+                <button type="button" id="btn-tracking-marker-kind-image" class="flex-1 fira text-[8px] font-black py-1 border-2 border-neutral-600 bg-black text-neutral-200">Image</button>
+                <button type="button" id="btn-tracking-marker-kind-text" class="flex-1 fira text-[8px] font-black py-1 border-2 border-neutral-600 bg-black text-neutral-500">Text</button>
+            </div>
+            <div id="tracking-marker-modal-text-wrap" class="flex flex-col gap-1">
+                <label class="fira text-[7px] text-neutral-500" for="tracking-marker-modal-text">Text</label>
+                <textarea id="tracking-marker-modal-text" rows="2" maxlength="64" class="w-full text-[9px] bg-black border-2 border-neutral-600 rounded-none px-1.5 py-1 text-neutral-200 font-mono outline-none focus:border-white resize-y min-h-[2.5rem]" placeholder="Label or emoji"></textarea>
+            </div>
+            <div id="tracking-marker-modal-image-wrap" class="hidden flex flex-col gap-1">
+                <span class="fira text-[7px] text-neutral-500">Image (PNG, JPG, GIF, WebP)</span>
+                <div class="flex flex-wrap items-center gap-1">
+                    <input type="file" id="tracking-marker-modal-file" class="hidden" accept="image/*">
+                    <button type="button" id="btn-tracking-marker-modal-pick" class="fira text-[7px] px-1.5 py-0.5 border-2 border-neutral-600 bg-black text-neutral-300 hover:border-white">Choose file…</button>
+                    <span id="tracking-marker-modal-file-name" class="fira text-[6px] text-neutral-500 truncate flex-1 min-w-0"></span>
+                </div>
+                <div class="border-2 border-neutral-800 bg-black flex items-center justify-center min-h-[4rem] p-1">
+                    <img id="tracking-marker-modal-preview" alt="" class="max-h-24 max-w-full object-contain hidden">
+                    <span id="tracking-marker-modal-preview-empty" class="fira text-[7px] text-neutral-600">No image</span>
+                </div>
+                <div class="flex flex-col gap-0.5 mt-0.5">
+                    <label class="fira text-[7px] text-neutral-500" for="tracking-marker-modal-blend">Blend</label>
+                    <select id="tracking-marker-modal-blend" class="w-full text-[8px] bg-black border-2 border-neutral-600 rounded-none px-1 py-0.5 text-neutral-300 outline-none focus:border-white" title="Canvas composite for image marker">
+                        <option value="source-over">Normal</option>
+                        <option value="screen">Screen</option>
+                        <option value="multiply">Multiply</option>
+                        <option value="lighter">Add / Lighter</option>
+                        <option value="overlay">Overlay</option>
+                        <option value="soft-light">Soft light</option>
+                        <option value="hard-light">Hard light</option>
+                        <option value="color-dodge">Color dodge</option>
+                        <option value="difference">Difference</option>
+                        <option value="exclusion">Exclusion</option>
+                        <option value="darken">Darken</option>
+                        <option value="lighten">Lighten</option>
+                    </select>
+                </div>
+            </div>
+            <div class="flex flex-col gap-0.5">
+                <div class="flex items-center justify-between gap-2">
+                    <span class="fira text-[7px] text-neutral-500">Size</span>
+                    <span id="val-tracking-marker-modal-size" class="fira text-[7px] text-neutral-400 tabular-nums">100%</span>
+                </div>
+                <input type="range" id="param-tracking-marker-modal-size" min="0.25" max="2.5" step="0.05" value="1" class="w-full h-1 bg-transparent rounded-none appearance-none" title="Marker scale">
+            </div>
+            <div class="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-neutral-800">
+                <button type="button" id="btn-tracking-marker-modal-delete" class="hidden fira text-[8px] font-black px-2 py-1 border-2 border-red-900 bg-black text-red-400 hover:border-red-500">Delete</button>
+                <div class="flex gap-1 ml-auto">
+                    <button type="button" id="btn-tracking-marker-modal-cancel" class="fira text-[8px] font-black px-2 py-1 border-2 border-neutral-600 bg-black text-neutral-300 hover:border-white">Cancel</button>
+                    <button type="button" id="btn-tracking-marker-modal-save" class="fira text-[8px] font-black px-2 py-1 border-2 border-neutral-200 bg-neutral-200 text-black hover:bg-white">Save</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="tracking-marker-gif-host" class="fixed left-0 top-0 w-px h-px overflow-hidden opacity-[0.001] pointer-events-none" aria-hidden="true"></div>
+
     <video id="hidden-video" class="hidden" crossorigin="anonymous" playsinline loop muted></video>
     <canvas id="buffer-canvas" class="hidden"></canvas>
     <canvas id="gif-buffer" class="hidden"></canvas>
@@ -1271,51 +1362,224 @@
         const LFO_WAVE_SHAPES = ['sine', 'triangle', 'saw', 'square', 'pulse', 'noise'];
         /** Canvas blend modes for audio overlay + blend LFO (order matches #audio-blend-mode options). */
         const AUDIO_BLEND_MODES = ['screen', 'multiply', 'difference', 'overlay', 'lighten', 'darken', 'soft-light', 'hard-light', 'exclusion', 'source-over'];
-        /** Built-in emoji/text presets (cannot be removed). */
-        const TRACKING_MARKER_BANK = ['🥀', '👺', '🫠'];
-        const TRACKING_MARKER_LFO_STORAGE_KEY = 'asciiLiveTrackingCustomMarkers';
+        const TRACKING_MARKERS_STORAGE_KEY = 'asciiLiveTrackingMarkersV2';
+        const TRACKING_MARKER_LEGACY_KEY = 'asciiLiveTrackingCustomMarkers';
         const TRACKING_CUSTOM_MARKER_MAX = 32;
-        let trackingCustomMarkers = [];
-        function loadTrackingCustomMarkers() {
+        const TRACKING_MARKER_IMAGE_MAX_BYTES = 2.5 * 1024 * 1024;
+        const TRACKING_MARKER_TEXT_MAX = 64;
+        let trackingMarkersList = [];
+        const trackingMarkerImageCache = new Map();
+        const trackingMarkerGifAnimCache = new Map();
+        const trackingMarkerGifDecodePending = new Set();
+        let gifuctLoadPromise = null;
+        const TRACKING_MARKER_IMAGE_BLEND_MODES = new Set([
+            'source-over',
+            'screen',
+            'multiply',
+            'lighter',
+            'overlay',
+            'soft-light',
+            'hard-light',
+            'color-dodge',
+            'difference',
+            'exclusion',
+            'darken',
+            'lighten'
+        ]);
+        let trackingMarkerModalMode = 'create';
+        let trackingMarkerModalEditingId = null;
+        let trackingMarkerModalKind = 'image';
+        let trackingMarkerModalDataUrl = '';
+
+        function genTrackingMarkerId() {
+            return 'm_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 10);
+        }
+        function clampTrackingMarkerSize(v) {
+            const n = Number(v);
+            if (!Number.isFinite(n)) return 1;
+            return Math.max(0.15, Math.min(3, n));
+        }
+        function clampTrackingMarkerBlend(v) {
+            const s = typeof v === 'string' ? v : 'source-over';
+            return TRACKING_MARKER_IMAGE_BLEND_MODES.has(s) ? s : 'source-over';
+        }
+        function dataURLToArrayBuffer(dataUrl) {
+            const comma = dataUrl.indexOf(',');
+            if (comma < 0) return null;
+            const b64 = dataUrl.slice(comma + 1);
+            const bin = atob(b64);
+            const len = bin.length;
+            const bytes = new Uint8Array(len);
+            for (let i = 0; i < len; i++) bytes[i] = bin.charCodeAt(i);
+            return bytes.buffer;
+        }
+        function normalizeMarkerRecord(raw) {
+            if (!raw || typeof raw !== 'object') return null;
+            const id = typeof raw.id === 'string' && raw.id.length ? raw.id : '';
+            if (!id) return null;
+            const kind = raw.kind === 'image' ? 'image' : 'text';
+            const size = clampTrackingMarkerSize(raw.size);
+            if (kind === 'image') {
+                const dataUrl = typeof raw.dataUrl === 'string' && raw.dataUrl.startsWith('data:') ? raw.dataUrl : '';
+                if (!dataUrl || dataUrl.length > TRACKING_MARKER_IMAGE_MAX_BYTES) return null;
+                const blend = clampTrackingMarkerBlend(raw.blend);
+                return { id, kind: 'image', dataUrl, size, blend };
+            }
+            const text = String(raw.text ?? '').trim().slice(0, TRACKING_MARKER_TEXT_MAX);
+            if (!text) return null;
+            return { id, kind: 'text', text, size };
+        }
+        function loadTrackingMarkers() {
+            trackingMarkersList = [];
             try {
-                const raw = localStorage.getItem(TRACKING_MARKER_LFO_STORAGE_KEY);
+                const raw = localStorage.getItem(TRACKING_MARKERS_STORAGE_KEY);
                 if (raw) {
                     const arr = JSON.parse(raw);
                     if (Array.isArray(arr)) {
                         const seen = new Set();
-                        trackingCustomMarkers = [];
                         for (const x of arr) {
-                            const t = String(x).trim().slice(0, 16);
-                            if (!t || seen.has(t)) continue;
-                            seen.add(t);
-                            trackingCustomMarkers.push(t);
+                            const m = normalizeMarkerRecord(x);
+                            if (!m || seen.has(m.id)) continue;
+                            seen.add(m.id);
+                            trackingMarkersList.push(m);
                         }
                     }
                 }
             } catch (_) {
-                trackingCustomMarkers = [];
+                trackingMarkersList = [];
             }
+            let migratedLegacy = false;
+            if (trackingMarkersList.length === 0) {
+                try {
+                    const rawLegacy = localStorage.getItem(TRACKING_MARKER_LEGACY_KEY);
+                    if (rawLegacy) {
+                        const arr = JSON.parse(rawLegacy);
+                        if (Array.isArray(arr)) {
+                            const seen = new Set();
+                            for (const x of arr) {
+                                if (typeof x === 'string') {
+                                    const t = x.trim().slice(0, TRACKING_MARKER_TEXT_MAX);
+                                    if (!t || seen.has(t)) continue;
+                                    seen.add(t);
+                                    trackingMarkersList.push({ id: genTrackingMarkerId(), kind: 'text', text: t, size: 1 });
+                                }
+                            }
+                            if (trackingMarkersList.length) migratedLegacy = true;
+                        }
+                    }
+                } catch (_) {}
+            }
+            if (migratedLegacy) saveTrackingMarkers();
         }
-        function saveTrackingCustomMarkers() {
+        function saveTrackingMarkers() {
             try {
-                localStorage.setItem(TRACKING_MARKER_LFO_STORAGE_KEY, JSON.stringify(trackingCustomMarkers));
-            } catch (_) {}
-        }
-        function getTrackingMarkerBankList() {
-            const seen = new Set(TRACKING_MARKER_BANK);
-            const out = [...TRACKING_MARKER_BANK];
-            for (const s of trackingCustomMarkers) {
-                const t = String(s).trim().slice(0, 16);
-                if (!t || seen.has(t)) continue;
-                seen.add(t);
-                out.push(t);
+                localStorage.setItem(TRACKING_MARKERS_STORAGE_KEY, JSON.stringify(trackingMarkersList));
+            } catch (e) {
+                console.warn('Tracking markers save failed', e);
             }
-            return out;
         }
-        /** One LFO carousel: rectangle → rect+X → circle → text with each marker (built-in + custom). */
+        function findTrackingMarker(id) {
+            if (!id) return null;
+            return trackingMarkersList.find((m) => m.id === id) || null;
+        }
+        function invalidateTrackingMarkerImage(id) {
+            if (!id) return;
+            trackingMarkerImageCache.delete(id);
+            trackingMarkerGifAnimCache.delete(id);
+            trackingMarkerGifDecodePending.delete(id);
+        }
+        function ensureGifImageInDom(img, dataUrl) {
+            if (!dataUrl || !dataUrl.startsWith('data:image/gif')) return;
+            const host = document.getElementById('tracking-marker-gif-host');
+            if (host && img && img.parentNode !== host) {
+                host.appendChild(img);
+            }
+        }
+        function getTrackingMarkerImage(id) {
+            const m = findTrackingMarker(id);
+            if (!m || m.kind !== 'image' || !m.dataUrl) return null;
+            let img = trackingMarkerImageCache.get(id);
+            if (img && img.__src === m.dataUrl) {
+                ensureGifImageInDom(img, m.dataUrl);
+                return img;
+            }
+            img = new Image();
+            img.__src = m.dataUrl;
+            img.src = m.dataUrl;
+            ensureGifImageInDom(img, m.dataUrl);
+            trackingMarkerImageCache.set(id, img);
+            return img;
+        }
+        function loadGifuct() {
+            if (!gifuctLoadPromise) {
+                gifuctLoadPromise = import('https://esm.sh/gifuct-js@2.1.2');
+            }
+            return gifuctLoadPromise;
+        }
+        async function decodeGifTrackingMarker(id) {
+            const m = findTrackingMarker(id);
+            if (!m || m.kind !== 'image' || !m.dataUrl || !m.dataUrl.startsWith('data:image/gif')) return;
+            if (trackingMarkerGifAnimCache.has(id) || trackingMarkerGifDecodePending.has(id)) return;
+            trackingMarkerGifDecodePending.add(id);
+            try {
+                const { parseGIF, decompressFrames } = await loadGifuct();
+                const buffer = dataURLToArrayBuffer(m.dataUrl);
+                if (!buffer) return;
+                const gif = parseGIF(buffer);
+                const frames = decompressFrames(gif, true);
+                if (!frames.length) return;
+                const w = gif.lsd.width;
+                const h = gif.lsd.height;
+                const gifCanvas = document.createElement('canvas');
+                gifCanvas.width = w;
+                gifCanvas.height = h;
+                const gifCtx = gifCanvas.getContext('2d');
+                const tempCanvas = document.createElement('canvas');
+                const tempCtx = tempCanvas.getContext('2d');
+                const baked = [];
+                let frameImageData = null;
+                let needsDisposal = false;
+                for (let i = 0; i < frames.length; i++) {
+                    const frame = frames[i];
+                    const dims = frame.dims;
+                    if (needsDisposal) {
+                        gifCtx.clearRect(0, 0, w, h);
+                        needsDisposal = false;
+                    }
+                    tempCanvas.width = dims.width;
+                    tempCanvas.height = dims.height;
+                    frameImageData = tempCtx.createImageData(dims.width, dims.height);
+                    frameImageData.data.set(frame.patch);
+                    tempCtx.putImageData(frameImageData, 0, 0);
+                    gifCtx.drawImage(tempCanvas, dims.left, dims.top);
+                    const fc = document.createElement('canvas');
+                    fc.width = w;
+                    fc.height = h;
+                    fc.getContext('2d').drawImage(gifCanvas, 0, 0);
+                    const delay = Math.max(20, frame.delay || 100);
+                    baked.push({ canvas: fc, delay });
+                    const disp = frame.disposalType != null ? frame.disposalType : 0;
+                    if (disp === 2) needsDisposal = true;
+                }
+                let totalMs = 0;
+                for (const f of baked) totalMs += f.delay;
+                trackingMarkerGifAnimCache.set(id, { frames: baked, totalMs, w, h });
+            } catch (err) {
+                console.warn('GIF frame decode failed', err);
+            } finally {
+                trackingMarkerGifDecodePending.delete(id);
+            }
+        }
+        function queueGifDecodeForMarker(id) {
+            if (!id) return;
+            const m = findTrackingMarker(id);
+            if (!m || m.kind !== 'image' || !m.dataUrl || !m.dataUrl.startsWith('data:image/gif')) return;
+            queueMicrotask(() => decodeGifTrackingMarker(id));
+        }
+        /** One LFO carousel: rectangle → rect+X → circle → each saved marker. */
         function getTrackingLfoSteps() {
             const geo = ['rect', 'rect_x', 'circle'].map((preset) => ({ preset }));
-            const text = getTrackingMarkerBankList().map((markerText) => ({ preset: 'text', markerText }));
+            const text = trackingMarkersList.map((m) => ({ preset: 'text', markerId: m.id }));
             return geo.concat(text);
         }
         /** Scales #lfo-tracking-marker-rate so the slider clearly controls carousel loop time. */
@@ -1551,7 +1815,8 @@
                 face: false,
                 hands: false,
                 preset: 'rect',
-                markerText: '🥀',
+                markerText: '',
+                markerId: null,
                 markerLfo: { active: false, shape: 'sine', rate: 1.1, autoWave: false, waveTimer: 0, waveCycleSec: 3 },
                 _markerLfoStepIdx: -1,
                 color: '#00ff88',
@@ -1773,86 +2038,236 @@
             if (sh && lab) lab.textContent = sh.value === 'noise' ? 'A' : '∿';
         }
 
+        function syncTrackingMarkerEditBtn() {
+            const btn = document.getElementById('btn-tracking-marker-edit');
+            if (!btn) return;
+            const ok = state.tracking.preset === 'text' && !!state.tracking.markerId && !!findTrackingMarker(state.tracking.markerId);
+            btn.disabled = !ok;
+        }
         function syncTrackingPresetChips() {
             const p = state.tracking.preset || 'rect';
-            const txt = state.tracking.markerText;
+            const mid = state.tracking.markerId;
             document.querySelectorAll('#controls-panel [data-tracking-chip]').forEach((btn) => {
                 const v = btn.getAttribute('data-tracking-chip');
                 let on = false;
-                if (v && v.startsWith('emoji:')) {
-                    const ch = v.slice(6);
-                    on = p === 'text' && txt === ch;
+                if (v && v.startsWith('marker:')) {
+                    const id = v.slice(7);
+                    on = p === 'text' && mid === id;
                 } else if (v) {
                     on = p === v;
                 }
                 btn.classList.toggle('tracking-preset-active', on);
             });
-            const wrap = document.getElementById('tracking-marker-input-wrap');
-            if (wrap) wrap.classList.toggle('hidden', p !== 'text');
+            syncTrackingMarkerEditBtn();
         }
-
-        const trackingBuiltinMarkerSet = new Set(TRACKING_MARKER_BANK);
         function renderTrackingCustomMarkerChips() {
             const host = document.getElementById('tracking-custom-marker-chips');
             if (!host) return;
             host.innerHTML = '';
-            const seen = new Set();
-            for (const s of trackingCustomMarkers) {
-                const t = String(s).trim().slice(0, 16);
-                if (!t || trackingBuiltinMarkerSet.has(t) || seen.has(t)) continue;
-                seen.add(t);
+            for (const m of trackingMarkersList) {
                 const row = document.createElement('span');
                 row.className = 'inline-flex items-center gap-0';
                 const chip = document.createElement('button');
                 chip.type = 'button';
-                chip.className = 'tracking-preset-chip tracking-emoji-chip';
-                chip.setAttribute('data-tracking-chip', 'emoji:' + t);
-                chip.title = t;
-                chip.textContent = t;
+                chip.className = 'tracking-preset-chip' + (m.kind === 'image' ? ' tracking-marker-img-chip' : ' tracking-emoji-chip');
+                chip.setAttribute('data-tracking-chip', 'marker:' + m.id);
+                if (m.kind === 'image') {
+                    chip.title = 'Image marker';
+                    const im = document.createElement('img');
+                    im.alt = '';
+                    im.src = m.dataUrl;
+                    chip.appendChild(im);
+                } else {
+                    const label = m.text.length > 10 ? m.text.slice(0, 9) + '…' : m.text;
+                    chip.title = m.text;
+                    chip.textContent = label;
+                }
                 const del = document.createElement('button');
                 del.type = 'button';
                 del.className = 'fira leading-none text-[9px] w-4 h-4 shrink-0 flex items-center justify-center text-neutral-500 border border-neutral-700 bg-black hover:border-red-500 hover:text-red-400';
                 del.textContent = '×';
-                del.title = 'Remove custom preset';
-                del.setAttribute('data-tracking-delete-marker', encodeURIComponent(t));
+                del.title = 'Remove marker';
+                del.setAttribute('data-tracking-delete-marker-id', m.id);
                 del.addEventListener('click', (e) => {
                     e.preventDefault();
                     e.stopPropagation();
-                    const m = decodeURIComponent(del.getAttribute('data-tracking-delete-marker') || '');
-                    removeTrackingCustomMarker(m);
+                    const id = del.getAttribute('data-tracking-delete-marker-id');
+                    if (id) removeTrackingMarkerById(id);
                 });
                 row.appendChild(chip);
                 row.appendChild(del);
                 host.appendChild(row);
             }
         }
-        function removeTrackingCustomMarker(marker) {
-            const m = String(marker).trim().slice(0, 16);
-            if (!m) return;
-            trackingCustomMarkers = trackingCustomMarkers.filter((x) => String(x).trim().slice(0, 16) !== m);
-            saveTrackingCustomMarkers();
+        function removeTrackingMarkerById(id) {
+            if (!id) return;
+            trackingMarkersList = trackingMarkersList.filter((x) => x.id !== id);
+            invalidateTrackingMarkerImage(id);
+            saveTrackingMarkers();
             renderTrackingCustomMarkerChips();
-            if (state.tracking.markerText === m) {
-                state.tracking.preset = 'text';
-                state.tracking.markerText = TRACKING_MARKER_BANK[0];
-                const mt = document.getElementById('tracking-marker-text');
-                if (mt) mt.value = state.tracking.markerText;
+            if (state.tracking.markerId === id) {
+                if (trackingMarkersList.length) {
+                    const next = trackingMarkersList[0];
+                    state.tracking.preset = 'text';
+                    state.tracking.markerId = next.id;
+                    state.tracking.markerText = next.kind === 'text' ? next.text : '';
+                } else {
+                    state.tracking.markerId = null;
+                    state.tracking.markerText = '';
+                    state.tracking.preset = 'rect';
+                }
             }
             syncTrackingPresetChips();
         }
-        function addTrackingCustomMarker(raw) {
-            let t = String(raw || '').trim().slice(0, 16);
-            if (!t) return;
-            if (getTrackingMarkerBankList().includes(t)) return;
-            if (trackingCustomMarkers.length >= TRACKING_CUSTOM_MARKER_MAX) return;
-            trackingCustomMarkers.push(t);
-            saveTrackingCustomMarkers();
+
+        function setTrackingMarkerModalKind(kind) {
+            trackingMarkerModalKind = kind === 'image' ? 'image' : 'text';
+            const tw = document.getElementById('tracking-marker-modal-text-wrap');
+            const iw = document.getElementById('tracking-marker-modal-image-wrap');
+            const bt = document.getElementById('btn-tracking-marker-kind-text');
+            const bi = document.getElementById('btn-tracking-marker-kind-image');
+            if (tw) tw.classList.toggle('hidden', trackingMarkerModalKind === 'image');
+            if (iw) iw.classList.toggle('hidden', trackingMarkerModalKind !== 'image');
+            if (bt) {
+                bt.classList.toggle('text-neutral-200', trackingMarkerModalKind === 'text');
+                bt.classList.toggle('text-neutral-500', trackingMarkerModalKind !== 'text');
+            }
+            if (bi) {
+                bi.classList.toggle('text-neutral-200', trackingMarkerModalKind === 'image');
+                bi.classList.toggle('text-neutral-500', trackingMarkerModalKind !== 'image');
+            }
+        }
+        function syncTrackingMarkerModalPreview() {
+            const img = document.getElementById('tracking-marker-modal-preview');
+            const empty = document.getElementById('tracking-marker-modal-preview-empty');
+            if (!img || !empty) return;
+            if (trackingMarkerModalDataUrl) {
+                img.src = trackingMarkerModalDataUrl;
+                img.classList.remove('hidden');
+                empty.classList.add('hidden');
+            } else {
+                img.removeAttribute('src');
+                img.classList.add('hidden');
+                empty.classList.remove('hidden');
+            }
+        }
+        function openTrackingMarkerModal(mode, editId) {
+            trackingMarkerModalMode = mode === 'edit' ? 'edit' : 'create';
+            trackingMarkerModalEditingId = mode === 'edit' ? editId : null;
+            const modal = document.getElementById('tracking-marker-modal');
+            const delBtn = document.getElementById('btn-tracking-marker-modal-delete');
+            const title = document.getElementById('tracking-marker-modal-title');
+            const ta = document.getElementById('tracking-marker-modal-text');
+            const sizeEl = document.getElementById('param-tracking-marker-modal-size');
+            const fn = document.getElementById('tracking-marker-modal-file-name');
+            const fi = document.getElementById('tracking-marker-modal-file');
+            trackingMarkerModalDataUrl = '';
+            if (fi) fi.value = '';
+            if (fn) fn.textContent = '';
+            if (mode === 'edit' && editId) {
+                const m = findTrackingMarker(editId);
+                if (!m) return;
+                if (title) title.textContent = 'Edit marker';
+                if (delBtn) delBtn.classList.remove('hidden');
+                setTrackingMarkerModalKind(m.kind);
+                if (m.kind === 'text') {
+                    if (ta) ta.value = m.text;
+                } else {
+                    if (ta) ta.value = '';
+                    trackingMarkerModalDataUrl = m.dataUrl;
+                }
+                if (sizeEl) sizeEl.value = String(clampTrackingMarkerSize(m.size));
+                const blendSel = document.getElementById('tracking-marker-modal-blend');
+                if (blendSel && m.kind === 'image') blendSel.value = clampTrackingMarkerBlend(m.blend);
+            } else {
+                if (title) title.textContent = 'Add marker';
+                if (delBtn) delBtn.classList.add('hidden');
+                setTrackingMarkerModalKind('image');
+                if (ta) ta.value = '';
+                if (sizeEl) sizeEl.value = '1';
+                const blendSel = document.getElementById('tracking-marker-modal-blend');
+                if (blendSel) blendSel.value = 'source-over';
+            }
+            const vSz = document.getElementById('val-tracking-marker-modal-size');
+            if (vSz && sizeEl) vSz.textContent = Math.round(parseFloat(sizeEl.value) * 100) + '%';
+            syncTrackingMarkerModalPreview();
+            if (modal) {
+                modal.classList.add('tracking-marker-modal-open');
+                modal.classList.remove('hidden');
+                modal.setAttribute('aria-hidden', 'false');
+            }
+        }
+        function closeTrackingMarkerModal() {
+            const modal = document.getElementById('tracking-marker-modal');
+            if (modal) {
+                modal.classList.remove('tracking-marker-modal-open');
+                modal.classList.add('hidden');
+                modal.setAttribute('aria-hidden', 'true');
+            }
+            trackingMarkerModalEditingId = null;
+        }
+        function saveTrackingMarkerFromModal() {
+            const ta = document.getElementById('tracking-marker-modal-text');
+            const sizeEl = document.getElementById('param-tracking-marker-modal-size');
+            const blendSel = document.getElementById('tracking-marker-modal-blend');
+            const sz = clampTrackingMarkerSize(sizeEl ? sizeEl.value : 1);
+            const blend = blendSel ? clampTrackingMarkerBlend(blendSel.value) : 'source-over';
+            let selId = null;
+            if (trackingMarkerModalKind === 'text') {
+                const text = (ta && ta.value ? ta.value : '').trim().slice(0, TRACKING_MARKER_TEXT_MAX);
+                if (!text) return;
+                if (trackingMarkerModalMode === 'edit' && trackingMarkerModalEditingId) {
+                    const m = findTrackingMarker(trackingMarkerModalEditingId);
+                    if (!m) return;
+                    m.kind = 'text';
+                    m.text = text;
+                    m.size = sz;
+                    delete m.dataUrl;
+                    delete m.blend;
+                    invalidateTrackingMarkerImage(m.id);
+                    selId = m.id;
+                } else {
+                    if (trackingMarkersList.length >= TRACKING_CUSTOM_MARKER_MAX) return;
+                    const id = genTrackingMarkerId();
+                    trackingMarkersList.push({ id, kind: 'text', text, size: sz });
+                    selId = id;
+                }
+            } else {
+                const dataUrl = trackingMarkerModalDataUrl;
+                if (!dataUrl || !dataUrl.startsWith('data:')) return;
+                if (trackingMarkerModalMode === 'edit' && trackingMarkerModalEditingId) {
+                    const m = findTrackingMarker(trackingMarkerModalEditingId);
+                    if (!m) return;
+                    m.kind = 'image';
+                    m.dataUrl = dataUrl;
+                    m.size = sz;
+                    m.blend = blend;
+                    delete m.text;
+                    invalidateTrackingMarkerImage(m.id);
+                    selId = m.id;
+                } else {
+                    if (trackingMarkersList.length >= TRACKING_CUSTOM_MARKER_MAX) return;
+                    const id = genTrackingMarkerId();
+                    trackingMarkersList.push({ id, kind: 'image', dataUrl, size: sz, blend });
+                    selId = id;
+                }
+            }
+            saveTrackingMarkers();
             renderTrackingCustomMarkerChips();
             state.tracking.preset = 'text';
-            state.tracking.markerText = t;
-            const mt = document.getElementById('tracking-marker-text');
-            if (mt) mt.value = t;
+            state.tracking.markerId = selId;
+            const mk = selId ? findTrackingMarker(selId) : null;
+            state.tracking.markerText = mk && mk.kind === 'text' ? mk.text : '';
+            if (mk && mk.kind === 'image' && mk.dataUrl && mk.dataUrl.startsWith('data:image/gif')) {
+                queueGifDecodeForMarker(selId);
+            }
             syncTrackingPresetChips();
+            closeTrackingMarkerModal();
+        }
+        function deleteTrackingMarkerFromModal() {
+            if (trackingMarkerModalMode !== 'edit' || !trackingMarkerModalEditingId) return;
+            removeTrackingMarkerById(trackingMarkerModalEditingId);
+            closeTrackingMarkerModal();
         }
 
         function syncD3LfoRateLabel() {
@@ -2827,6 +3242,8 @@
                     if (typeof tr.hands === 'boolean') state.tracking.hands = tr.hands;
                     if (typeof tr.preset === 'string') state.tracking.preset = tr.preset;
                     if (typeof tr.markerText === 'string') state.tracking.markerText = tr.markerText;
+                    if (typeof tr.markerId === 'string') state.tracking.markerId = tr.markerId;
+                    else if (tr.markerId === null) state.tracking.markerId = null;
                     if (typeof tr.color === 'string') state.tracking.color = tr.color;
                     if (tr.markerLfo && typeof tr.markerLfo === 'object') {
                         const ml = tr.markerLfo;
@@ -3114,6 +3531,7 @@
                         hands: state.tracking.hands,
                         preset: state.tracking.preset,
                         markerText: state.tracking.markerText,
+                        markerId: state.tracking.markerId,
                         color: state.tracking.color,
                         markerLfo: {
                             active: state.tracking.markerLfo.active,
@@ -3755,54 +4173,105 @@
             updateOnOffToggleBtn(document.getElementById('btn-tracking-objects'), state.tracking.objects);
             updateOnOffToggleBtn(document.getElementById('btn-tracking-face'), state.tracking.face);
             updateOnOffToggleBtn(document.getElementById('btn-tracking-hands'), state.tracking.hands);
-            loadTrackingCustomMarkers();
+            loadTrackingMarkers();
+            for (const m of trackingMarkersList) {
+                if (m.kind === 'image' && m.dataUrl && m.dataUrl.startsWith('data:image/gif')) {
+                    queueGifDecodeForMarker(m.id);
+                }
+            }
             renderTrackingCustomMarkerChips();
             const trackingPresetsContainer = document.getElementById('tracking-presets-container');
             if (trackingPresetsContainer) {
                 trackingPresetsContainer.addEventListener('click', (e) => {
-                    if (e.target.closest('[data-tracking-delete-marker]')) return;
+                    if (e.target.closest('[data-tracking-delete-marker-id]')) return;
                     const chip = e.target.closest('[data-tracking-chip]');
                     if (!chip || !trackingPresetsContainer.contains(chip)) return;
                     const v = chip.getAttribute('data-tracking-chip');
                     if (!v) return;
-                    if (v.startsWith('emoji:')) {
+                    if (v.startsWith('marker:')) {
                         state.tracking.preset = 'text';
-                        state.tracking.markerText = v.slice(6);
+                        state.tracking.markerId = v.slice(7);
+                        const mk = findTrackingMarker(state.tracking.markerId);
+                        state.tracking.markerText = mk && mk.kind === 'text' ? mk.text : '';
                     } else {
                         state.tracking.preset = v;
+                        state.tracking.markerId = null;
                     }
-                    const mt = document.getElementById('tracking-marker-text');
-                    if (mt) mt.value = state.tracking.markerText;
                     syncTrackingPresetChips();
                 });
             }
-            const addCustomMarker = () => {
-                const inp = document.getElementById('tracking-custom-marker-input');
-                if (!inp) return;
-                addTrackingCustomMarker(inp.value);
-                inp.value = '';
+            const btnTmAdd = document.getElementById('btn-tracking-marker-add');
+            if (btnTmAdd) btnTmAdd.onclick = () => openTrackingMarkerModal('create', null);
+            const btnTmEdit = document.getElementById('btn-tracking-marker-edit');
+            if (btnTmEdit) btnTmEdit.onclick = () => {
+                if (state.tracking.preset === 'text' && state.tracking.markerId) {
+                    openTrackingMarkerModal('edit', state.tracking.markerId);
+                }
             };
-            const btnAddCustom = document.getElementById('btn-tracking-custom-marker-add');
-            if (btnAddCustom) btnAddCustom.onclick = addCustomMarker;
-            const inpCustom = document.getElementById('tracking-custom-marker-input');
-            if (inpCustom) {
-                inpCustom.onkeydown = (e) => {
-                    if (e.key === 'Enter') {
-                        e.preventDefault();
-                        addCustomMarker();
+            const btnTmKindText = document.getElementById('btn-tracking-marker-kind-text');
+            const btnTmKindImage = document.getElementById('btn-tracking-marker-kind-image');
+            if (btnTmKindText) btnTmKindText.onclick = () => setTrackingMarkerModalKind('text');
+            if (btnTmKindImage) btnTmKindImage.onclick = () => setTrackingMarkerModalKind('image');
+            const btnTmPick = document.getElementById('btn-tracking-marker-modal-pick');
+            const inpTmFile = document.getElementById('tracking-marker-modal-file');
+            if (btnTmPick && inpTmFile) {
+                btnTmPick.onclick = () => inpTmFile.click();
+                inpTmFile.onchange = () => {
+                    const f = inpTmFile.files && inpTmFile.files[0];
+                    const fn = document.getElementById('tracking-marker-modal-file-name');
+                    if (fn) fn.textContent = f ? f.name : '';
+                    if (!f || !f.type.startsWith('image/')) {
+                        trackingMarkerModalDataUrl = '';
+                        syncTrackingMarkerModalPreview();
+                        return;
                     }
+                    const fr = new FileReader();
+                    fr.onload = () => {
+                        const res = fr.result;
+                        if (typeof res === 'string') {
+                            if (res.length > TRACKING_MARKER_IMAGE_MAX_BYTES) {
+                                trackingMarkerModalDataUrl = '';
+                                setTrackingStatus('Image too large (max ~2.5 MB)', true);
+                            } else {
+                                trackingMarkerModalDataUrl = res;
+                                setTrackingStatus('');
+                            }
+                        }
+                        syncTrackingMarkerModalPreview();
+                    };
+                    fr.readAsDataURL(f);
                 };
             }
-            document.getElementById('tracking-marker-text').oninput = (e) => {
-                state.tracking.markerText = e.target.value;
-                syncTrackingPresetChips();
-            };
-            document.getElementById('tracking-marker-text').value = state.tracking.markerText;
+            const szModal = document.getElementById('param-tracking-marker-modal-size');
+            const valSzModal = document.getElementById('val-tracking-marker-modal-size');
+            if (szModal && valSzModal) {
+                szModal.oninput = () => {
+                    valSzModal.textContent = Math.round(parseFloat(szModal.value) * 100) + '%';
+                };
+            }
+            const btnTmSave = document.getElementById('btn-tracking-marker-modal-save');
+            const btnTmCancel = document.getElementById('btn-tracking-marker-modal-cancel');
+            const btnTmDelete = document.getElementById('btn-tracking-marker-modal-delete');
+            const btnTmClose = document.getElementById('btn-tracking-marker-modal-close');
+            const bdTm = document.getElementById('tracking-marker-modal-backdrop');
+            if (btnTmSave) btnTmSave.onclick = () => saveTrackingMarkerFromModal();
+            if (btnTmCancel) btnTmCancel.onclick = () => closeTrackingMarkerModal();
+            if (btnTmClose) btnTmClose.onclick = () => closeTrackingMarkerModal();
+            if (btnTmDelete) btnTmDelete.onclick = () => deleteTrackingMarkerFromModal();
+            if (bdTm) bdTm.onclick = () => closeTrackingMarkerModal();
+            document.addEventListener('keydown', (e) => {
+                if (e.key !== 'Escape') return;
+                const modal = document.getElementById('tracking-marker-modal');
+                if (modal && !modal.classList.contains('hidden')) {
+                    e.preventDefault();
+                    closeTrackingMarkerModal();
+                }
+            });
             syncTrackingPresetChips();
             document.getElementById('lfo-tracking-marker-btn').onclick = (e) => {
                 state.tracking.markerLfo.active = !state.tracking.markerLfo.active;
                 if (state.tracking.markerLfo.active) state.tracking._markerLfoStepIdx = -1;
-                updateBrutalLfoInlineBtn(e.currentTarget, state.tracking.markerLfo.active);
+                updateOnOffToggleBtn(e.currentTarget, state.tracking.markerLfo.active);
                 syncCollapsiblePanels();
             };
             document.getElementById('lfo-tracking-marker-shape').onchange = (ev) => {
@@ -3832,7 +4301,7 @@
             document.getElementById('lfo-tracking-marker-wave-cycle').value = String(state.tracking.markerLfo.waveCycleSec);
             document.getElementById('val-lfo-tracking-marker-wave-cycle').textContent = state.tracking.markerLfo.waveCycleSec + 's';
             syncTrackingMarkerLfoRateLabel();
-            updateBrutalLfoInlineBtn(document.getElementById('lfo-tracking-marker-btn'), state.tracking.markerLfo.active);
+            updateOnOffToggleBtn(document.getElementById('lfo-tracking-marker-btn'), state.tracking.markerLfo.active);
             updateAutoWaveBtn(document.getElementById('btn-lfo-tracking-marker-auto'), state.tracking.markerLfo.autoWave);
             document.getElementById('btn-tracking-gate-enable').onclick = (e) => {
                 state.tracking.gate.enabled = !state.tracking.gate.enabled;
@@ -4577,11 +5046,15 @@
                 const idx = Math.min(nSteps - 1, Math.floor(t01 * nSteps));
                 const step = lfoSteps[idx];
                 state.tracking.preset = step.preset;
-                if (step.markerText != null) state.tracking.markerText = step.markerText;
+                if (step.markerId != null) {
+                    state.tracking.markerId = step.markerId;
+                    const mk = findTrackingMarker(step.markerId);
+                    state.tracking.markerText = mk && mk.kind === 'text' ? mk.text : '';
+                } else {
+                    state.tracking.markerId = null;
+                }
                 if (idx !== state.tracking._markerLfoStepIdx) {
                     state.tracking._markerLfoStepIdx = idx;
-                    const mt = document.getElementById('tracking-marker-text');
-                    if (mt) mt.value = state.tracking.markerText;
                     syncTrackingPresetChips();
                 }
             }
@@ -5008,8 +5481,16 @@
             if (!t) return;
             const p = t.preset || 'rect';
             if (p.startsWith('text:')) {
-                t.markerText = p.slice(5) || t.markerText || '🥀';
+                t.markerText = p.slice(5) || t.markerText || '';
                 t.preset = 'text';
+                t.markerId = null;
+            }
+            if (t.preset === 'text' && t.markerId) {
+                const m = findTrackingMarker(t.markerId);
+                if (!m) {
+                    t.markerId = null;
+                    if (!String(t.markerText || '').trim()) t.preset = 'rect';
+                }
             }
         }
 
@@ -5095,15 +5576,83 @@
             ctx.fillStyle = color;
             ctx.lineWidth = lw;
             if (preset === 'text' || preset.startsWith('text:')) {
-                const ch =
-                    preset === 'text'
-                        ? (state.tracking.markerText || '◉').trim() || '◉'
-                        : preset.slice(5) || '◉';
-                const fs = Math.max(10, Math.min(w, h) * 0.42);
-                ctx.font = `bold ${fs}px 'Fira Code', ui-monospace, monospace, 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji'`;
-                ctx.textAlign = 'center';
-                ctx.textBaseline = 'middle';
-                ctx.fillText(ch, x + w / 2, y + h / 2);
+                const mid = state.tracking.markerId;
+                const m = mid ? findTrackingMarker(mid) : null;
+                const scale = m ? clampTrackingMarkerSize(m.size) : 1;
+                if (m && m.kind === 'image' && m.dataUrl) {
+                    const blend = clampTrackingMarkerBlend(m.blend);
+                    const side = Math.min(w, h) * 0.85 * scale;
+                    const drawScaledRaster = (src) => {
+                        const sw = src.width != null ? src.width : src.naturalWidth;
+                        const sh = src.height != null ? src.height : src.naturalHeight;
+                        if (!sw || !sh) return false;
+                        const ar = sw / Math.max(1, sh);
+                        let dw = side;
+                        let dh = side;
+                        if (ar > 1) dh = side / ar;
+                        else dw = side * ar;
+                        const cx = x + w / 2 - dw / 2;
+                        const cy = y + h / 2 - dh / 2;
+                        ctx.save();
+                        ctx.globalCompositeOperation = blend;
+                        ctx.drawImage(src, cx, cy, dw, dh);
+                        ctx.restore();
+                        return true;
+                    };
+                    if (m.dataUrl.startsWith('data:image/gif')) {
+                        const anim = trackingMarkerGifAnimCache.get(m.id);
+                        if (anim && anim.frames.length) {
+                            const t = performance.now() % Math.max(anim.totalMs, 1);
+                            let acc = 0;
+                            let fi = 0;
+                            for (let i = 0; i < anim.frames.length; i++) {
+                                if (t < acc + anim.frames[i].delay) {
+                                    fi = i;
+                                    break;
+                                }
+                                acc += anim.frames[i].delay;
+                            }
+                            drawScaledRaster(anim.frames[fi].canvas);
+                        } else {
+                            queueGifDecodeForMarker(m.id);
+                            const img = getTrackingMarkerImage(m.id);
+                            if (img && img.complete && img.naturalWidth) {
+                                drawScaledRaster(img);
+                            } else {
+                                const fs = Math.max(10, Math.min(w, h) * 0.35 * scale);
+                                ctx.font = `bold ${fs}px 'Fira Code', ui-monospace, monospace`;
+                                ctx.textAlign = 'center';
+                                ctx.textBaseline = 'middle';
+                                ctx.fillStyle = color;
+                                ctx.fillText('…', x + w / 2, y + h / 2);
+                            }
+                        }
+                    } else {
+                        const img = getTrackingMarkerImage(m.id);
+                        if (img && img.complete && img.naturalWidth) {
+                            drawScaledRaster(img);
+                        } else {
+                            const fs = Math.max(10, Math.min(w, h) * 0.35 * scale);
+                            ctx.font = `bold ${fs}px 'Fira Code', ui-monospace, monospace`;
+                            ctx.textAlign = 'center';
+                            ctx.textBaseline = 'middle';
+                            ctx.fillStyle = color;
+                            ctx.fillText('…', x + w / 2, y + h / 2);
+                        }
+                    }
+                } else {
+                    const ch =
+                        m && m.kind === 'text'
+                            ? (m.text || '◉').trim() || '◉'
+                            : preset === 'text'
+                              ? (state.tracking.markerText || '◉').trim() || '◉'
+                              : (preset.slice(5) || '◉');
+                    const fs = Math.max(10, Math.min(w, h) * 0.42 * scale);
+                    ctx.font = `bold ${fs}px 'Fira Code', ui-monospace, monospace, 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji'`;
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText(ch, x + w / 2, y + h / 2);
+                }
             } else if (preset === 'circle') {
                 const cx = x + w / 2;
                 const cy = y + h / 2;
