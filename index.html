@@ -810,9 +810,10 @@
                 </div>
                         <div class="control-group w-full ascii-style-nested">
                     <div class="control-row-head">
-                        <label class="knob-label min-w-0 truncate">Characters</label>
+                        <label class="knob-label min-w-0 truncate">Edit characters</label>
                         <div class="control-row-tools">
-                            <button type="button" id="lfo-charset-btn" class="btn-onoff" title="Show character controls (text, Animate)">OFF</button>
+                            <button type="button" id="btn-charset-reset" onclick="resetPresets()" class="text-[8px] font-black px-1.5 py-0.5 rounded-none border-2 border-neutral-600 bg-black hover:bg-neutral-950 hover:text-red-400 hover:border-red-500 transition-all font-black uppercase shrink-0" title="Reset all style presets">RESET</button>
+                            <button type="button" id="lfo-charset-btn" class="btn-onoff" title="Show character string and Animate">OFF</button>
                         </div>
                     </div>
                     <div id="charset-main-body" class="hidden">
@@ -3732,8 +3733,17 @@
             };
             normalizeTrackingPreset();
             document.getElementById('btn-tracking-section').onclick = (e) => {
-                state.tracking.enabled = !state.tracking.enabled;
-                updateOnOffToggleBtn(e.currentTarget, state.tracking.enabled);
+                const on = !state.tracking.enabled;
+                state.tracking.enabled = on;
+                updateOnOffToggleBtn(e.currentTarget, on);
+                if (on) {
+                    state.tracking.objects = true;
+                    state.tracking.face = true;
+                    state.tracking.hands = true;
+                    updateOnOffToggleBtn(document.getElementById('btn-tracking-objects'), true);
+                    updateOnOffToggleBtn(document.getElementById('btn-tracking-face'), true);
+                    updateOnOffToggleBtn(document.getElementById('btn-tracking-hands'), true);
+                }
                 syncCollapsiblePanels();
                 if (!trackingAnyEnabled()) resetTrackingPipeline();
                 else ensureTrackingInitialized().catch(() => {});
@@ -4797,6 +4807,8 @@
             if (pmb) pmb.classList.toggle('hidden', !state.ui.paletteExpanded);
             const pr = document.getElementById('btn-palette-reset');
             if (pr) pr.classList.toggle('hidden', !state.ui.paletteExpanded);
+            const cr = document.getElementById('btn-charset-reset');
+            if (cr) cr.classList.toggle('hidden', !state.ui.charsExpanded);
 
             const dhm = document.getElementById('density-header-meta');
             if (dhm) dhm.classList.toggle('hidden', !state.ui.densityExpanded);
