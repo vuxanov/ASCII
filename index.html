@@ -628,7 +628,7 @@
                 <label class="w-full py-2 bg-black hover:bg-neutral-900 border-2 border-neutral-600 rounded-none text-xs font-black uppercase tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer">
                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
                     ADD MP4/GIF
-                    <input type="file" id="playlist-upload" multiple accept="video/*,image/gif" class="hidden">
+                    <input type="file" id="playlist-upload" multiple accept="video/*,image/*" class="hidden">
                 </label>
             </section>
 
@@ -1283,6 +1283,9 @@
             </div>
             <div id="tracking-marker-modal-text-wrap" class="flex flex-col gap-1">
                 <label class="fira text-[7px] text-neutral-500" for="tracking-marker-modal-text">Text</label>
+                <select id="tracking-marker-recent-text-pick" class="w-full text-[8px] bg-black border-2 border-neutral-600 rounded-none px-1 py-0.5 text-neutral-400 outline-none focus:border-white mb-0.5" title="Insert a recently saved label">
+                    <option value="">Recent text…</option>
+                </select>
                 <textarea id="tracking-marker-modal-text" rows="2" maxlength="64" class="w-full text-[9px] bg-black border-2 border-neutral-600 rounded-none px-1.5 py-1 text-neutral-200 font-mono outline-none focus:border-white resize-y min-h-[2.5rem]" placeholder="Label or emoji"></textarea>
             </div>
             <div id="tracking-marker-modal-image-wrap" class="hidden flex flex-col gap-1">
@@ -1363,6 +1366,7 @@
         /** Canvas blend modes for audio overlay + blend LFO (order matches #audio-blend-mode options). */
         const AUDIO_BLEND_MODES = ['screen', 'multiply', 'difference', 'overlay', 'lighten', 'darken', 'soft-light', 'hard-light', 'exclusion', 'source-over'];
         const TRACKING_MARKERS_STORAGE_KEY = 'asciiLiveTrackingMarkersV2';
+        const TRACKING_MARKER_RECENT_TEXT_KEY = 'asciiLiveTrackingRecentTexts';
         const TRACKING_MARKER_LEGACY_KEY = 'asciiLiveTrackingCustomMarkers';
         const TRACKING_CUSTOM_MARKER_MAX = 32;
         const TRACKING_MARKER_IMAGE_MAX_BYTES = 2.5 * 1024 * 1024;
@@ -1477,6 +1481,45 @@
             } catch (e) {
                 console.warn('Tracking markers save failed', e);
             }
+        }
+        function loadRecentTrackingTexts() {
+            try {
+                const raw = localStorage.getItem(TRACKING_MARKER_RECENT_TEXT_KEY);
+                if (!raw) return [];
+                const arr = JSON.parse(raw);
+                return Array.isArray(arr) ? arr.filter((x) => typeof x === 'string') : [];
+            } catch (_) {
+                return [];
+            }
+        }
+        function pushRecentTrackingText(t) {
+            const s = String(t || '')
+                .trim()
+                .slice(0, TRACKING_MARKER_TEXT_MAX);
+            if (!s) return;
+            const next = [s, ...loadRecentTrackingTexts().filter((x) => x !== s)].slice(0, 20);
+            try {
+                localStorage.setItem(TRACKING_MARKER_RECENT_TEXT_KEY, JSON.stringify(next));
+            } catch (e) {
+                console.warn('Recent tracking text save failed', e);
+            }
+        }
+        function syncTrackingMarkerRecentTextPick() {
+            const sel = document.getElementById('tracking-marker-recent-text-pick');
+            if (!sel) return;
+            const cur = sel.value;
+            sel.innerHTML = '';
+            const opt0 = document.createElement('option');
+            opt0.value = '';
+            opt0.textContent = 'Recent text…';
+            sel.appendChild(opt0);
+            for (const s of loadRecentTrackingTexts()) {
+                const o = document.createElement('option');
+                o.value = s;
+                o.textContent = s.length > 42 ? s.slice(0, 40) + '…' : s;
+                sel.appendChild(o);
+            }
+            if (cur && [...sel.options].some((o) => o.value === cur)) sel.value = cur;
         }
         function findTrackingMarker(id) {
             if (!id) return null;
@@ -2191,6 +2234,7 @@
             const vSz = document.getElementById('val-tracking-marker-modal-size');
             if (vSz && sizeEl) vSz.textContent = Math.round(parseFloat(sizeEl.value) * 100) + '%';
             syncTrackingMarkerModalPreview();
+            syncTrackingMarkerRecentTextPick();
             if (modal) {
                 modal.classList.add('tracking-marker-modal-open');
                 modal.classList.remove('hidden');
@@ -2232,6 +2276,7 @@
                     trackingMarkersList.push({ id, kind: 'text', text, size: sz });
                     selId = id;
                 }
+                pushRecentTrackingText(text);
             } else {
                 const dataUrl = trackingMarkerModalDataUrl;
                 if (!dataUrl || !dataUrl.startsWith('data:')) return;
@@ -2915,6 +2960,10 @@
                     try { URL.revokeObjectURL(url); } catch (e) { /* noop */ }
                     return null;
                 }
+            } else if (meta.type === 'image') {
+                const im = new Image();
+                im.src = url;
+                item.imageEl = im;
             }
             return item;
         }
@@ -2978,6 +3027,10 @@
                             // If gif decode fails, skip this item.
                             continue;
                         }
+                    } else if (it.type === 'image') {
+                        const im = new Image();
+                        im.src = url;
+                        item.imageEl = im;
                     }
                     loadedItems.push(item);
                 }
@@ -3080,6 +3133,23 @@
                         if (t) item.thumb = t;
                         rerender();
                     });
+                } else if (item.type === 'image' && item.imageEl && !item.thumb) {
+                    const gen = () => {
+                        const im = item.imageEl;
+                        if (!im || !im.naturalWidth) return;
+                        try {
+                            const tw = 64;
+                            const th = Math.max(1, Math.floor((tw / im.naturalWidth) * im.naturalHeight));
+                            const c = document.createElement('canvas');
+                            c.width = tw;
+                            c.height = th;
+                            c.getContext('2d').drawImage(im, 0, 0, tw, th);
+                            item.thumb = c.toDataURL('image/jpeg', 0.6);
+                            rerender();
+                        } catch (e) { /* noop */ }
+                    };
+                    if (item.imageEl.complete) gen();
+                    else item.imageEl.onload = gen;
                 }
             });
         }
@@ -3584,6 +3654,14 @@
                 selectSource(state.activeIndex);
             }
             requestAnimationFrame(renderLoop);
+            window.addEventListener('beforeunload', () => {
+                try {
+                    persistPlaylistMeta();
+                } catch (e) { /* noop */ }
+                try {
+                    saveTrackingMarkers();
+                } catch (e) { /* noop */ }
+            });
         }
 
         async function enumerateCameras() {
@@ -4259,6 +4337,16 @@
             if (btnTmClose) btnTmClose.onclick = () => closeTrackingMarkerModal();
             if (btnTmDelete) btnTmDelete.onclick = () => deleteTrackingMarkerFromModal();
             if (bdTm) bdTm.onclick = () => closeTrackingMarkerModal();
+            const recentPick = document.getElementById('tracking-marker-recent-text-pick');
+            if (recentPick) {
+                recentPick.onchange = () => {
+                    const v = recentPick.value;
+                    if (!v) return;
+                    const ta = document.getElementById('tracking-marker-modal-text');
+                    if (ta) ta.value = v;
+                    recentPick.value = '';
+                };
+            }
             document.addEventListener('keydown', (e) => {
                 if (e.key !== 'Escape') return;
                 const modal = document.getElementById('tracking-marker-modal');
@@ -4565,8 +4653,10 @@
             let didAutoPlay = false;
             files.forEach(async file => {
                 const url = URL.createObjectURL(file);
-                const type = file.type === 'image/gif' ? 'gif' : 'video';
-                const item = { id: crypto.randomUUID(), name: file.name.toUpperCase(), url: url, type: type, mime: file.type, thumb: null };
+                let type = 'video';
+                if (file.type === 'image/gif') type = 'gif';
+                else if (file.type.startsWith('image/')) type = 'image';
+                const item = { id: crypto.randomUUID(), name: file.name.toUpperCase(), url: url, type: type, mime: file.type, thumb: null, imageEl: null };
                 if (type === 'gif') {
                     try {
                         const buffer = await file.arrayBuffer();
@@ -4585,6 +4675,25 @@
                         thumbCanvas.getContext('2d').drawImage(tempCanvas, 0, 0, thumbWidth, thumbHeight);
                         item.thumb = thumbCanvas.toDataURL('image/jpeg', 0.6);
                     } catch (err) { console.error("GIF fail", err); item.type = 'none'; }
+                } else if (type === 'image') {
+                    const im = new Image();
+                    item.imageEl = im;
+                    im.src = url;
+                    im.onload = () => {
+                        try {
+                            const tw = 64;
+                            const th = Math.max(1, Math.floor((tw / im.naturalWidth) * im.naturalHeight));
+                            const thumbCanvas = document.createElement('canvas');
+                            thumbCanvas.width = tw;
+                            thumbCanvas.height = th;
+                            thumbCanvas.getContext('2d').drawImage(im, 0, 0, tw, th);
+                            item.thumb = thumbCanvas.toDataURL('image/jpeg', 0.6);
+                        } catch (err) {
+                            /* noop */
+                        }
+                        renderPlaylist();
+                    };
+                    im.onerror = () => renderPlaylist();
                 } else {
                     const tempVid = document.createElement('video');
                     tempVid.src = url;
@@ -4702,7 +4811,12 @@
             const item = state.playlist[idx];
             state.playlistSettings.timer = 0;
             video.pause();
-            if (state.sourceType !== 'cam' && state.sourceType !== 'video') video.src = "";
+            if (item.type !== 'video' && item.type !== 'cam') {
+                try {
+                    video.src = '';
+                    video.removeAttribute('src');
+                } catch (e) { /* noop */ }
+            }
             if (item.type === 'cam') {
                 if (!item.isStreaming) startCamera();
                 else { video.srcObject = state.camStream; video.play(); state.sourceType = 'cam'; }
@@ -4714,6 +4828,16 @@
                 state.sourceType = 'gif';
                 state.currentGif = { frames: [], frameIndex: 0, nextFrameTime: 0, gif: item.gifData };
                 statusEl.textContent = "GIF FEED";
+                statusEl.className = SOURCE_STATUS_CLASS;
+            } else if (item.type === 'image') {
+                state.sourceType = 'image';
+                if (!item.imageEl) {
+                    const im = new Image();
+                    im.src = item.url;
+                    item.imageEl = im;
+                }
+                state.currentGif = { frames: [], frameIndex: 0, nextFrameTime: 0, gif: null };
+                statusEl.textContent = "IMAGE";
                 statusEl.className = SOURCE_STATUS_CLASS;
             }
             renderPlaylist();
@@ -5526,6 +5650,9 @@
                 const h = el.videoHeight || 1;
                 return { w, h };
             }
+            if (el instanceof HTMLImageElement) {
+                return { w: el.naturalWidth || 1, h: el.naturalHeight || 1 };
+            }
             if (el instanceof HTMLCanvasElement) {
                 return { w: el.width || 1, h: el.height || 1 };
             }
@@ -5882,6 +6009,16 @@
                     g.nextFrameTime = now + (frameInfo.delay * 10);
                 }
                 activeSourceElement = gifBufferCanvas; sw = g.gif.width; sh = g.gif.height;
+            } else if (state.sourceType === 'image') {
+                const item = state.playlist[state.activeIndex];
+                const img = item && item.imageEl;
+                if (!img || !img.complete || !img.naturalWidth) return;
+                gifBufferCanvas.width = img.naturalWidth;
+                gifBufferCanvas.height = img.naturalHeight;
+                gifBufferCtx.drawImage(img, 0, 0);
+                activeSourceElement = gifBufferCanvas;
+                sw = img.naturalWidth;
+                sh = img.naturalHeight;
             }
             if (!activeSourceElement) return;
 
